@@ -1,7 +1,7 @@
 /*
  * Overhead.c
  *
- *  Created on: 2018¦~5¤ë28¤é
+ *  Created on: 2018ï¿½~5ï¿½ï¿½28ï¿½ï¿½
  *      Author: Meenchen
  */
 #include <stdio.h>
@@ -15,7 +15,7 @@ void overhead()
     DBworking(&D, 2, ID);
     int* ptr = D.address;
     *ptr = 123;
-    ID = DBcommit(&D,NULL,NULL,2,1);
+    ID = DBcommit(&D,2,1);
 
     long count;
     int t = 1;
@@ -31,6 +31,6 @@ void overhead()
     }
     //commit
     for(count = 0; count < 1000000; count++){
-        ID = DBcommit(&D,NULL,NULL,2,1);
+        ID = DBcommit(&D,2,1);
     }
 }

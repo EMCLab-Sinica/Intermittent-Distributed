@@ -1,7 +1,7 @@
 /*
  * CalibrateCap.c
  *
- *  Created on: 2018¦~3¤ë15¤é
+ *  Created on: 2018ï¿½~3ï¿½ï¿½15ï¿½ï¿½
  *      Author: Meenchen
  */
 #include <FreeRTOS.h>
@@ -37,7 +37,7 @@ void calibrateCap(){
         DBworking(&data, 4, avgcapID);
         unsigned long* ptr = data.address;
         *ptr = averageCap;
-        avgcapID = DBcommit(&data,NULL,NULL,2,1);
+        avgcapID = DBcommit(&data,2,1);
 
         information[IDCAPCALIBRATE]++;
         unresgisterTCB(IDCAPCALIBRATE);

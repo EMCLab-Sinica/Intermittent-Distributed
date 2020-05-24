@@ -1,7 +1,7 @@
 /*
  * CalibrateTemp.c
  *
- *  Created on: 2018¦~3¤ë15¤é
+ *  Created on: 2018ï¿½~3ï¿½ï¿½15ï¿½ï¿½
  *      Author: Meenchen
  */
 #include <FreeRTOS.h>
@@ -38,7 +38,7 @@ void calibrateTemp(){
         DBworking(&data, 4, avgtempID);
         float* ptr = data.address;
         *ptr = averageTemp;
-        avgtempID = DBcommit(&data,NULL,NULL,4,1);
+        avgtempID = DBcommit(&data,4,1);
 
         information[IDTEMPCALIBRATE]++;
         unresgisterTCB(IDTEMPCALIBRATE);

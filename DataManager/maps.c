@@ -1,8 +1,7 @@
 /*
  * maps.c
  *
- *  Created on: 2017¦~8¤ë15¤é
- *      Author: Meenchen
+ * Description: Functions to maintain the address maps
  */
 #include <DataManager/maps.h>
 #include "FreeRTOS.h"
@@ -107,7 +106,7 @@ typedef struct tskTaskControlBlock
 extern tskTCB * volatile pxCurrentTCB;
 
 /*
- * init(): reset all the mapSwitcher and maps
+ * description: reset all the mapSwitcher and maps
  * parameters: none
  * return: none
  * */
@@ -124,7 +123,7 @@ extern tskTCB * volatile pxCurrentTCB;
 }
 
  /*
-  * access(int numObj): return the address for the commit data, reduce the valid interval
+  * description: return the address for the commit data, reduce the valid interval
   * parameters: number of the object
   * return: none
   * */
@@ -138,7 +137,7 @@ void accessCache(int numObj){
 }
 
 /*
- * access(int numObj): return the address for the commit data, reduce the valid interval
+ * description: return the address for the commit data, reduce the valid interval
  * parameters: number of the object
  * return: none
  * */
@@ -156,7 +155,7 @@ void* access(int numObj){
 
 volatile int dummy;// the compiler mess up something which will skip compiling the CHECK_BIT procedure, we need this to make the if/else statement work!
 /*
- * accessData(int numObj): return the address for the commit data
+ * description: return the address for the commit data
  * parameters: number of the object
  * return: none
  * */
@@ -173,7 +172,7 @@ void* accessData(int numObj){
 }
 
 /*
- * commit(int numObj, void* commitaddress): commit the address for certain commit data
+ * description: commit the address for certain commit data
  * parameters: number of the object, source address
  * return: none
  * */
@@ -197,7 +196,7 @@ void commit(int numObj, void* commitaddress, unsigned long vBegin, unsigned long
 
 
 /*
- * getBegin(int numObj): commit the address for certain commit data
+ * description: commit the address for certain commit data
  * parameters: number of the object
  * return: value of the begin interval
  * */
@@ -215,7 +214,7 @@ unsigned long getBegin(int numObj){
 
 
 /*
- * getEnd(int numObj): commit the address for certain commit data
+ * description: commit the address for certain commit data
  * parameters: number of the object
  * return: value of the End interval
  * */
@@ -233,7 +232,7 @@ unsigned long getEnd(int numObj){
 
 
 /*
- * dumpAll(): use for debug, dump all info.
+ * description: use for debug, dump all info.
  * parameters: none
  * return: none
  * */

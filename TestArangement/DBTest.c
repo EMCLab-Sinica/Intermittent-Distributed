@@ -24,7 +24,6 @@ void main_DBtest( void )
     /* Start a simple task for test */
     if(firstTime != 1){
         constructor();
-        DBmodeSelect(VM);
     }
 /*
     xTaskCreate( calibrateCap, "calibrateCap", configMINIMAL_STACK_SIZE, NULL, COUNTER_TASK_PRIORITY, NULL );

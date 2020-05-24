@@ -1,18 +1,15 @@
 /*
  * maps.h
  *
- *  Created on: 2017¦~8¤ë15¤é
- *      Author: Meenchen
  *  Description : This header file is used to define the address maps for atomic commit
  *              ** What we need to protect for atomicity
  *                  * Address of consistency version (map0 and map1)
  *                  * Validity time interval of data (validStart and validEnd)
- *  Initialize: call init() for reseting data
+ *              ** call init() to reset data
  */
 
 #define NUMOBJ 10
 #define NUMCOMMIT 15
-#define NUMBIT 20
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
 #pragma DATA_SECTION(mapSwitcher, ".map") //each bit indicates address map for a object

@@ -1,7 +1,7 @@
 /*
  * SenseCap.c
  *
- *  Created on: 2018¦~3¤ë13¤é
+ *  Created on: 2018ï¿½~3ï¿½ï¿½13ï¿½ï¿½
  *      Author: Meenchen
  */
 #include <FreeRTOS.h>
@@ -59,7 +59,7 @@ void CapLog(){
         unsigned long capadd = temp;
         capadd = (capadd * 2 * 2.5 *1000) / 4095;//ref:https://e2e.ti.com/support/microcontrollers/msp430/f/166/t/432697
         data.address = &capadd;
-        capID = DBcommit(&data,NULL,NULL,4,1);
+        capID = DBcommit(&data,4,1);
         readCap++;
         //validity done
         information[IDCAP]++;

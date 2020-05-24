@@ -72,9 +72,9 @@ int main(void)
 
         // xTaskCreate(rf_handle_receive, "rf_receive", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
         // xTaskCreate(rf_send_task, "rf_send", configMINIMAL_STACK_SIZE, NULL, 1, NULL );
-        vTaskStartScheduler();
+        // vTaskStartScheduler();
 
-        // main_DBtest();
+        main_DBtest();
     }
     else
     {

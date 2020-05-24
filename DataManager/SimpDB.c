@@ -128,10 +128,8 @@ void constructor(){
     }
     dataId = 0;
     DWORKpoint = 0;
-#ifdef DATACONSISTENCY
     for(i = 0; i < NUMTASK; i++)
         WSRValid[i] = 0;
-#endif
 
 //    memset(snapshot, 0, sizeof(unsigned char), configMINIMAL_STACK_SIZE * NUMTASK);
 }
@@ -150,11 +148,12 @@ void destructor(){
 }
 
 /*
- * commit(void *source, int size): create/write a data entry
+ * description: create/write a data entry
  * parameters: source address of the data(max for 3 data commit atomically), size in terms of bytes
  * return: the id of the data, -1 for failure
+ * note: currently support for committing one data object
  * */
-int DBcommit(struct working *work, struct working *work2, struct working *work3, int size, int num){
+int DBcommit(struct working *work, int size, int num){
     int creation = 0,workId;
     void* previous;
 
@@ -172,7 +171,6 @@ int DBcommit(struct working *work, struct working *work2, struct working *work3,
     workId = work->id;
     taskENTER_CRITICAL();
 
-#ifdef DATACONSISTENCY
     int i,j;
     /* Validation */
     // for read set that have been updated after the read
@@ -203,35 +201,18 @@ int DBcommit(struct working *work, struct working *work2, struct working *work3,
     }
 
     /* validation success, commit all changes*/
-    if(work->loc == NVM){//working at NVM
-        commit(workId,work->address, pxCurrentTCB->vBegin, pxCurrentTCB->vEnd);
-        DB[workId].cacheLoc = NVM;
-    }
-    else{//working at VM, then write to a new segment
         void* temp = (void*)pvPortMalloc(size);
         memcpy(temp, work->address, size);
         commit(workId,temp, pxCurrentTCB->vBegin, pxCurrentTCB->vEnd);
-        DB[workId].cacheLoc = VM;
-    }
-
-    /* Free the previous cache data in NVM*/
-    if(creation == 0 && DB[workId].cacheLoc == NVM)
-        vPortFree(DB[workId].cacheAdd);
 
     /* Free the previous consistent data */
     if(creation == 0)
         vPortFree(previous);
-#else
-    /* Directly write data at the same location in NVM */
-    memcpy(previous, work->address, size);
-    DB[workId].cacheLoc = VM;
-#endif
 
     /* Link the data */
     DB[workId].size = size;
     DB[workId].cacheAdd = work->address;
 
-#ifdef DATACONSISTENCY
     /* validation: for those written data read by other tasks*/
     // all write set's readers can be removed from readTCBNum[] after their valid interval is reduced
     for(i = 0; i < MAXREAD; i++){
@@ -252,8 +233,6 @@ int DBcommit(struct working *work, struct working *work2, struct working *work3,
             DB[workId].readTCBNum[i] = 0;// configure for write set's readers
         }
     }
-#endif
-
 
     taskEXIT_CRITICAL();
     return workId;
@@ -271,7 +250,6 @@ void* DBread(int id){
     else{
         /* Validation: save the reader's TCBNumber for committing tasks */
         //may need to be protected by some mutex
-#ifdef DATACONSISTENCY
         int i;
         taskENTER_CRITICAL();
         for(i = 0; i < MAXREAD; i++)
@@ -287,7 +265,6 @@ void* DBread(int id){
                 }
             }
         taskEXIT_CRITICAL();
-#endif
         if(DB[id].cacheAdd != NULL){
             accessCache(id);
             return DB[id].cacheAdd;
@@ -313,37 +290,31 @@ void DBreadIn(void* to,int id){
  * */
 void DBworking(struct working* wIn, int size, int id)
 {
-    if(DBmode == NVM){//stay in NVM
-        wIn->address = (void*)pvPortMalloc(size);
-        wIn->loc = 0;
+    if(DWORKpoint + size > DWORKSIZE)
+    {
+        //reset, assume will not be overlapped
+        print2uart("Warning: VM for working version overflowed! resetting\n");
+        DWORKpoint = 0;
     }
-    else{//stay in VM
-        if(DWORKpoint + size > DWORKSIZE)//reset, assume will not be overlapped
-            DWORKpoint = 0;
-        wIn->address = &SRAMData[DWORKpoint];
-        wIn->loc = 1;
-        DWORKpoint += size;
-    }
+    wIn->address = &SRAMData[DWORKpoint];
+    wIn->loc = 1;
+    DWORKpoint += size;
     wIn->id = id;
     return;
 }
 
-extern unsigned long timeCounter;
-extern unsigned long taskRecency[12];
 /*
- * registerTCB(int TCB): start the concurrency control of the current task, this function will register the current TCB to the DB, and initialize the TCB's validity interval
+ * description: start the concurrency control of the current task, this function will register the current TCB to the DB, and initialize the TCB's validity interval
  * parameters: the TCB number
  * return: none
  * */
 void registerTCB(int id){
-#ifdef DATACONSISTENCY
     int i;
     unsigned short TCB = pxCurrentTCB->uxTCBNumber;
 
     //initialize the TCB's validity interval
     pxCurrentTCB->vBegin = 0;
     pxCurrentTCB->vEnd = 4294967295;
-//    taskRecency[id] = timeCounter;
     //register the current TCB to the DB,
     for(i = 0; i < NUMTASK; i++){
         if(!WSRValid[i]){
@@ -355,20 +326,18 @@ void registerTCB(int id){
     }
     //should not be here
     //TODO: error handling
-#endif
 }
 
 
 /*
- * unresgisteTCB(int TCB): finish the concurrency control of the current task, unregister the current TCB from the DB
+ * description: finish the concurrency control of the current task, unregister the current TCB from the DB
  * parameters: the TCB number
  * return: none
  * */
-void unresgisterTCB(int id){
-#ifdef DATACONSISTENCY
+void unresgisterTCB(int id)
+{
     int i;
     unsigned short TCB = pxCurrentTCB->uxTCBNumber;
-//    taskRecency[id] = 0;
     for(i = 0; i < NUMTASK; i++){
         if(WSRValid[i]){
             if(WSRTCB[i] == TCB){
@@ -378,11 +347,5 @@ void unresgisterTCB(int id){
         }
     }
     //TODO: error handling
-#endif
 }
 
-
-/* Description: switch the mode of DB */
-void DBmodeSelect(int select){
-    DBmode = select;
-}

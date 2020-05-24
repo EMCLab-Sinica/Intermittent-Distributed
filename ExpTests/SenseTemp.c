@@ -1,7 +1,7 @@
 /*
  * SenseTemp.c
  *
- *  Created on: 2018¦~3¤ë13¤é
+ *  Created on: 2018ï¿½~3ï¿½ï¿½13ï¿½ï¿½
  *      Author: Meenchen
  */
 #define CALADC12_12V_30C  *((unsigned int *)0x1A1A)   // Temperature Sensor Calibration-30 C
@@ -75,7 +75,7 @@ void SenseLog(){
         DBworking(&data, 4, tempID);//2 bytes for int and for create(-1)
         float* tempadd = data.address;
         *tempadd = temp;
-        tempID = DBcommit(&data,NULL,NULL,4,1);
+        tempID = DBcommit(&data,4,1);
         readTemp++;
         information[IDTEMP]++;
         unresgisterTCB(IDTEMP);
