@@ -1,7 +1,7 @@
 /*
  * FailureTest.c
  *
- *  Created on: 2017¦~9¤ë1¤é
+ *  Created on: 2017ï¿½~9ï¿½ï¿½1ï¿½ï¿½
  *      Author: Meenchen
  */
 
@@ -48,7 +48,7 @@ static void prvTest( void *pvParameters )
     volatile int counter,ouputer;
 
     ouputer = information[0];
-//    constructor();
+//    DBConstructor();
 //    DBworking(&dataA, 20, -1);//20 bytes and for create(-1)
 //    unsigned char* pointA = (unsigned char*)dataA.address;
 //    for(i = 0; i < 20; i++){

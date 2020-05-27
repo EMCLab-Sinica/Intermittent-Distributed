@@ -1,7 +1,7 @@
 /*
  * Recovery.c
  *
- *  Created on: 2018¦~2¤ë12¤é
+ *  Created on: 2018ï¿½~2ï¿½ï¿½12ï¿½ï¿½
  *      Author: Meenchen
  */
 
@@ -11,6 +11,7 @@
 #include "task.h"
 #include "Tools/myuart.h"
 #include "driverlib.h"
+#include "mylist.h"
 
 /* Used to check whether memory address is valid */
 #define heapBITS_PER_BYTE       ( ( size_t ) 8 )
@@ -116,6 +117,23 @@ typedef struct tskTaskControlBlock
     #endif
 
 } tskTCB;
+
+/* Used for rerunning unfinished tasks */
+#pragma NOINIT(unfinished)
+static unsigned short unfinished[NUMTASK];// 1: running, others for invalid
+#pragma NOINIT(address)
+static void* address[NUMTASK];// Function address of tasks
+#pragma NOINIT(priority)
+static unsigned short priority[NUMTASK];
+#pragma NOINIT(TCBNum)
+static unsigned short TCBNum[NUMTASK];
+#pragma NOINIT(TCBAdd)
+static void* TCBAdd[NUMTASK];// TCB address of tasks
+#pragma NOINIT(schedulerTask)
+static int schedulerTask[NUMTASK];// if it is schduler's task, we don't need to recreate it because the shceduler does
+/* Logs for all the components */
+#pragma NOINIT(dataTransferLogList)
+MyList_t *dataTransferLogList;
 
 extern tskTCB * volatile pxCurrentTCB;
 extern unsigned char volatile stopTrack;
@@ -245,4 +263,56 @@ void failureRecovery(){
     }
     /* Start the scheduler. */
     vTaskStartScheduler();
+}
+
+/* DataManager Logging */
+void createDataTransferLog(
+    TransferType_e transferType, uint8_t dataId, const data_t *dataObj, const TaskHandle_t *xFromTask)
+{
+    DataTransferLog_t *newDataTransferLog = pvPortMalloc(sizeof(DataTransferLog_t));
+    
+    newDataTransferLog->dataId = dataId;
+    if ( transferType == request )
+    {
+        newDataTransferLog->xDataObj = (data_t *)dataObj;
+        newDataTransferLog->xFromTask = (TaskHandle_t *)xFromTask;
+    }
+    newDataTransferLog->type = transferType;
+
+    listInsert(newDataTransferLog, dataTransferLogList);
+}
+
+DataTransferLog_t *getDataTransferLog(TransferType_e transferType, uint8_t dataId)
+{
+    DataTransferLog_t *log;
+    MyListNode_t *iterator = dataTransferLogList->head;
+    while (iterator != NULL)
+    {
+        log = iterator->data;
+        if (log->dataId == dataId && log->type == transferType)
+        {
+            break;
+        }
+        iterator = iterator->next;
+    }
+
+    return log;
+}
+
+void deleteDataTransferLog(TransferType_e transferType, uint8_t dataId)
+{
+    DataTransferLog_t *log;
+    MyListNode_t *iterator = dataTransferLogList->head;
+    while (iterator != NULL)
+    {
+        log = iterator->data;
+        if (log->dataId == dataId && log->type == transferType)
+        {
+            break;
+        }
+        iterator = iterator->next;
+    }
+
+    listRemove(iterator, dataTransferLogList);
+
 }

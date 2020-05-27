@@ -1,3 +1,4 @@
+
 /*
  *  main.c
  *
@@ -15,6 +16,7 @@
 #include <RecoveryHandler/Recovery.h>
 #include <Tools/myuart.h>
 #include "RFHandler.h"
+#include <Tasks/TestTasks.h>
 
 #ifdef TestStack
 #include "StackInVM.h"
@@ -38,7 +40,7 @@ functionality in an interrupt. */
 static void prvSetupHardware(void);
 
 unsigned short SemphTCB;
-volatile uint8_t my_addr = 0;
+volatile uint8_t nodeAddr = 0;
 extern QueueHandle_t RFReceiverQueue;
 
 /*-----------------------------------------------------------*/
@@ -50,7 +52,7 @@ int main(void)
 
     /* Configure the hardware ready to run the demo. */
     prvSetupHardware();
-    init_rf(&my_addr);
+    init_rf(&nodeAddr);
 
     if (firstTime != 1)
     {
@@ -59,27 +61,21 @@ int main(void)
          */
 
         pvInitHeapVar();
+        DBConstructor();
         /* Initialize RF*/
-        init_rf_queues();
-        //enable_rf_interrupt();
-        capID = -1;
-        tempID = -1;
-        avgtempID = -1;
-        avgcapID = -1;
-        timeCounter = 0;
-        for(int i = 0; i < NUMTASK;i++)
-            information[i] = 0;
+        initRFQueues();
+        enable_rf_interrupt();
 
-        // xTaskCreate(rf_handle_receive, "rf_receive", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
-        // xTaskCreate(rf_send_task, "rf_send", configMINIMAL_STACK_SIZE, NULL, 1, NULL );
-        // vTaskStartScheduler();
+        xTaskCreate(RFHandleReceive, "RFReceive", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+        xTaskCreate(remoteAccessTask, "RemoteAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
+        vTaskStartScheduler();
 
-        main_DBtest();
+        // main_DBtest();
     }
     else
     {
         print2uart("Recovery\n");
-        init_rf_queues();
+        initRFQueues();
         enable_rf_interrupt();
         failureRecovery();
     }
@@ -210,12 +206,12 @@ __interrupt void Port_8(void)
         }
 
         get_packet(buf, &pktlen, &my_addr, &src_addr);
-        static packet_header_t *packetHeader = (packet_header_t *)buf;
+        static PacketHeader_t *packetHeader = (PacketHeader_t *)buf;
 
         if (packetHeader->rxAddr == my_addr || packetHeader->txAddr == BROADCAST_ADDRESS)
         {
             /* Post the byte. */
-            xSendQueueResult = xQueueSendToBackFromISR(RFReceiverQueue, buf, &xHigherPriorityTaskWoken);
+            xSendQueueResult = xQueueSendToBackFromISR(RFReceiverQueue, buf, NULL);
             if (xSendQueueResult != pdTRUE)
             {
                 print2uart("Send to queue failed\n");

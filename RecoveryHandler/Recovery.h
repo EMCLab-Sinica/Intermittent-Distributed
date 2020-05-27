@@ -4,33 +4,43 @@
  *  Created on: 2018�~2��12��
  *      Author: Meenchen
  */
-
-#include <config.h>
-
 #ifndef RECOVERYHANDLER_RECOVERY_H_
 #define RECOVERYHANDLER_RECOVERY_H_
 
+#include <config.h>
+#include "mylist.h"
+#include "SimpDB.h"
+#include "FreeRTOS.h"
+#include "task.h"
+
+/* DataManager Logging */
+typedef enum TransferType
+{
+    request,
+    response 
+} TransferType_e;
+
+typedef struct DataTransferLog
+{
+    TransferType_e type;
+    uint8_t dataId;
+    data_t *xDataObj;
+    TaskHandle_t *xFromTask;
+
+} DataTransferLog_t;
+
+
 void taskRerun();
-
-/* Used for rerunning unfinished tasks */
-#pragma NOINIT(unfinished)
-static unsigned short unfinished[NUMTASK];// 1: running, others for invalid
-#pragma NOINIT(address)
-static void* address[NUMTASK];// Function address of tasks
-#pragma NOINIT(priority)
-static unsigned short priority[NUMTASK];
-#pragma NOINIT(TCBNum)
-static unsigned short TCBNum[NUMTASK];
-#pragma NOINIT(TCBAdd)
-static void* TCBAdd[NUMTASK];// TCB address of tasks
-#pragma NOINIT(schedulerTask)
-static int schedulerTask[NUMTASK];// if it is schduler's task, we don't need to recreate it because the shceduler does
-
-
 void taskRerun();
 void regTaskStart(void* add, unsigned short pri, unsigned short TCB, void* TCBA, int stopTrack);
 void regTaskEnd();
 void failureRecovery();
 void freePreviousTasks();
+
+/* DataManager Logging */
+void createDataTransferLog(TransferType_e transferType, uint8_t dataId,
+                           const data_t *dataObj, const TaskHandle_t *xFromTask);
+DataTransferLog_t * getDataTransferLog(TransferType_e transferType, uint8_t dataId);
+void deleteDataTransferLog(TransferType_e transferType, uint8_t dataId);
 
 #endif /* RECOVERYHANDLER_RECOVERY_H_ */

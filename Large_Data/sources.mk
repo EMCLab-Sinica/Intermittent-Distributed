@@ -115,12 +115,11 @@ SUBDIRS := \
 CCS_Only \
 Connectivity \
 DataManager \
-ExpTests \
 FreeRTOS_Source \
 FreeRTOS_Source/portable/CCS/MSP430X \
 FreeRTOS_Source/portable/MemMang \
 RecoveryHandler \
-TestArangement \
+Tasks \
 Tools \
 driverlib/MSP430FR5xx_6xx \
 

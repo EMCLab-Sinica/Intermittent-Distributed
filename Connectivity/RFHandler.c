@@ -1,13 +1,19 @@
-#include "CC1101_MSP430.h"
-#include "RFHandler.h"
 #include <stdint.h>
-#include "myuart.h"
 #include <FreeRTOS.h>
 #include <task.h>
+#include "Recovery.h"
+#include "RFHandler.h"
+#include "CC1101_MSP430.h"
+
+#include "mylist.h"
+#include "myuart.h"
+
+#define  DEBUG 1
 
 QueueHandle_t RFReceiverQueue;
+extern MyList_t *dataTransferLogList;
 
-uint8_t init_rf_queues()
+uint8_t initRFQueues()
 {
     /* Create a queue capable of containing 5 rf packets. */
     RFReceiverQueue = xQueueCreate(2, MAX_PACKET_LEN);
@@ -21,82 +27,132 @@ uint8_t init_rf_queues()
     return TRUE;
 }
 
-void rf_handle_receive()
+void RFHandleReceive()
 {
-    static uint8_t buf[MAX_PACKET_LEN];
-    static packet_header_t *packetHeader;
+    static uint8_t packetBuf[MAX_PACKET_LEN];
+    static PacketHeader_t *packetHeader;
+
     print2uart("Receive Hander Online\n");
 
     while (1)
     {
-        xQueueReceive(RFReceiverQueue, (void *)buf, portMAX_DELAY);
-        packetHeader = (packet_header_t *)buf;
+        xQueueReceive(RFReceiverQueue, (void *)packetBuf, portMAX_DELAY);
+        packetHeader = (PacketHeader_t *)packetBuf;
+        if (DEBUG)
+            print2uart("Request Type: %x \n", packetHeader->packetType);
 
         switch (packetHeader->packetType)
         {
-        case request_data:
+        case RequestData:
         {
-            // request_data_pkt_t *packet = (request_data_pkt_t *)buf;
-            // print2uart("Request Type: %x \n", packet->header.packetType);
-            // print2uart("REQ DATA ID: %x \n", packet->dataId);
+            const RequestDataPkt_t const *packet = (RequestDataPkt_t *)packetBuf;
+            uint8_t dataReceiver = (*packet).header.txAddr;
+            if (DEBUG)
+                print2uart("RequestData: dataId: %x \n", packet->dataId);
 
-            // // data_t data = *getDataRecord(packet->dataId);
+            createDataTransferLog(response, packet->dataId, NULL, NULL);
 
-            // packet_header_t header = {.packetType = response_data_start};
-            // response_data_ctrl_pkt_t start_pkt =
-            //     {
-            //         .header = header,
-            //         .dataSize = data.size,
-            //         .version = data.version,
-            //         .validationTS = data.validationTS
-            //     };
-            // // send packet
+            // send control message: start
+            data_t *data = getDataRecord(packet->dataId);
+            if (data == NULL)
+            {
+                print2uart("Can not find data with id: %d...\n");
+                break;
+            }
 
-            // uint8_t dataSize = data.size;
-            // uint8_t payloadSize = 0;
-            // while (dataSize > 0)
-            // {
-            //     if (dataSize > MAX_DATA_PAYLOAD_SIZE)
-            //     {
-            //         payloadSize = MAX_DATA_PAYLOAD_SIZE;
-            //     }
-            //     else
-            //     {
-            //         payloadSize = dataSize;
-            //     }
+            PacketHeader_t header = {.packetType = ResponseDataStart};
+            ResponseDataCtrlPkt_t startPacket = {
+                .header = header,
+                .dataId = packet->dataId,
+                .dataSize = data->size,
+                .validationTS = data->validationTS};
 
-            //     header.packetType = response_data_payload;
-            //     response_data_payload_pkt_t payload_pkt =
-            //         {
-            //             .header = header,
-            //             .payloadSize = payloadSize
-            //         };
-            //     memcpy(payload_pkt.payload, data.ptr, payloadSize);
-            //     // send packet
+            RFSendPacket(dataReceiver, (uint8_t *)&startPacket, sizeof(startPacket));
 
-            //     dataSize -= payloadSize;
-            // }
-            // header.packetType;
-            // response_data_ctrl_pkt_t end_pkt = {.header = header};
-            // // send packet
+            // start to send data payload
+            uint32_t dataSize = data->size;
+            uint8_t payloadSize = 0, chunkNum = 0;
+            while (dataSize > 0)
+            {
+                if (dataSize > CHUNK_SIZE)
+                {
+                    payloadSize = CHUNK_SIZE;
+                }
+                else
+                {
+                    payloadSize = dataSize;
+                }
 
+                header.packetType = ResponseDataPayload;
+                ResponseDataPayloadPkt_t payloadPkt =
+                    {
+                        .header = header,
+                        .dataId = packet->dataId,
+                        .chunkNum = chunkNum,
+                        .payloadSize = payloadSize};
+                memcpy(payloadPkt.payload, data->ptr, payloadSize);
+
+                // calculate the real packet size:  control message (header) + the real payload size
+                RFSendPacket(dataReceiver, (uint8_t *)&payloadPkt,
+                             sizeof(payloadPkt) - CHUNK_SIZE + payloadSize);
+
+                dataSize -= payloadSize;
+                chunkNum += 1;
+            }
+
+            // send control message: end
+            header.packetType = ResponseDataEnd;
+            ResponseDataCtrlPkt_t endPacket = {.header = header, .dataId = packet->dataId};
+            RFSendPacket(dataReceiver, (uint8_t *)&endPacket, sizeof(endPacket));
+
+            deleteDataTransferLog(response, packet->dataId);
             break;
         }
 
-        case response_data_start:
+        case ResponseDataStart:
         {
+            ResponseDataCtrlPkt_t *packet = (ResponseDataCtrlPkt_t *)packetBuf;
+            // read request log and buffer
+            DataTransferLog_t *log = getDataTransferLog(request, packet->dataId);
+            data_t *data = log->xDataObj;
+
+            data->validationTS = packet->validationTS;
+            data->version = packet->version;
+            data->size = packet->dataSize;
             break;
         }
 
-        case response_data_payload:
+        case ResponseDataPayload:
         {
+            ResponseDataPayloadPkt_t *packet = (ResponseDataPayloadPkt_t *)packetBuf;
+            DataTransferLog_t *log = getDataTransferLog(request, packet->dataId);
+            data_t *data = log->xDataObj;
+
+            memcpy((uint8_t *)data->ptr + (packet->chunkNum * CHUNK_SIZE), packet->payload, packet->payloadSize);
             break;
         }
 
-        case response_data_end:
+        case ResponseDataEnd:
         {
+            ResponseDataCtrlPkt_t *packet = (ResponseDataCtrlPkt_t *)packetBuf;
+            DataTransferLog_t *log = getDataTransferLog(request, packet->dataId);
+
+            if (DEBUG)
+                print2uart("End of response of dataId: %d, TaskHandle: %x \n", log->dataId, log->xFromTask);
+
+            if (xTaskNotifyGive(*(log->xFromTask)) == pdPASS)
+            {
+                print2uart("Wake up task\n");
+            } else
+            {
+                print2uart("Wake up failed\n");
+            }
+
+
+            deleteDataTransferLog(request, packet->dataId);
             break;
         }
+
         default:
             print2uart("Unknown Request: %d\n", packetHeader->packetType);
             break;
@@ -104,19 +160,8 @@ void rf_handle_receive()
     }
 }
 
-void rf_send_task()
+void RFSendPacket(uint8_t rxAddr, uint8_t *txBuffer, uint8_t pktlen)
 {
-    print2uart("RF Sender\n");
-    receive();
-    // enable RF interrupts
-    uint8_t my_addr = 0, rx_addr = 0, tx_retries = 5;
-
-    packet_header_t header = {.packetType = request_data};
-    request_data_pkt_t packet = {.header = header, .dataId = 3};
-
-    while (1)
-    {
-        send_packet(my_addr, rx_addr, (uint8_t *)&packet, sizeof(request_data_pkt_t), tx_retries);
-        vTaskDelay(500);
-    }
+    extern uint8_t nodeAddr;
+    send_packet(nodeAddr, rxAddr, txBuffer, pktlen, 0);
 }

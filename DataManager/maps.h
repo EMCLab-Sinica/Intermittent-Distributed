@@ -8,7 +8,7 @@
  *              ** call init() to reset data
  */
 
-#define NUMOBJ 10
+#define DB_MAX_OBJ 16
 #define NUMCOMMIT 15
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
@@ -18,18 +18,18 @@ static int mapSwitcher[15];//16bit * 15 = 240 maximum objects
 
 /* Protected data for atomicity */
 #pragma NOINIT(map0)
-static void* map0[NUMOBJ];
+static void* map0[DB_MAX_OBJ];
 #pragma NOINIT(validBegin0)
-static unsigned long validBegin0[NUMOBJ];
+static unsigned long validBegin0[DB_MAX_OBJ];
 #pragma NOINIT(validEnd0)
-static unsigned long validEnd0[NUMOBJ];
+static unsigned long validEnd0[DB_MAX_OBJ];
 
 #pragma NOINIT(map1)
-static void* map1[NUMOBJ];
+static void* map1[DB_MAX_OBJ];
 #pragma NOINIT(validBegin1)
-static unsigned long validBegin1[NUMOBJ];
+static unsigned long validBegin1[DB_MAX_OBJ];
 #pragma NOINIT(validEnd1)
-static unsigned long validEnd1[NUMOBJ];
+static unsigned long validEnd1[DB_MAX_OBJ];
 
 /* internal functions */
 static unsigned long max(unsigned long a, unsigned long b){
