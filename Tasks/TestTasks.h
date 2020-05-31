@@ -1,3 +1,4 @@
 
 
 void remoteAccessTask();
+void localAccessTask();

@@ -64,7 +64,7 @@ void DBDestructor();
 
 data_t *getDataRecord(uint8_t owner, uint8_t dataId);
 data_t *readDB(uint8_t dataId);
-data_t readInLocalDB(uint8_t dataId, void* destDataPtr);
+data_t readLocalDB(uint8_t dataId, void* destDataPtr, uint8_t size);
 data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
                     uint8_t dataId, void *destDataPtr, uint8_t size);
 

@@ -119,14 +119,34 @@ data_t *getDataRecord(uint8_t owner, uint8_t dataId)
  * note: currently support for committing one data object
  * */
 
-data_t readLocalDB(uint8_t dataId, void* destDataPtr)
+data_t readLocalDB(uint8_t dataId, void* destDataPtr, uint8_t size)
 {
-    data_t dataRead;
-    return dataRead;
+    data_t dataWorking;
+    data_t * data = getDataRecord(nodeAddr, dataId);
+
+    if (data == NULL)
+    {
+        if (DEBUG)
+            print2uart("readLocalDB: Can not find data with id=%d\n", dataId);
+        destDataPtr = NULL;
+        dataWorking.id = -1;
+        return  dataWorking;
+    }
+
+    memcpy(destDataPtr, data->ptr, size);
+    dataWorking = *data;
+    dataWorking.ptr = destDataPtr;
+    dataWorking.version = working;
+    if (size < data->size)
+    {
+        dataWorking.size = size;
+    }
+
+    return dataWorking;
 }
 
 data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t owner,
-                    uint8_t dataId, void *toDataPtr, uint8_t size)
+                    uint8_t dataId, void *destDataPtr, uint8_t size)
 {
     data_t *duplicatedDataObj = createVMDBobject(size);
     /* logging */
@@ -159,8 +179,8 @@ data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t owner,
 
     data_t dataRead;
     memcpy(&dataRead, duplicatedDataObj, sizeof(data_t));
-    memcpy(toDataPtr, duplicatedDataObj->ptr, duplicatedDataObj->size);
-    dataRead.ptr = toDataPtr;
+    memcpy(destDataPtr, duplicatedDataObj->ptr, duplicatedDataObj->size);
+    dataRead.ptr = destDataPtr;
     dataRead.version = working;
     return dataRead;
 }

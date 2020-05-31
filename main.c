@@ -70,10 +70,15 @@ int main(void)
         enableRFInterrupt();
 
         xTaskCreate(RFHandleReceive, "RFReceive", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
-        if (nodeAddr != 1)  // testing
+        if (nodeAddr == 1)  // testing
+        {
+            xTaskCreate(localAccessTask, "LocalAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
+        }
+        else if (nodeAddr == 2)
         {
             xTaskCreate(remoteAccessTask, "RemoteAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
         }
+        
         vTaskStartScheduler();
 
         // main_DBtest();
