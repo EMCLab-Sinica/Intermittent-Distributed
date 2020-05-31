@@ -40,8 +40,6 @@ void RFHandleReceive()
     {
         xQueueReceive(RFReceiverQueue, (void *)packetBuf, portMAX_DELAY);
         packetHeader = (PacketHeader_t *)packetBuf;
-        if (DEBUG)
-            print2uart("Request Type: %x \n", packetHeader->packetType);
 
         switch (packetHeader->packetType)
         {
@@ -65,7 +63,8 @@ void RFHandleReceive()
             PacketHeader_t header = {.packetType = ResponseDataStart};
             ResponseDataCtrlPkt_t startPacket = {
                 .header = header,
-                .dataId = packet->dataId,
+                .owner = data->owner,
+                .dataId = data->id,
                 .dataSize = data->size,
                 .validationTS = data->validationTS};
 
@@ -121,6 +120,8 @@ void RFHandleReceive()
             DataTransferLog_t *log = getDataTransferLog(request, packet->dataId);
             data_t *data = log->xDataObj;
 
+            data->id = packet->dataId;
+            data->owner = packet->owner;
             data->validationTS = packet->validationTS;
             data->version = packet->version;
             data->size = packet->dataSize;
@@ -139,7 +140,6 @@ void RFHandleReceive()
 
             uint8_t offset = packet->chunkNum * CHUNK_SIZE;
             memcpy((uint8_t *)(data->ptr) + offset, packet->payload, packet->payloadSize);
-            print2uart("payload content: %x\n", *(uint8_t *)(data->ptr));
             break;
         }
 

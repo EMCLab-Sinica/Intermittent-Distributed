@@ -50,6 +50,7 @@ typedef struct RequestDataPacket
 typedef struct ResponseDataControlPacket
 {
     PacketHeader_t header;
+    uint8_t owner;
     uint8_t dataId;
     uint8_t dataSize;
     DataVersion_e version;
@@ -60,6 +61,7 @@ typedef struct ResponseDataControlPacket
 typedef struct ResponseDataPayloadPacket
 {
     PacketHeader_t header;
+    uint8_t owner;
     uint8_t dataId;
     uint8_t payloadSize;
     uint8_t chunkNum;
