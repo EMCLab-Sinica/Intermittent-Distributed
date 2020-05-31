@@ -13,48 +13,50 @@
  * return: none
  * */
  void init(){
-    memset(mapSwitcher, 0, sizeof(unsigned int) * NUMCOMMIT);
+    memset(mapSwitcher, 0, sizeof(uint32_t) * NUMCOMMIT);
 
     memset(map0, 0, sizeof(void*) * DB_MAX_OBJ);
-    memset(validBegin0, 0, sizeof(unsigned long) * DB_MAX_OBJ);
-    memset(validEnd0, 0, sizeof(unsigned long) * DB_MAX_OBJ);
+    memset(validBegin0, 0, sizeof(uint64_t) * DB_MAX_OBJ);
+    memset(validEnd0, 0, sizeof(uint64_t) * DB_MAX_OBJ);
 
     memset(map1, 0, sizeof(void*) * DB_MAX_OBJ);
-    memset(validBegin1, 0, sizeof(unsigned long) * DB_MAX_OBJ);
-    memset(validEnd1, 0, sizeof(unsigned long) * DB_MAX_OBJ);
+    memset(validBegin1, 0, sizeof(uint64_t) * DB_MAX_OBJ);
+    memset(validEnd1, 0, sizeof(uint64_t) * DB_MAX_OBJ);
 }
 
 
+volatile int dummy;// the compiler mess up something which will skip compiling the CHECK_BIT procedure, we need this to make the if/else statement work!
 /*
  * description: return the address for the commit data, reduce the valid interval
  * parameters: number of the object
  * return: none
  * */
-void* access(int numObj){
-    int prefix = numObj/16,postfix = numObj%16;
-    if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
-        return map1[numObj];
-    }
-    else{
-        return map0[numObj];
-    }
-}
-
-volatile int dummy;// the compiler mess up something which will skip compiling the CHECK_BIT procedure, we need this to make the if/else statement work!
-/*
- * description: return the address for the commit data
- * parameters: number of the object
- * return: none
- * */
-void* accessData(int numObj){
-    int prefix = numObj/16,postfix = numObj%16;
+void* access(int objectIndex){
+    uint32_t prefix = objectIndex / 16, postfix = objectIndex % 16;
     if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
         dummy = 1;
-        return map1[numObj];
+        return map1[objectIndex];
     }
     else{
         dummy = 0;
-        return map0[numObj];
+        return map0[objectIndex];
+    }
+}
+
+/*
+ * description: return the data address of the data object
+ * parameters: number of the object
+ * return: none
+ * */
+void* accessData(int objectIndex){
+    uint32_t prefix = objectIndex / 16, postfix = objectIndex % 16;
+    if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
+        dummy = 1;
+        return map1[objectIndex];
+    }
+    else{
+        dummy = 0;
+        return map0[objectIndex];
     }
 }
 
@@ -63,17 +65,20 @@ void* accessData(int numObj){
  * parameters: number of the object, source address
  * return: none
  * */
-void commit(int numObj, void* commitaddress, unsigned long vBegin, unsigned long vEnd){
-    int prefix = numObj/16,postfix = numObj%16;
-    if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
-        map0[numObj] = commitaddress;
-        validBegin0[numObj] = vBegin;
-        validEnd0[numObj] = vEnd;
+void commit(uint32_t objectIndex, void *dataAddress, uint64_t vBegin, uint64_t vEnd)
+{
+    int prefix = objectIndex / 16, postfix = objectIndex % 16;
+    if (CHECK_BIT(mapSwitcher[prefix], postfix) > 0)
+    {
+        map0[objectIndex] = dataAddress;
+        validBegin0[objectIndex] = vBegin;
+        validEnd0[objectIndex] = vEnd;
     }
-    else{
-        map1[numObj] = commitaddress;
-        validBegin1[numObj] = vBegin;
-        validEnd1[numObj] = vEnd;
+    else
+    {
+        map1[objectIndex] = dataAddress;
+        validBegin1[objectIndex] = vBegin;
+        validEnd1[objectIndex] = vEnd;
     }
 
     //atomic commit
@@ -81,21 +86,20 @@ void commit(int numObj, void* commitaddress, unsigned long vBegin, unsigned long
     //TODO: we need to use some trick to the stack pointer to use pushm for multiple section
 }
 
-
 /*
  * description: commit the address for certain commit data
  * parameters: number of the object
  * return: value of the begin interval
  * */
-unsigned long getBegin(int numObj){
-    int prefix = numObj/16, postfix = numObj%16;
+unsigned long getBegin(int objectIndex){
+    int prefix = objectIndex/16, postfix = objectIndex%16;
     if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
         dummy = 1;
-        return validBegin1[numObj];
+        return validBegin1[objectIndex];
     }
     else{
         dummy = 0;
-        return validBegin0[numObj];
+        return validBegin0[objectIndex];
     }
 }
 
@@ -105,15 +109,15 @@ unsigned long getBegin(int numObj){
  * parameters: number of the object
  * return: value of the End interval
  * */
-unsigned long getEnd(int numObj){
-    int prefix = numObj/16,postfix = numObj%16;
+unsigned long getEnd(int objectIndex){
+    int prefix = objectIndex/16,postfix = objectIndex%16;
     if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
         dummy = 1;
-        return validEnd1[numObj];
+        return validEnd1[objectIndex];
     }
     else{
         dummy = 0;
-        return validEnd0[numObj];
+        return validEnd0[objectIndex];
     }
 }
 

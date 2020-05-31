@@ -270,7 +270,7 @@ void createDataTransferLog(
     TransferType_e transferType, uint8_t dataId, const data_t *dataObj, const TaskHandle_t *xFromTask)
 {
     DataTransferLog_t *newDataTransferLog = pvPortMalloc(sizeof(DataTransferLog_t));
-    
+
     newDataTransferLog->dataId = dataId;
     if ( transferType == request )
     {
@@ -302,17 +302,21 @@ DataTransferLog_t *getDataTransferLog(TransferType_e transferType, uint8_t dataI
 void deleteDataTransferLog(TransferType_e transferType, uint8_t dataId)
 {
     DataTransferLog_t *log;
-    MyListNode_t *iterator = dataTransferLogList->head;
-    while (iterator != NULL)
+    MyListNode_t *current = dataTransferLogList->head;
+    MyListNode_t *previous = current;
+    while (current != NULL)
     {
-        log = iterator->data;
+        log = current->data;
         if (log->dataId == dataId && log->type == transferType)
         {
-            break;
+            previous->next = current->next;
+            if (current == dataTransferLogList->head)
+                dataTransferLogList->head = current->next;
+            vPortFree(current->data);       // free the data
+            vPortFree(current);             // free the node
+            return;
         }
-        iterator = iterator->next;
+        previous = current;
+        current = current->next;
     }
-
-    listRemove(iterator, dataTransferLogList);
-
 }

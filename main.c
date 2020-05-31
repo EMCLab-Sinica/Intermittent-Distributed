@@ -40,7 +40,7 @@ functionality in an interrupt. */
 static void prvSetupHardware(void);
 
 unsigned short SemphTCB;
-volatile uint8_t nodeAddr = 0;
+const uint8_t nodeAddr = 0;
 extern QueueHandle_t RFReceiverQueue;
 
 /*-----------------------------------------------------------*/

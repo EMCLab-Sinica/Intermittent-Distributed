@@ -7,11 +7,12 @@
  *      Author: Meenchen
  *  Description: This simple DB is used to manage data and task snapshot(stacks)
  */
-#include <../DataManager/maps.h>
+#include <DataManager/maps.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include <stdint.h>
 #include <config.h>
+#include "Queue.h"
 
 #define VM_WORKING_SIZE 3072 // working space in VM
 
@@ -29,24 +30,29 @@ struct working{//working space of data for tasks
 
 typedef enum DataVersion
 {
-    consistent,
-    working
+    consistent,             // consistent version in NVM
+    duplicated,             // consistent version in VM
+    working,                // working version in VM
+    modified                // working version in NVM
 } DataVersion_e;
 
 typedef struct Data //two-version data structure
 {
     int8_t id;
-    void *ptr; //Should point to VM or NVM(depends on mode)
+    int8_t owner;  // ownerAddr of the data
     DataVersion_e version;
+    void *ptr; //Should point to VM or NVM(depends on mode)
     uint32_t size;
-    uint32_t validationTS;
+    uint64_t validationTS;
     uint8_t readTCBNum[MAXREAD]; //store 5 readers' TCB number
+
 } data_t;
 
 typedef struct Database
 {
     data_t dataRecord[DB_MAX_OBJ];
-    uint8_t dataRecordPos;    // end of array
+    uint8_t dataRecordPos;       // end of array
+    uint8_t dataIdAutoIncrement; // auto increment for NVM DB
 } database_t;
 
 /* for validation */
@@ -54,22 +60,22 @@ extern unsigned long timeCounter;
 
 /* DB functions */
 void DBConstructor();
+void DBDestructor();
 
-void destructor();
-int DBcommit(struct working *work, int size, int num);
-void* DBread(uint8_t dataId);
-void DBreadIn(void* to,int id);
-void DBworking(struct working* wIn, int size, int id);
+data_t *getDataRecord(uint8_t owner, uint8_t dataId);
+data_t *readDB(uint8_t dataId);
+data_t readInLocalDB(uint8_t dataId, void* destDataPtr);
+data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
+                    uint8_t dataId, void *destDataPtr, uint8_t size);
 
-data_t *VMDBCreate(uint8_t size, uint8_t dataId);
-void VMDBDelete(uint8_t dataId);
+data_t createWorkingSpace();
+data_t *createVMDBobject(uint8_t size);
 
-data_t *getDataRecord(uint8_t dataId);
-void readRemoteDB(const TaskHandle_t *xFromTask, data_t *dataObj, uint8_t remoteAddr, uint8_t dataId);
+int8_t commitLocalDB(data_t *data, uint32_t size);
+
 
 void * getStackVM(int taskID);
 void * getTCBVM(int taskID);
-
 /* functions for validation*/
 void registerTCB(int id);
 void unresgisterTCB(int id);

@@ -7,13 +7,14 @@
  *                  * Validity time interval of data (validStart and validEnd)
  *              ** call init() to reset data
  */
+#include <stdint.h>
 
 #define DB_MAX_OBJ 16
 #define NUMCOMMIT 15
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
 #pragma DATA_SECTION(mapSwitcher, ".map") //each bit indicates address map for a object
-static int mapSwitcher[15];//16bit * 15 = 240 maximum objects
+static uint32_t mapSwitcher[15];//16bit * 15 = 240 maximum objects
 
 
 /* Protected data for atomicity */
@@ -41,13 +42,13 @@ static unsigned long max(unsigned long a, unsigned long b){
 
 /* map functions */
 void init();
-void* access(int numObj);
-void accessCache(int numObj);
-void* accessData(int numObj);
-void commit(int numObj, void* commitaddress, unsigned long vBegin, unsigned long vEnd);
+void* access(int objectIndex);
+void accessCache(int objectIndex);
+void* accessData(int objectIndex);
+void commit(uint32_t objectIndex, void *dataAddress, uint64_t vBegin, uint64_t vEnd);
 void dumpAll();
-unsigned long getBegin(int numObj);
-unsigned long getEnd(int numObj);
+unsigned long getBegin(int objectIndex);
+unsigned long getEnd(int objectIndex);
 
 
 

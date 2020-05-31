@@ -24,7 +24,8 @@ typedef enum PacketType
     RequestData,
     ResponseDataStart,
     ResponseDataPayload,
-    ResponseDataEnd
+    ResponseDataEnd,
+    SyncCounter
 
 } PacketType_e;
 
@@ -41,6 +42,7 @@ typedef struct PacketHeader
 typedef struct RequestDataPacket
 {
     PacketHeader_t header;
+    uint8_t owner;
     uint8_t dataId;
 
 } RequestDataPkt_t;
@@ -64,6 +66,13 @@ typedef struct ResponseDataPayloadPacket
     uint8_t payload[CHUNK_SIZE];
 
 } ResponseDataPayloadPkt_t;
+
+typedef struct SyncCounterPacket
+{
+    PacketHeader_t header;
+    uint64_t timeCounter;
+
+} SyncCounterPkt_t;
 
 
 void RFSendPacket(uint8_t rxAddr, uint8_t *txBuffer, uint8_t pktlen);

@@ -39,7 +39,7 @@ void freePreviousTasks();
 
 /* DataManager Logging */
 void createDataTransferLog(TransferType_e transferType, uint8_t dataId,
-                           const data_t *dataObj, const TaskHandle_t *xFromTask);
+                           const data_t const *dataObj, const TaskHandle_t const *xFromTask);
 DataTransferLog_t * getDataTransferLog(TransferType_e transferType, uint8_t dataId);
 void deleteDataTransferLog(TransferType_e transferType, uint8_t dataId);
 

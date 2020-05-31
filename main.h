@@ -85,7 +85,8 @@ void vApplicationIdleHook( void )
 /* Hook at each application tick */
 void vApplicationTickHook( void )
 {
-   return;
+    timeCounter++; //keep track of running time
+    return;
 }
 /*-----------------------------------------------------------*/
 

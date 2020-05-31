@@ -11,19 +11,17 @@ void remoteAccessTask()
     if (myTaskHandle == NULL)
     {
         print2uart("Error, can not retrive task handle\n");
-        while(1);
+        while (1)
+            ;
     }
+
+    data_t remoteDataObject;
     while (1)
     {
         vTaskDelay(1000);
-        uint8_t dataId = 6;
-        data_t *remoteDataObject = VMDBCreate(16, dataId);
-        if (remoteDataObject == NULL)
-        {
-            print2uart("Error, database full\n");
-            while (1) ;
-        }
-        readRemoteDB(&myTaskHandle, remoteDataObject, 0, dataId);
-        print2uart("GotData\n");
+        uint32_t test;
+        remoteDataObject = readRemoteDB(&myTaskHandle, 1, 1, &test, sizeof(uint32_t));
+
+        print2uart("GotData: %d\n", test);
     }
 }

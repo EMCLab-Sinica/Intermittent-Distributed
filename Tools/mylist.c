@@ -66,7 +66,8 @@ void listRemove(void *data, MyList_t *list)
             previous->next = current->next;
             if (current == list->head)
                 list->head = current->next;
-            vPortFree(current);
+            vportFree(current->data);       // free the data
+            vPortFree(current);             // free the node
             return;
         }
         previous = current;

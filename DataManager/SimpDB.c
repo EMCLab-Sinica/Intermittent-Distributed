@@ -45,6 +45,7 @@ void DBConstructor(){
     dataTransferLogList = makeList();
     init();
     NVMDatabase.dataRecordPos = 0;
+    NVMDatabase.dataIdAutoIncrement = 1; // dataId start from 1
     for(uint8_t i = 0; i < DB_MAX_OBJ; i++){
         NVMDatabase.dataRecord[i].id = -1;
         NVMDatabase.dataRecord[i].ptr = NULL;
@@ -64,147 +65,63 @@ void DBConstructor(){
     NVMDatabase.dataRecordPos = 1;
 }
 
-
-/*
- * DBread(int Did):
- * parameters: id of the data
- * return: the pointer of data, NULL for failure
- * */
-void* DBread(uint8_t dataId){
-    if (DEBUG)
-        print2uart("DBRead: request dataId: %d\n", dataId);
-
-    // read VM DB
-    for (uint8_t i = 0; i < VMDatabase.dataRecordPos; i++)
-    {
-        if (dataId == VMDatabase.dataRecord[i].id)
-        {
-            if (DEBUG)
-                print2uart("DBRead: dataId: %d found in VM DB\n", dataId);
-
-            return VMDatabase.dataRecord[i].ptr;
-        }
-    }
-
-    // read NVM DB
-    for (uint8_t i = 0; i < NVMDatabase.dataRecordPos; i++)
-    {
-        if (dataId == NVMDatabase.dataRecord[i].id)
-        {
-            if (DEBUG)
-                print2uart("DBRead: dataId: %d found in NVM DB\n", dataId);
-
-            return accessData(i);
-        }
-    }
-    /* Validation: save the reader's TCBNumber for committing tasks */
-    //may need to be protected by some mutex
-
-    if (DEBUG)
-        print2uart("DBRead: dataId: %d not found\n", dataId);
-    return NULL;
-}
-
-data_t *getDataRecord(uint8_t dataId)
+data_t *getDataRecord(uint8_t owner, uint8_t dataId)
 {
     if (DEBUG)
-        print2uart("getDataRecord: request dataId: %d\n", dataId);
+        print2uart("getDataRecord: request (owner, dataId): (%d, %d)\n", owner, dataId);
+
+    data_t *data = NULL;
 
     for (uint8_t i = 0; i < VMDatabase.dataRecordPos; i++)
     {
-        if (dataId == VMDatabase.dataRecord[i].id)
+        data = VMDatabase.dataRecord+i;
+        if (owner == data->owner && dataId == data->id)
         {
             if (DEBUG)
-                print2uart("getDataRecord: dataId: %d found in VM DB\n", dataId);
+                print2uart("getDataRecord: (owner, dataId): (%d, %d) found in VMDB\n", owner, dataId);
 
-            return VMDatabase.dataRecord+i;
+            return data;
         }
     }
 
+    data = NULL;
     // read NVM DB
     for (uint8_t i = 0; i < NVMDatabase.dataRecordPos; i++)
     {
-        if (dataId == NVMDatabase.dataRecord[i].id)
+        data = NVMDatabase.dataRecord+i;
+        if (owner == data->owner && dataId == data->id)
         {
             if (DEBUG)
-                print2uart("getDataRecord: dataId: %d found in NVM DB\n", dataId);
+                print2uart("getDataRecord: (owner, dataId): (%d, %d) found in NVMDB\n", owner, dataId);
 
-            return NVMDatabase.dataRecord+i;
+            return data;
         }
     }
     if (DEBUG)
-        print2uart("getDataRecord: dataId: %d not found.\n", dataId);
+        print2uart("getDataRecord: (owner, dataId): (%d, %d) not found\n", owner, dataId);
+
     return NULL;
 }
 
 /*
- * DBreadIn(void* to,int id):
- * parameters: read to where, id of the data
+ * description: create/write a data entry to NVM DB
+ * parameters:
  * return:
+ * note: currently support for committing one data object
  * */
-void DBreadIn(void* to,int id){
-    // memcpy(to, DBread(id), DB[id].size);
+
+data_t readLocalDB(uint8_t dataId, void* destDataPtr)
+{
+    data_t dataRead;
+    return dataRead;
 }
 
-/* Deprecated */
-/*
- * DBworking(int id, void *source, int size): return a working space for tasks
- * parameters: data structure of working space, size of the required data
- * return: none
- * */
-void DBworking(struct working* wIn, int size, int id)
+data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
+                    uint8_t dataId, void *toDataPtr, uint8_t size)
 {
-    if(VMWorkingSpacePos + size > VM_WORKING_SIZE)
-    {
-        //reset, assume will not be overlapped
-        print2uart("Warning: VM for working version overflowed! resetting\n");
-        VMWorkingSpacePos = 0;
-    }
-    wIn->address = &VMWorkingSpace[VMWorkingSpacePos];
-    wIn->loc = 1;
-    VMWorkingSpacePos += size;
-    wIn->id = id;
-    return;
-}
-
-data_t *VMDBCreate(uint8_t size, uint8_t dataId)
-{
-    if (VMDatabase.dataRecordPos >= DB_MAX_OBJ)
-    {
-        print2uart("Error: VMDatabase full, please enlarge MAX_DB_OBJ\n");
-        return NULL
-    }
-    if (DEBUG)
-        print2uart("VMDBCreate: size: %d, dataId: %d\n", size, dataId);
-
-    if (VMWorkingSpacePos + size > VM_WORKING_SIZE)
-    {
-        //reset, assume will not be overlapped
-        print2uart("Warning: VM for working version overflowed! resetting\n");
-        VMWorkingSpacePos = 0;
-    }
-
-    data_t *newVMData = VMDatabase.dataRecord + VMDatabase.dataRecordPos;
-    newVMData->size = size;
-    newVMData->ptr = &VMWorkingSpace[VMWorkingSpacePos];
-    newVMData->id  = dataId;
-
-    VMWorkingSpacePos += size;
-    VMDatabase.dataRecordPos++;
-
-    return newVMData;
-}
-
-void VMDBDelete(uint8_t dataId)
-{
-
-}
-
-void readRemoteDB(const TaskHandle_t const *xFromTask, data_t *dataObj, uint8_t remoteAddr, uint8_t dataId)
-{
+    data_t *duplicatedDataObj = createVMDBobject(size);
     /* logging */
-    createDataTransferLog(request, dataId, dataObj, xFromTask);
-
+    createDataTransferLog(request, dataId, duplicatedDataObj, xFromTask);
 
     // send request
     PacketHeader_t header = {.packetType = RequestData};
@@ -228,142 +145,129 @@ void readRemoteDB(const TaskHandle_t const *xFromTask, data_t *dataObj, uint8_t 
 
     if (DEBUG)
         print2uart("readRemoteDB: remote dataId: %d, notified\n", dataId);
+
+    deleteDataTransferLog(request, dataId);
+
+    data_t dataRead;
+    memcpy(&dataRead, duplicatedDataObj, sizeof(data_t));
+    memcpy(toDataPtr, duplicatedDataObj->ptr, duplicatedDataObj->size);
+    dataRead.ptr = toDataPtr;
+    dataRead.version = working;
+    return dataRead;
 }
 
 /*
- * description: start the concurrency control of the current task, this function will register the current TCB to the DB, and initialize the TCB's validity interval
- * parameters: the TCB number
+ * DBworking(int id, void *source, int size): return a working space for tasks
+ * parameters: data structure of working space, size of the required data
  * return: none
  * */
-// void registerTCB(int id){
-//     int i;
-//     unsigned short TCB = pxCurrentTCB->uxTCBNumber;
+data_t createWorkingSpace()
+{
+    data_t data;
+    extern uint8_t nodeAddr;
 
-//     //initialize the TCB's validity interval
-//     pxCurrentTCB->vBegin = 0;
-//     pxCurrentTCB->vEnd = 4294967295;
-//     //register the current TCB to the DB,
-//     for(i = 0; i < NUMTASK; i++){
-//         if(!WSRValid[i]){
-//             WSRTCB[i] = TCB;
-//             WSRBegin[i] = 4294967295;
-//             WSRValid[i] = 1;
-//             return;
-//         }
-//     }
-//     //should not be here
-//     //TODO: error handling
-// }
-
+    data.id = -1;
+    data.owner = nodeAddr;
+    data.version = working;
+    data.validationTS = 0;
+    return data;
+}
 
 /*
- * description: finish the concurrency control of the current task, unregister the current TCB from the DB
- * parameters: the TCB number
+ * Create a data object in Database located in VM
+ * parameters: size of the data object
  * return: none
  * */
-// void unresgisterTCB(int id)
-// {
-//     int i;
-//     unsigned short TCB = pxCurrentTCB->uxTCBNumber;
-//     for(i = 0; i < NUMTASK; i++){
-//         if(WSRValid[i]){
-//             if(WSRTCB[i] == TCB){
-//                 WSRValid[i] = 0;
-//                 return;
-//             }
-//         }
-//     }
-//     //TODO: error handling
-// }
+data_t *createVMDBobject(uint8_t size)
+{
+    if (VMDatabase.dataRecordPos >= DB_MAX_OBJ)
+    {
+        print2uart("Error: VMDatabase full, please enlarge MAX_DB_OBJ\n");
+        return NULL;
+    }
+    if (DEBUG)
+        print2uart("VMDBCreate: size: %d\n", size);
+
+    if (VMWorkingSpacePos + size > VM_WORKING_SIZE)
+    {
+        //reset, assume will not be overlapped
+        print2uart("Warning: VM for working version overflowed! resetting\n");
+        VMWorkingSpacePos = 0;
+    }
+
+    data_t *newVMData = &VMDatabase.dataRecord[VMDatabase.dataRecordPos];
+    newVMData->size = size;
+    newVMData->ptr = VMWorkingSpace + VMWorkingSpacePos;
+
+    VMWorkingSpacePos += size;
+    VMDatabase.dataRecordPos++;
+
+    return newVMData;
+}
+
+int8_t commitLocalDB(data_t *data, uint32_t size)
+{
+    if (data->version != working || data->version != modified) // only working or modified version can be committed
+        return -1;
+
+    void* oldMallocDataAddress = NULL;
+    uint32_t objectIndex = 0;
+
+    if (data->id <= 0) // creation
+    {
+        extern uint8_t nodeAddr;
+        data->owner = nodeAddr;
+        data->size = size;
+        data->id = VMDatabase.dataIdAutoIncrement++;
+        objectIndex = NVMDatabase.dataRecordPos++;
+    }
+    else    // find db record
+    {
+
+        data_t *DBData = NULL;
+        for (uint32_t i = 0; i < NVMDatabase.dataRecordPos; i++)
+        {
+            DBData = NVMDatabase.dataRecord + i;
+            if (DBData->owner == data->owner && DBData->id == data->id)
+            {
+                objectIndex = i;
+                break;
+            }
+        }
+
+        oldMallocDataAddress = accessData(objectIndex);
+
+        if(DEBUG)
+            print2uart("commitLocalDB: commit failed, can not find data: (%d, %d)\n",
+                       data->owner, data->id);
+        return -1;
+    }
+
+    taskENTER_CRITICAL();
+
+    void *NVMSpace = (void *)pvPortMalloc(data->size);
+    memcpy(NVMSpace, data->ptr, data->size);
+    commit(objectIndex, NVMSpace, 0, 0);
+
+    /* Free the previous consistent data */
+    if (oldMallocDataAddress)
+        vPortFree(oldMallocDataAddress);
+
+    /* Link the data */
+    NVMDatabase.dataRecord[objectIndex] = *data;
+    NVMDatabase.dataRecord[objectIndex].ptr = NVMSpace;
+    NVMDatabase.dataRecord[objectIndex].size = size;
+    extern uint8_t nodeAddr;
+    if (data->owner == nodeAddr)
+    {
+        NVMDatabase.dataRecord[objectIndex].version = consistent;
+    }
+    else
+    {
+        NVMDatabase.dataRecord[objectIndex].version = modified;
+    }
 
 
-/*
- * description: create/write a data entry
- * parameters: source address of the data, size in terms of bytes
- * return: the id of the data, -1 for failure
- * note: currently support for committing one data object
- * */
-// int DBcommit(struct working *work, int size, int num){
-//     int creation = 0,workId;
-//     void* previous;
-
-//     /* creation or invalid ID */
-//     if(work->id < 0){
-//         work->id = dataId++;
-//         creation = 1;
-//     }
-//     else//need to free it after commit
-//         previous = accessData(work->id);
-
-//     if(work->id >= DB_MAX_OBJ)
-//         return -1;
-
-//     workId = work->id;
-//     taskENTER_CRITICAL();
-
-//     int i,j;
-//     /* Validation */
-//     // for read set that have been updated after the read
-//     for(j = 0; j < NUMTASK; j++){
-//        if(WSRValid[j] > 0 && WSRTCB[j] == pxCurrentTCB->uxTCBNumber){
-//            pxCurrentTCB->vEnd = min(pxCurrentTCB->vEnd,WSRBegin[j]-1);
-//            WSRBegin[j] = 4294967295;//incase for a task with multiple commits
-//            break;
-//        }
-//     }
-
-//     // for write set:
-//     if(creation == 0)
-//         pxCurrentTCB->vBegin = max(pxCurrentTCB->vBegin, getBegin(workId)+1);
-
-//     // should be finished no more later than current time
-//     pxCurrentTCB->vEnd = min(pxCurrentTCB->vEnd, timeCounter);
-
-//     // validation success or fail
-//     if(pxCurrentTCB->vBegin > pxCurrentTCB->vEnd){
-//         taskEXIT_CRITICAL();
-//         regTaskEnd();
-//         taskRerun();
-//         /* Free the previous consistent data */
-//         if(creation == 0)
-//             vPortFree(previous);
-//         return -1;
-//     }
-
-//     /* validation success, commit all changes*/
-//         void* temp = (void*)pvPortMalloc(size);
-//         memcpy(temp, work->address, size);
-//         commit(workId,temp, pxCurrentTCB->vBegin, pxCurrentTCB->vEnd);
-
-//     /* Free the previous consistent data */
-//     if(creation == 0)
-//         vPortFree(previous);
-
-//     /* Link the data */
-//     DB[workId].size = size;
-//     DB[workId].ptr = work->address;
-
-//     /* validation: for those written data read by other tasks*/
-//     // all write set's readers can be removed from readTCBNum[] after their valid interval is reduced
-//     for(i = 0; i < MAXREAD; i++){
-//         if(DB[workId].readTCBNum[i] != 0){
-//             //no point to self-restricted
-//             if(DB[workId].readTCBNum[i] == pxCurrentTCB->uxTCBNumber){
-//                 DB[workId].readTCBNum[i] = 0;
-//                 continue;
-//             }
-
-//             //search for valid, the task has read the written data
-//             for(j = 0; j < NUMTASK; j++){
-//                 if(WSRValid[j] == 1 &&  WSRTCB[j] == DB[workId].readTCBNum[i]){
-//                     WSRBegin[j] = min(pxCurrentTCB->vBegin,WSRBegin[j]);
-//                     break;
-//                 }
-//             }
-//             DB[workId].readTCBNum[i] = 0;// configure for write set's readers
-//         }
-//     }
-
-//     taskEXIT_CRITICAL();
-//     return workId;
-// }
+    taskEXIT_CRITICAL();
+    return data->id;
+}

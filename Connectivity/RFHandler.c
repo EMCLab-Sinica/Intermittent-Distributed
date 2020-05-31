@@ -45,7 +45,7 @@ void RFHandleReceive()
         {
         case RequestData:
         {
-            const RequestDataPkt_t const *packet = (RequestDataPkt_t *)packetBuf;
+            const RequestDataPkt_t *packet = (RequestDataPkt_t *)packetBuf;
             uint8_t dataReceiver = (*packet).header.txAddr;
             if (DEBUG)
                 print2uart("RequestData: dataId: %x \n", packet->dataId);
@@ -53,10 +53,10 @@ void RFHandleReceive()
             createDataTransferLog(response, packet->dataId, NULL, NULL);
 
             // send control message: start
-            data_t *data = getDataRecord(packet->dataId);
+            data_t *data = getDataRecord(packet->owner, packet->dataId);
             if (data == NULL)
             {
-                print2uart("Can not find data with id: %d...\n");
+                print2uart("Can not find data with (%d, %d)...\n", packet->owner, packet->dataId);
                 break;
             }
 
@@ -112,6 +112,9 @@ void RFHandleReceive()
         case ResponseDataStart:
         {
             ResponseDataCtrlPkt_t *packet = (ResponseDataCtrlPkt_t *)packetBuf;
+            if (DEBUG)
+                print2uart("ResponseDataStart: dataId: %x \n", packet->dataId);
+
             // read request log and buffer
             DataTransferLog_t *log = getDataTransferLog(request, packet->dataId);
             data_t *data = log->xDataObj;
@@ -125,10 +128,16 @@ void RFHandleReceive()
         case ResponseDataPayload:
         {
             ResponseDataPayloadPkt_t *packet = (ResponseDataPayloadPkt_t *)packetBuf;
+
+            if (DEBUG)
+                print2uart("ResponseDataPayload: dataId: %x \n", packet->dataId);
+
             DataTransferLog_t *log = getDataTransferLog(request, packet->dataId);
             data_t *data = log->xDataObj;
 
-            memcpy((uint8_t *)data->ptr + (packet->chunkNum * CHUNK_SIZE), packet->payload, packet->payloadSize);
+            uint8_t offset = packet->chunkNum * CHUNK_SIZE;
+            memcpy((uint8_t *)(data->ptr) + offset, packet->payload, packet->payloadSize);
+            print2uart("payload content: %x\n", *(uint8_t *)(data->ptr));
             break;
         }
 
