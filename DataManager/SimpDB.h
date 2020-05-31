@@ -36,6 +36,13 @@ typedef enum DataVersion
     modified                // working version in NVM
 } DataVersion_e;
 
+typedef enum DBSearchMode
+{
+    all,
+    vmdb,
+    nvmdb
+} DBSearchMode_e;
+
 typedef struct Data //two-version data structure
 {
     int8_t id;
@@ -44,7 +51,7 @@ typedef struct Data //two-version data structure
     void *ptr; //Should point to VM or NVM(depends on mode)
     uint32_t size;
     uint64_t validationTS;
-    uint8_t readTCBNum[MAXREAD]; //store 5 readers' TCB number
+    // uint8_t readTCBNum[MAXREAD]; //store 5 readers' TCB number
 
 } data_t;
 
@@ -62,7 +69,7 @@ extern unsigned long timeCounter;
 void DBConstructor();
 void DBDestructor();
 
-data_t *getDataRecord(uint8_t owner, uint8_t dataId);
+data_t *getDataRecord(uint8_t owner, uint8_t dataId, DBSearchMode_e mode);
 data_t *readDB(uint8_t dataId);
 data_t readLocalDB(uint8_t dataId, void* destDataPtr, uint8_t size);
 data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t remoteAddr,

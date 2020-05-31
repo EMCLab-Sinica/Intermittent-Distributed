@@ -51,8 +51,8 @@ void DBConstructor(){
         NVMDatabase.dataRecord[i].id = -1;
         NVMDatabase.dataRecord[i].ptr = NULL;
         NVMDatabase.dataRecord[i].size = 0;
-        for (uint8_t j = 0; j < MAXREAD; j++)
-            NVMDatabase.dataRecord[i].readTCBNum[j] = 0;
+        //for (uint8_t j = 0; j < MAXREAD; j++)
+            //NVMDatabase.dataRecord[i].readTCBNum[j] = 0;
     }
     dataId = 0;
     VMWorkingSpacePos = 0;
@@ -74,38 +74,41 @@ void DBConstructor(){
     }
 }
 
-data_t *getDataRecord(uint8_t owner, uint8_t dataId)
+data_t *getDataRecord(uint8_t owner, uint8_t dataId, DBSearchMode_e mode)
 {
-    if (DEBUG)
-        print2uart("getDataRecord: request (owner, dataId): (%d, %d)\n", owner, dataId);
-
     data_t *data = NULL;
-
-    for (uint8_t i = 0; i < VMDatabase.dataRecordPos; i++)
-    {
-        data = VMDatabase.dataRecord+i;
-        if (data->owner == owner && data->id == dataId)
-        {
-            if (DEBUG)
-                print2uart("getDataRecord: (owner, dataId): (%d, %d) found in VMDB\n", owner, dataId);
-
-            return data;
-        }
-    }
-
-    data = NULL;
     // read NVM DB
-    for (uint8_t i = 0; i < NVMDatabase.dataRecordPos; i++)
+    if (mode == nvmdb || mode == all)
     {
-        data = NVMDatabase.dataRecord+i;
-        if (data->owner == owner && data->id == dataId)
+        for (uint8_t i = 0; i < NVMDatabase.dataRecordPos; i++)
         {
-            if (DEBUG)
-                print2uart("getDataRecord: (owner, dataId): (%d, %d) found in NVMDB\n", owner, dataId);
+            data = NVMDatabase.dataRecord + i;
+            if (data->owner == owner && data->id == dataId)
+            {
+                if (DEBUG)
+                    print2uart("getDataRecord: (owner, dataId): (%d, %d) found in NVMDB\n", owner, dataId);
 
-            return data;
+                return data;
+            }
+        }
+        data = NULL;
+    }
+
+    if (mode == vmdb || mode == all)
+    {
+        for (uint8_t i = 0; i < VMDatabase.dataRecordPos; i++)
+        {
+            data = VMDatabase.dataRecord + i;
+            if (data->owner == owner && data->id == dataId)
+            {
+                if (DEBUG)
+                    print2uart("getDataRecord: (owner, dataId): (%d, %d) found in VMDB\n", owner, dataId);
+
+                return data;
+            }
         }
     }
+
     if (DEBUG)
         print2uart("getDataRecord: (owner, dataId): (%d, %d) not found\n", owner, dataId);
 
@@ -122,7 +125,7 @@ data_t *getDataRecord(uint8_t owner, uint8_t dataId)
 data_t readLocalDB(uint8_t dataId, void* destDataPtr, uint8_t size)
 {
     data_t dataWorking;
-    data_t * data = getDataRecord(nodeAddr, dataId);
+    data_t * data = getDataRecord(nodeAddr, dataId, all);
 
     if (data == NULL)
     {
@@ -148,7 +151,15 @@ data_t readLocalDB(uint8_t dataId, void* destDataPtr, uint8_t size)
 data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t owner,
                     uint8_t dataId, void *destDataPtr, uint8_t size)
 {
-    data_t *duplicatedDataObj = createVMDBobject(size);
+    data_t *duplicatedDataObj;
+    // see if we already have the duplicated copy of the data object
+    duplicatedDataObj = getDataRecord(owner, dataId, vmdb);
+    if (duplicatedDataObj == NULL)
+    {
+        print2uart("NULLLLL\n");
+        duplicatedDataObj = createVMDBobject(size);
+    }
+
     /* logging */
     createDataTransferLog(request, dataId, duplicatedDataObj, xFromTask);
 

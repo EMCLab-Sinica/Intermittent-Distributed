@@ -55,7 +55,7 @@ void RFHandleReceive()
             createDataTransferLog(response, packet->dataId, NULL, NULL);
 
             // send control message: start
-            data_t *data = getDataRecord(packet->owner, packet->dataId);
+            data_t *data = getDataRecord(packet->owner, packet->dataId, all);
             if (data == NULL)
             {
                 print2uart("Can not find data with (%d, %d)...\n", packet->owner, packet->dataId);
