@@ -4,6 +4,7 @@
 #include "Recovery.h"
 #include "RFHandler.h"
 #include "CC1101_MSP430.h"
+#include "config.h"
 
 #include "mylist.h"
 #include "myuart.h"
@@ -12,6 +13,7 @@
 
 QueueHandle_t RFReceiverQueue;
 extern MyList_t *dataTransferLogList;
+extern uint8_t nodeAddr;
 
 uint8_t initRFQueues()
 {
@@ -171,6 +173,5 @@ void RFHandleReceive()
 
 void RFSendPacket(uint8_t rxAddr, uint8_t *txBuffer, uint8_t pktlen)
 {
-    extern uint8_t nodeAddr;
     send_packet(nodeAddr, rxAddr, txBuffer, pktlen, 0);
 }

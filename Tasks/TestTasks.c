@@ -20,7 +20,7 @@ void remoteAccessTask()
     {
         vTaskDelay(1000);
         uint32_t test;
-        remoteDataObject = readRemoteDB(&myTaskHandle, 1, 1, &test, sizeof(uint32_t));
+        remoteDataObject = readRemoteDB(&myTaskHandle, 1, 1, (void *)&test, sizeof(test));
 
         print2uart("GotData: %d\n", test);
     }

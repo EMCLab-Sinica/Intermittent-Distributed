@@ -127,8 +127,8 @@
 #define RCCTRL0_STATUS 0xFD //Last RC Oscillator Calibration Result
                             //--------------------------[END status register]-------------------------------
 
-uint8_t init_rf(volatile uint8_t *my_addr);
-void enable_rf_interrupt(void);
+uint8_t initRF(volatile uint8_t *my_addr);
+void enableRFInterrupt(void);
 void end_rf(void);
 
 void spi_init_interface(void);

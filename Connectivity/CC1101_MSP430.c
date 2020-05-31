@@ -366,7 +366,7 @@ void wakeup(void)
 */
 
 //----------------------[CC1101 init functions]---------------------------------
-uint8_t init_rf(volatile uint8_t *my_addr)
+uint8_t initRF(volatile uint8_t *my_addr)
 {
     uint8_t CC1101_freq_select, CC1101_mode_select, CC1101_channel_select;
     uint8_t partnum, version;
@@ -406,7 +406,7 @@ uint8_t init_rf(volatile uint8_t *my_addr)
     }
 
     //default settings
-    *my_addr = 0x00;
+    // *my_addr = 0x00;
     CC1101_freq_select = 0x02; //433.92MHz
     CC1101_mode_select = 0x01; //gfsk 1.2kbps
     CC1101_channel_select = 0x01;
@@ -436,10 +436,11 @@ uint8_t init_rf(volatile uint8_t *my_addr)
     return TRUE;
 }
 //-------------------------------[end]------------------------------------------
-void enable_rf_interrupt(void)
+void enableRFInterrupt(void)
 {
-    ENABLE_GDO2_INT();
     CONFIG_GDO2_RISING_EDGE_INT();
+    CLEAR_GDO2_INT_FLAG();
+    ENABLE_GDO2_INT();
 }
 
 //-----------------[finish's the CC1101 operation]------------------------------

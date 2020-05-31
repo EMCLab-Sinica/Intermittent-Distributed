@@ -13,6 +13,7 @@
 #include "RFHandler.h"
 #include "mylist.h"
 #include "myuart.h"
+#include "config.h"
 
 #define DEBUG 1 // control debug message
 
@@ -33,13 +34,13 @@ static unsigned int VMWorkingSpacePos;
 static database_t VMDatabase;
 
 extern MyList_t *dataTransferLogList;
+extern uint8_t nodeAddr;
 
 /*
  * DBConstructor(): initialize all data structure in the database
  * parameters: none
  * return: none
  * */
-const uint8_t testValue = 7;
 void DBConstructor(){
     // create logging
     dataTransferLogList = makeList();
@@ -59,10 +60,18 @@ void DBConstructor(){
         WSRValid[i] = 0;
 
     // insert for test
-    NVMDatabase.dataRecord[0].id = 6;
-    NVMDatabase.dataRecord[0].ptr = (void*)&testValue;
-    NVMDatabase.dataRecord[0].size = sizeof(testValue);
-    NVMDatabase.dataRecordPos = 1;
+    print2uart("DBCons: nodeAddr %d\n", nodeAddr);
+    if (nodeAddr == 1)
+    {
+        uint32_t *testValue = pvPortMalloc(sizeof(uint32_t));
+        *testValue = 7;
+        print2uart("init owner = 1, data = 1\n");
+        NVMDatabase.dataRecord[0].owner = 1;
+        NVMDatabase.dataRecord[0].id = 1;
+        NVMDatabase.dataRecord[0].ptr = (void *)testValue;
+        NVMDatabase.dataRecord[0].size = sizeof(*testValue);
+        NVMDatabase.dataRecordPos = 1;
+    }
 }
 
 data_t *getDataRecord(uint8_t owner, uint8_t dataId)
@@ -75,7 +84,7 @@ data_t *getDataRecord(uint8_t owner, uint8_t dataId)
     for (uint8_t i = 0; i < VMDatabase.dataRecordPos; i++)
     {
         data = VMDatabase.dataRecord+i;
-        if (owner == data->owner && dataId == data->id)
+        if (data->owner == owner && data->id == dataId)
         {
             if (DEBUG)
                 print2uart("getDataRecord: (owner, dataId): (%d, %d) found in VMDB\n", owner, dataId);
@@ -89,7 +98,7 @@ data_t *getDataRecord(uint8_t owner, uint8_t dataId)
     for (uint8_t i = 0; i < NVMDatabase.dataRecordPos; i++)
     {
         data = NVMDatabase.dataRecord+i;
-        if (owner == data->owner && dataId == data->id)
+        if (data->owner == owner && data->id == dataId)
         {
             if (DEBUG)
                 print2uart("getDataRecord: (owner, dataId): (%d, %d) found in NVMDB\n", owner, dataId);
@@ -116,7 +125,7 @@ data_t readLocalDB(uint8_t dataId, void* destDataPtr)
     return dataRead;
 }
 
-data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
+data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t owner,
                     uint8_t dataId, void *toDataPtr, uint8_t size)
 {
     data_t *duplicatedDataObj = createVMDBobject(size);
@@ -125,7 +134,7 @@ data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
 
     // send request
     PacketHeader_t header = {.packetType = RequestData};
-    RequestDataPkt_t packet = {.header = header, .dataId = dataId};
+    RequestDataPkt_t packet = {.header = header, .owner = owner, .dataId = dataId};
     RFSendPacket(0, (uint8_t *)&packet, sizeof(RequestDataPkt_t));
 
     if (DEBUG)
@@ -164,7 +173,6 @@ data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
 data_t createWorkingSpace()
 {
     data_t data;
-    extern uint8_t nodeAddr;
 
     data.id = -1;
     data.owner = nodeAddr;
@@ -215,7 +223,6 @@ int8_t commitLocalDB(data_t *data, uint32_t size)
 
     if (data->id <= 0) // creation
     {
-        extern uint8_t nodeAddr;
         data->owner = nodeAddr;
         data->size = size;
         data->id = VMDatabase.dataIdAutoIncrement++;
@@ -257,7 +264,6 @@ int8_t commitLocalDB(data_t *data, uint32_t size)
     NVMDatabase.dataRecord[objectIndex] = *data;
     NVMDatabase.dataRecord[objectIndex].ptr = NVMSpace;
     NVMDatabase.dataRecord[objectIndex].size = size;
-    extern uint8_t nodeAddr;
     if (data->owner == nodeAddr)
     {
         NVMDatabase.dataRecord[objectIndex].version = consistent;

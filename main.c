@@ -17,6 +17,7 @@
 #include <Tools/myuart.h>
 #include "RFHandler.h"
 #include <Tasks/TestTasks.h>
+#include "config.h"
 
 #ifdef TestStack
 #include "StackInVM.h"
@@ -40,7 +41,7 @@ functionality in an interrupt. */
 static void prvSetupHardware(void);
 
 unsigned short SemphTCB;
-const uint8_t nodeAddr = 0;
+uint8_t nodeAddr = 1;
 extern QueueHandle_t RFReceiverQueue;
 
 /*-----------------------------------------------------------*/
@@ -52,7 +53,9 @@ int main(void)
 
     /* Configure the hardware ready to run the demo. */
     prvSetupHardware();
-    init_rf(&nodeAddr);
+    print2uart("Node id: %d\n", nodeAddr);
+
+    initRF(&nodeAddr);
 
     if (firstTime != 1)
     {
@@ -64,10 +67,13 @@ int main(void)
         DBConstructor();
         /* Initialize RF*/
         initRFQueues();
-        enable_rf_interrupt();
+        enableRFInterrupt();
 
         xTaskCreate(RFHandleReceive, "RFReceive", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
-        xTaskCreate(remoteAccessTask, "RemoteAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
+        if (nodeAddr != 1)  // testing
+        {
+            xTaskCreate(remoteAccessTask, "RemoteAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
+        }
         vTaskStartScheduler();
 
         // main_DBtest();
@@ -76,7 +82,7 @@ int main(void)
     {
         print2uart("Recovery\n");
         initRFQueues();
-        enable_rf_interrupt();
+        enableRFInterrupt();
         failureRecovery();
     }
 
