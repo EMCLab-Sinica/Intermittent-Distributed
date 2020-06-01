@@ -64,7 +64,8 @@ int main(void)
          */
 
         pvInitHeapVar();
-        DBConstructor();
+        NVMDBConstructor();
+        VMDBConstructor();
         /* Initialize RF*/
         initRFQueues();
         enableRFInterrupt();
@@ -86,6 +87,7 @@ int main(void)
     else
     {
         print2uart("Recovery\n");
+        VMDBConstructor();
         initRFQueues();
         enableRFInterrupt();
         failureRecovery();

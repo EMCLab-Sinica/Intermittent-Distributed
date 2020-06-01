@@ -48,7 +48,7 @@ static void prvTest( void *pvParameters )
     volatile int counter,ouputer;
 
     ouputer = information[0];
-//    DBConstructor();
+//    NVMDBConstructor();
 //    DBworking(&dataA, 20, -1);//20 bytes and for create(-1)
 //    unsigned char* pointA = (unsigned char*)dataA.address;
 //    for(i = 0; i < 20; i++){

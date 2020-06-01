@@ -7,7 +7,7 @@
 void localAccessTask()
 {
     print2uart("LocalAccess\n");
-    data_t localDataObject;
+    Data_t localDataObject;
     uint32_t test;
     localDataObject = readLocalDB(1, &test, sizeof(test));
     print2uart("GotData: %d\n", test);
@@ -25,7 +25,7 @@ void remoteAccessTask()
         while (1) ;
     }
 
-    data_t remoteDataObject;
+    Data_t remoteDataObject;
     while (1)
     {
         vTaskDelay(1000);

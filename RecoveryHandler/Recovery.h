@@ -25,7 +25,7 @@ typedef struct DataTransferLog
 {
     TransferType_e type;
     uint8_t dataId;
-    data_t *xDataObj;
+    Data_t *xDataObj;
     TaskHandle_t *xFromTask;
 
 } DataTransferLog_t;
@@ -52,7 +52,7 @@ void freePreviousTasks();
 
 /* DataManager Logging */
 void createDataTransferLog(TransferType_e transferType, uint8_t dataId,
-                           const data_t const *dataObj, const TaskHandle_t const *xFromTask);
+                           const Data_t const *dataObj, const TaskHandle_t const *xFromTask);
 DataTransferLog_t * getDataTransferLog(TransferType_e transferType, uint8_t dataId);
 void deleteDataTransferLog(TransferType_e transferType, uint8_t dataId);
 

@@ -50,7 +50,7 @@ void *listGetFront(MyList_t *list)
     }
     else
     {
-        return list->head;
+        return list->head->data;
     }
 }
 
@@ -66,7 +66,8 @@ void listPopFront(MyList_t *list)
         current = list->head;
         list->head = current->next;
         vPortFree(current->data); // free the data
-        vPortFree(current);           // free the node
+        vPortFree(current);       // free the node
+
         return;
     }
 }
@@ -115,7 +116,7 @@ void listRemove(void *data, MyList_t *list)
             if (current == list->tail)
                 list->tail = previous;
             vPortFree(current->data); // free the data
-            vPortFree(current);           // free the node
+            vPortFree(current);       // free the node
             return;
         }
         previous = current;

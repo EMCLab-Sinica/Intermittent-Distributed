@@ -50,7 +50,7 @@ typedef struct DataControlPacket
 typedef struct TransferDataStartPacket
 {
     PacketHeader_t header;
-    data_t data;
+    Data_t data;
 
 } TransferDataStartPacket_t;
 

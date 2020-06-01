@@ -12,6 +12,7 @@
 #include "task.h"
 #include <stdint.h>
 #include <config.h>
+#include "mylist.h"
 
 #define VM_WORKING_SIZE 3072 // working space in VM
 
@@ -52,32 +53,33 @@ typedef struct Data //two-version data structure
     uint64_t validationTS;
     // uint8_t readTCBNum[MAXREAD]; //store 5 readers' TCB number
 
-} data_t;
+} Data_t;
 
 typedef struct Database
 {
-    data_t dataRecord[DB_MAX_OBJ];
-    uint8_t dataRecordPos;       // end of array
+    Data_t dataRecord[DB_MAX_OBJ];
+    uint8_t dataRecordCount;       // end of array
     uint8_t dataIdAutoIncrement; // auto increment for NVM DB
-} database_t;
+} Database_t;
 
 /* for validation */
 extern unsigned long timeCounter;
 
 /* DB functions */
-void DBConstructor();
+void NVMDBConstructor();
+void VMDBConstructor();
 void DBDestructor();
 
-data_t *getDataRecord(uint8_t owner, uint8_t dataId, DBSearchMode_e mode);
-data_t *readDB(uint8_t dataId);
-data_t readLocalDB(uint8_t dataId, void* destDataPtr, uint8_t size);
-data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
+Data_t *getDataRecord(uint8_t owner, uint8_t dataId, DBSearchMode_e mode);
+Data_t *readDB(uint8_t dataId);
+Data_t readLocalDB(uint8_t dataId, void* destDataPtr, uint8_t size);
+Data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
                     uint8_t dataId, void *destDataPtr, uint8_t size);
 
-data_t createWorkingSpace();
-data_t *createVMDBobject(uint8_t size);
+Data_t createWorkingSpace();
+Data_t *createVMDBobject(uint8_t size);
 
-int8_t commitLocalDB(data_t *data, uint32_t size);
+int8_t commitLocalDB(Data_t *data, uint32_t size);
 
 
 void * getStackVM(int taskID);

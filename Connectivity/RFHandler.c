@@ -53,14 +53,14 @@ void RFHandleReceive()
             createDataTransferLog(response, packet->dataId, NULL, NULL);
 
             // send control message: start
-            data_t *data = getDataRecord(packet->owner, packet->dataId, all);
+            Data_t *data = getDataRecord(packet->owner, packet->dataId, all);
             if (data == NULL)
             {
                 print2uart("Can not find data with (%d, %d)...\n", packet->owner, packet->dataId);
                 break;
             }
-            data_t dataCopy;
-            memcpy(&dataCopy, data, sizeof(data_t));
+            Data_t dataCopy;
+            memcpy(&dataCopy, data, sizeof(Data_t));
             dataCopy.ptr = NULL;
 
             PacketHeader_t header = {.packetType = ResponseDataStart};
@@ -120,7 +120,7 @@ void RFHandleReceive()
 
             // read request log and buffer
             DataTransferLog_t *log = getDataTransferLog(request, packet->data.id);
-            data_t *data = log->xDataObj;
+            Data_t *data = log->xDataObj;
             void *localDataBuf = data->ptr;
 
             *data = packet->data;
@@ -137,7 +137,7 @@ void RFHandleReceive()
                 print2uart("ResponseDataPayload: dataId: %x \n", packet->dataId);
 
             DataTransferLog_t *log = getDataTransferLog(request, packet->dataId);
-            data_t *data = log->xDataObj;
+            Data_t *data = log->xDataObj;
 
             uint8_t offset = packet->chunkNum * CHUNK_SIZE;
             memcpy((uint8_t *)(data->ptr) + offset, packet->payload, packet->payloadSize);

@@ -18,7 +18,7 @@
 #define DEBUG 1 // control debug message
 
 #pragma NOINIT(NVMDatabase)
-static database_t NVMDatabase;
+static Database_t NVMDatabase;
 
 #pragma DATA_SECTION(dataId, ".map") //id for data labeling
 static int dataId;
@@ -31,30 +31,28 @@ static unsigned char VMWorkingSpace[VM_WORKING_SIZE];
 static unsigned int VMWorkingSpacePos;
 
 /* space in VM for working versions*/
-static database_t VMDatabase;
+static Database_t VMDatabase;
 
 extern MyList_t *dataTransferLogList;
 extern uint8_t nodeAddr;
 
 /*
- * DBConstructor(): initialize all data structure in the database
+ * NVMDBConstructor(): initialize all data structure in the database
  * parameters: none
  * return: none
  * */
-void DBConstructor(){
+void NVMDBConstructor(){
     // create logging
     dataTransferLogList = makeList();
     init();
-    NVMDatabase.dataRecordPos = 0;
     NVMDatabase.dataIdAutoIncrement = 1; // dataId start from 1
+    NVMDatabase.dataRecordCount = 0;
     for(uint8_t i = 0; i < DB_MAX_OBJ; i++){
         NVMDatabase.dataRecord[i].id = -1;
         NVMDatabase.dataRecord[i].ptr = NULL;
         NVMDatabase.dataRecord[i].size = 0;
-        //for (uint8_t j = 0; j < MAXREAD; j++)
-            //NVMDatabase.dataRecord[i].readTCBNum[j] = 0;
     }
-    dataId = 0;
+
     VMWorkingSpacePos = 0;
     for(uint8_t i = 0; i < NUMTASK; i++)
         WSRValid[i] = 0;
@@ -70,17 +68,26 @@ void DBConstructor(){
         NVMDatabase.dataRecord[0].id = 1;
         NVMDatabase.dataRecord[0].ptr = (void *)testValue;
         NVMDatabase.dataRecord[0].size = sizeof(*testValue);
-        NVMDatabase.dataRecordPos = 1;
     }
 }
 
-data_t *getDataRecord(uint8_t owner, uint8_t dataId, DBSearchMode_e mode)
+void VMDBConstructor(){
+    VMDatabase.dataIdAutoIncrement = 1; // dataId start from 1
+    NVMDatabase.dataRecordCount = 0;
+    for(uint8_t i = 0; i < DB_MAX_OBJ; i++){
+        VMDatabase.dataRecord[i].id = -1;
+        VMDatabase.dataRecord[i].ptr = NULL;
+        VMDatabase.dataRecord[i].size = 0;
+    }
+}
+
+Data_t *getDataRecord(uint8_t owner, uint8_t dataId, DBSearchMode_e mode)
 {
-    data_t *data = NULL;
+    Data_t *data = NULL;
     // read NVM DB
     if (mode == nvmdb || mode == all)
     {
-        for (uint8_t i = 0; i < NVMDatabase.dataRecordPos; i++)
+        for (uint8_t i = 0; i < DB_MAX_OBJ; i++)
         {
             data = NVMDatabase.dataRecord + i;
             if (data->owner == owner && data->id == dataId)
@@ -96,7 +103,7 @@ data_t *getDataRecord(uint8_t owner, uint8_t dataId, DBSearchMode_e mode)
 
     if (mode == vmdb || mode == all)
     {
-        for (uint8_t i = 0; i < VMDatabase.dataRecordPos; i++)
+        for (uint8_t i = 0; i < DB_MAX_OBJ; i++)
         {
             data = VMDatabase.dataRecord + i;
             if (data->owner == owner && data->id == dataId)
@@ -122,10 +129,10 @@ data_t *getDataRecord(uint8_t owner, uint8_t dataId, DBSearchMode_e mode)
  * note: currently support for committing one data object
  * */
 
-data_t readLocalDB(uint8_t dataId, void* destDataPtr, uint8_t size)
+Data_t readLocalDB(uint8_t dataId, void* destDataPtr, uint8_t size)
 {
-    data_t dataWorking;
-    data_t * data = getDataRecord(nodeAddr, dataId, all);
+    Data_t dataWorking;
+    Data_t * data = getDataRecord(nodeAddr, dataId, all);
 
     if (data == NULL)
     {
@@ -148,10 +155,10 @@ data_t readLocalDB(uint8_t dataId, void* destDataPtr, uint8_t size)
     return dataWorking;
 }
 
-data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t owner,
+Data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t owner,
                     uint8_t dataId, void *destDataPtr, uint8_t size)
 {
-    data_t *duplicatedDataObj;
+    Data_t *duplicatedDataObj;
     // see if we already have the duplicated copy of the data object
     duplicatedDataObj = getDataRecord(owner, dataId, vmdb);
     if (duplicatedDataObj == NULL)
@@ -187,8 +194,8 @@ data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t owner,
 
     deleteDataTransferLog(request, dataId);
 
-    data_t dataRead;
-    memcpy(&dataRead, duplicatedDataObj, sizeof(data_t));
+    Data_t dataRead;
+    memcpy(&dataRead, duplicatedDataObj, sizeof(Data_t));
     memcpy(destDataPtr, duplicatedDataObj->ptr, duplicatedDataObj->size);
     dataRead.ptr = destDataPtr;
     dataRead.version = working;
@@ -200,9 +207,9 @@ data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t owner,
  * parameters: data structure of working space, size of the required data
  * return: none
  * */
-data_t createWorkingSpace()
+Data_t createWorkingSpace()
 {
-    data_t data;
+    Data_t data;
 
     data.id = -1;
     data.owner = nodeAddr;
@@ -216,11 +223,11 @@ data_t createWorkingSpace()
  * parameters: size of the data object
  * return: none
  * */
-data_t *createVMDBobject(uint8_t size)
+Data_t *createVMDBobject(uint8_t size)
 {
-    if (VMDatabase.dataRecordPos >= DB_MAX_OBJ)
+    if (VMDatabase.dataRecordCount >= DB_MAX_OBJ)
     {
-        print2uart("Error: VMDatabase full, please enlarge MAX_DB_OBJ\n");
+        print2uart("Error: VMDatabase full, please enlarge DB_MAX_OBJ\n");
         return NULL;
     }
     if (DEBUG)
@@ -233,36 +240,65 @@ data_t *createVMDBobject(uint8_t size)
         VMWorkingSpacePos = 0;
     }
 
-    data_t *newVMData = &VMDatabase.dataRecord[VMDatabase.dataRecordPos];
+    int8_t freeSlot = -1;
+    // find a free slot
+    for(uint8_t i = 0; i < DB_MAX_OBJ; i++)
+    {
+        if(VMDatabase.dataRecord[i].id < 0)
+        {
+            freeSlot = i;
+            break;
+        }
+    }
+    if (freeSlot == -1)
+    {
+        VMDatabase.dataRecordCount = DB_MAX_OBJ;
+        print2uart("Error: VMDatabase full, please enlarge DB_MAX_OBJ\n");
+        return NULL;
+    }
+
+    Data_t *newVMData = &VMDatabase.dataRecord[freeSlot];
     newVMData->size = size;
     newVMData->ptr = VMWorkingSpace + VMWorkingSpacePos;
 
     VMWorkingSpacePos += size;
-    VMDatabase.dataRecordPos++;
+    VMDatabase.dataRecordCount++;
 
     return newVMData;
 }
 
-int8_t commitLocalDB(data_t *data, uint32_t size)
+int8_t commitLocalDB(Data_t *data, uint32_t size)
 {
     if (data->version != working || data->version != modified) // only working or modified version can be committed
         return -1;
 
     void* oldMallocDataAddress = NULL;
-    uint32_t objectIndex = 0;
+    uint32_t objectIndex = -1;
 
     if (data->id <= 0) // creation
     {
         data->owner = nodeAddr;
         data->size = size;
-        data->id = VMDatabase.dataIdAutoIncrement++;
-        objectIndex = NVMDatabase.dataRecordPos++;
+        data->id = NVMDatabase.dataIdAutoIncrement++;
+        for (uint8_t i = 0; i < DB_MAX_OBJ; i++)
+        {
+            if (NVMDatabase.dataRecord[i].id < 0)
+            {
+                objectIndex = i;
+                break;
+            }
+            if (objectIndex < 0)
+            {
+                print2uart("Error: NVMDatabase full, please enlarge DB_MAX_OBJ\n");
+                return -1;
+            }
+        }
     }
-    else    // find db record
+    else // find db record
     {
 
-        data_t *DBData = NULL;
-        for (uint32_t i = 0; i < NVMDatabase.dataRecordPos; i++)
+        Data_t *DBData = NULL;
+        for (uint32_t i = 0; i < NVMDatabase.dataRecordCount; i++)
         {
             DBData = NVMDatabase.dataRecord + i;
             if (DBData->owner == data->owner && DBData->id == data->id)
@@ -302,8 +338,9 @@ int8_t commitLocalDB(data_t *data, uint32_t size)
     {
         NVMDatabase.dataRecord[objectIndex].version = modified;
     }
-
-
     taskEXIT_CRITICAL();
+
+    // incase failed at previous stage
+    NVMDatabase.dataRecordCount++;
     return data->id;
 }

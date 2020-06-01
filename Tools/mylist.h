@@ -1,6 +1,8 @@
 #ifndef MYLIST_H
 #define MYLIST_H
 
+#include <stdbool.h>
+
 typedef struct MyListNode MyListNode_t;
 
 struct MyListNode
@@ -16,6 +18,8 @@ typedef struct MyList
 } MyList_t;
 
 MyList_t *makeList();
+void *listGetFront(MyList_t *list);
+void listPopFront(MyList_t *list);
 void listInsertFront(void *data, MyList_t *list);
 void listInsertEnd(void *data, MyList_t *list);
 void listRemove(void *data, MyList_t *list);

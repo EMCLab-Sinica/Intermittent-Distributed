@@ -278,7 +278,7 @@ void failureRecovery(){
 
 /* DataManager Logging */
 void createDataTransferLog(
-    TransferType_e transferType, uint8_t dataId, const data_t *dataObj, const TaskHandle_t *xFromTask)
+    TransferType_e transferType, uint8_t dataId, const Data_t *dataObj, const TaskHandle_t *xFromTask)
 {
     DataTransferLog_t *newDataTransferLog = pvPortMalloc(sizeof(DataTransferLog_t));
 
@@ -286,7 +286,7 @@ void createDataTransferLog(
     newDataTransferLog->type = transferType;
     if ( transferType == request )
     {
-        newDataTransferLog->xDataObj = (data_t *)dataObj;
+        newDataTransferLog->xDataObj = (Data_t *)dataObj;
         newDataTransferLog->xFromTask = (TaskHandle_t *)xFromTask;
     }
 
