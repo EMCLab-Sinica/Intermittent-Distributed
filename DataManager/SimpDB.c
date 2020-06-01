@@ -156,7 +156,6 @@ data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t owner,
     duplicatedDataObj = getDataRecord(owner, dataId, vmdb);
     if (duplicatedDataObj == NULL)
     {
-        print2uart("NULLLLL\n");
         duplicatedDataObj = createVMDBobject(size);
     }
 

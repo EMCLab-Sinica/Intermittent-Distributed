@@ -41,7 +41,7 @@ functionality in an interrupt. */
 static void prvSetupHardware(void);
 
 unsigned short SemphTCB;
-uint8_t nodeAddr = 2;
+uint8_t nodeAddr = 1;
 extern QueueHandle_t RFReceiverQueue;
 
 /*-----------------------------------------------------------*/

@@ -7,6 +7,24 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include <stdio.h>
+
+#pragma DATA_SECTION(mapSwitcher, ".map") //each bit indicates address map for a object
+static uint32_t mapSwitcher[NUMCOMMIT];//16bit * 15 = 240 maximum objects
+/* Protected data for atomicity */
+#pragma NOINIT(map0)
+static void* map0[DB_MAX_OBJ];
+#pragma NOINIT(validBegin0)
+static uint64_t validBegin0[DB_MAX_OBJ];
+#pragma NOINIT(validEnd0)
+static uint64_t validEnd0[DB_MAX_OBJ];
+
+#pragma NOINIT(map1)
+static void* map1[DB_MAX_OBJ];
+#pragma NOINIT(validBegin1)
+static uint64_t validBegin1[DB_MAX_OBJ];
+#pragma NOINIT(validEnd1)
+static uint64_t validEnd1[DB_MAX_OBJ];
+
 /*
  * description: reset all the mapSwitcher and maps
  * parameters: none
