@@ -290,7 +290,7 @@ void createDataTransferLog(
         newDataTransferLog->xFromTask = (TaskHandle_t *)xFromTask;
     }
 
-    listInsert(newDataTransferLog, dataTransferLogList);
+    listInsertEnd(newDataTransferLog, dataTransferLogList);
 }
 
 DataTransferLog_t *getDataTransferLog(TransferType_e transferType, uint8_t dataId)

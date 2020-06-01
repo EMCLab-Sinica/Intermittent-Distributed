@@ -12,7 +12,6 @@
 #include "task.h"
 #include <stdint.h>
 #include <config.h>
-#include "Queue.h"
 
 #define VM_WORKING_SIZE 3072 // working space in VM
 
