@@ -76,10 +76,10 @@ Data_t readLocalDB(uint8_t dataId, void* destDataPtr, uint8_t size);
 Data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
                     uint8_t dataId, void *destDataPtr, uint8_t size);
 
-Data_t createWorkingSpace();
+Data_t createWorkingSpace(void *dataPtr, uint32_t size);
 Data_t *createVMDBobject(uint8_t size);
 
-int8_t commitLocalDB(Data_t *data, uint32_t size);
+int32_t commitLocalDB(Data_t *data, uint32_t size);
 
 
 void * getStackVM(int taskID);

@@ -58,16 +58,11 @@ void NVMDBConstructor(){
         WSRValid[i] = 0;
 
     // insert for test
-    print2uart("DBCons: nodeAddr %d\n", nodeAddr);
     if (nodeAddr == 1)
     {
-        uint32_t *testValue = pvPortMalloc(sizeof(uint32_t));
-        *testValue = 7;
-        print2uart("init owner = 1, data = 1\n");
-        NVMDatabase.dataRecord[0].owner = 1;
-        NVMDatabase.dataRecord[0].id = 1;
-        NVMDatabase.dataRecord[0].ptr = (void *)testValue;
-        NVMDatabase.dataRecord[0].size = sizeof(*testValue);
+        int32_t testValue = 7;
+        Data_t myData = createWorkingSpace(&testValue, sizeof(testValue));
+        commitLocalDB(&myData, sizeof(testValue));
     }
 }
 
@@ -93,8 +88,10 @@ Data_t *getDataRecord(uint8_t owner, uint8_t dataId, DBSearchMode_e mode)
             if (data->owner == owner && data->id == dataId)
             {
                 if (DEBUG)
-                    print2uart("getDataRecord: (owner, dataId): (%d, %d) found in NVMDB\n", owner, dataId);
-
+                    print2uart("getDataRecord: (owner, dataId): (%d, %d) found in NVMDB index %d\n", owner, dataId, i);
+                
+                // update data location (two version atomic commit)
+                data->ptr = accessData(i);
                 return data;
             }
         }
@@ -207,7 +204,7 @@ Data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t owner,
  * parameters: data structure of working space, size of the required data
  * return: none
  * */
-Data_t createWorkingSpace()
+Data_t createWorkingSpace(void *dataPtr, uint32_t size)
 {
     Data_t data;
 
@@ -215,6 +212,8 @@ Data_t createWorkingSpace()
     data.owner = nodeAddr;
     data.version = working;
     data.validationTS = 0;
+    data.ptr = dataPtr;
+    data.size = size;
     return data;
 }
 
@@ -267,13 +266,16 @@ Data_t *createVMDBobject(uint8_t size)
     return newVMData;
 }
 
-int8_t commitLocalDB(Data_t *data, uint32_t size)
+int32_t commitLocalDB(Data_t *data, size_t size)
 {
-    if (data->version != working || data->version != modified) // only working or modified version can be committed
+    if (data->version != working && data->version != modified) // only working or modified version can be committed
+    {
+        print2uart("Can only commit working or modified version\n");
         return -1;
+    }
 
     void* oldMallocDataAddress = NULL;
-    uint32_t objectIndex = -1;
+    int32_t objectIndex = -1;
 
     if (data->id <= 0) // creation
     {
@@ -298,7 +300,7 @@ int8_t commitLocalDB(Data_t *data, uint32_t size)
     {
 
         Data_t *DBData = NULL;
-        for (uint32_t i = 0; i < NVMDatabase.dataRecordCount; i++)
+        for (uint8_t i = 0; i < NVMDatabase.dataRecordCount; i++)
         {
             DBData = NVMDatabase.dataRecord + i;
             if (DBData->owner == data->owner && DBData->id == data->id)
@@ -342,5 +344,5 @@ int8_t commitLocalDB(Data_t *data, uint32_t size)
 
     // incase failed at previous stage
     NVMDatabase.dataRecordCount++;
-    return data->id;
+    return (int32_t)data->id;
 }
