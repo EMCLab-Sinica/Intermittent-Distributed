@@ -2,7 +2,7 @@
 extern unsigned int FreqLevel;
 extern int uartsetup;
 
-//#define DEBUG 1
+// #define DEBUG 0
 
 // Init serial
 void uartinit();

@@ -39,26 +39,22 @@ typedef struct PacketHeader
 
 } PacketHeader_t;
 
-typedef struct RequestDataPacket
+typedef struct DataControlPacket
 {
     PacketHeader_t header;
     uint8_t owner;
     uint8_t dataId;
 
-} RequestDataPkt_t;
+} DataControlPacket_t;
 
-typedef struct ResponseDataControlPacket
+typedef struct TransferDataStartPacket
 {
     PacketHeader_t header;
-    uint8_t owner;
-    uint8_t dataId;
-    uint8_t dataSize;
-    DataVersion_e version;
-    uint32_t validationTS;
+    data_t data;
 
-} ResponseDataCtrlPkt_t;
+} TransferDataStartPacket_t;
 
-typedef struct ResponseDataPayloadPacket
+typedef struct TransferDataPayloadPacket
 {
     PacketHeader_t header;
     uint8_t owner;
@@ -67,7 +63,7 @@ typedef struct ResponseDataPayloadPacket
     uint8_t chunkNum;
     uint8_t payload[CHUNK_SIZE];
 
-} ResponseDataPayloadPkt_t;
+} TransferDataPayloadPacket_t;
 
 typedef struct SyncCounterPacket
 {

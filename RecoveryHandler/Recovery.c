@@ -8,6 +8,7 @@
 #include <RecoveryHandler/Recovery.h>
 #include "FreeRTOS.h"
 #include <stdio.h>
+#include <string.h>
 #include "task.h"
 #include "Tools/myuart.h"
 #include "driverlib.h"
@@ -131,6 +132,8 @@ static unsigned short TCBNum[NUMTASK];
 static void* TCBAdd[NUMTASK];// TCB address of tasks
 #pragma NOINIT(schedulerTask)
 static int schedulerTask[NUMTASK];// if it is schduler's task, we don't need to recreate it because the shceduler does
+#pragma NOINIT(taskName)
+static char taskName[NUMTASK][configMAX_TASK_NAME_LEN+1];
 /* Logs for all the components */
 #pragma NOINIT(dataTransferLogList)
 MyList_t *dataTransferLogList;
@@ -154,11 +157,12 @@ void taskRerun(){
  * parameters: none
  * return: none
  * */
-void regTaskStart(void* add, unsigned short pri, unsigned short TCB, void* TCBA, int stopTrack){
+void regTaskStart(char* pcName, void* add, unsigned short pri, unsigned short TCB, void* TCBA, int stopTrack){
     int i;
     for(i = 0; i < NUMTASK; i++){
         //find a invalid
         if(unfinished[i] != 1){
+            strcpy(taskName[i], pcName);
             address[i] = add;
             priority[i] = pri;
             TCBNum[i] = TCB;
@@ -255,7 +259,7 @@ void failureRecovery(){
             }
             unfinished[i] = 0;
             if(!schedulerTask[i]){
-                xTaskCreate(address[i], "Recovery", configMINIMAL_STACK_SIZE, NULL, priority[i], NULL);
+                xTaskCreate(address[i], taskName[i], configMINIMAL_STACK_SIZE, NULL, priority[i], NULL);
                 dprint2uart("Recovery Create: %d\r\n", TCBNum[i]);
             }
             dprint2uart("Rend: xPortGetFreeHeapSize = %l\r\n", xPortGetFreeHeapSize());
@@ -272,12 +276,12 @@ void createDataTransferLog(
     DataTransferLog_t *newDataTransferLog = pvPortMalloc(sizeof(DataTransferLog_t));
 
     newDataTransferLog->dataId = dataId;
+    newDataTransferLog->type = transferType;
     if ( transferType == request )
     {
         newDataTransferLog->xDataObj = (data_t *)dataObj;
         newDataTransferLog->xFromTask = (TaskHandle_t *)xFromTask;
     }
-    newDataTransferLog->type = transferType;
 
     listInsert(newDataTransferLog, dataTransferLogList);
 }

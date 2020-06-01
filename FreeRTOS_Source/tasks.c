@@ -855,7 +855,7 @@ static void prvAddNewTaskToReadyList( TCB_t *pxNewTCB ) PRIVILEGED_FUNCTION;
 		}
 
 		#if ( configINTERMITTENT_DISTRIBUTED == 1)
-			regTaskStart(pxTaskCode, uxPriority, pxNewTCB->uxTCBNumber, pxNewTCB, stopTrack);
+			regTaskStart(pxNewTCB->pcTaskName, pxTaskCode, uxPriority, pxNewTCB->uxTCBNumber, pxNewTCB, stopTrack);
 		#endif
 
 		return xReturn;

@@ -32,7 +32,7 @@ typedef struct DataTransferLog
 
 void taskRerun();
 void taskRerun();
-void regTaskStart(void* add, unsigned short pri, unsigned short TCB, void* TCBA, int stopTrack);
+void regTaskStart(char *pcName, void *add, unsigned short pri, unsigned short TCB, void *TCBA, int stopTrack);
 void regTaskEnd();
 void failureRecovery();
 void freePreviousTasks();

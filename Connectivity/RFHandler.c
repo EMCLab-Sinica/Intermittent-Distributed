@@ -45,7 +45,7 @@ void RFHandleReceive()
         {
         case RequestData:
         {
-            const RequestDataPkt_t *packet = (RequestDataPkt_t *)packetBuf;
+            const DataControlPacket_t *packet = (DataControlPacket_t *)packetBuf;
             uint8_t dataReceiver = (*packet).header.txAddr;
             if (DEBUG)
                 print2uart("RequestData: dataId: %x \n", packet->dataId);
@@ -59,14 +59,15 @@ void RFHandleReceive()
                 print2uart("Can not find data with (%d, %d)...\n", packet->owner, packet->dataId);
                 break;
             }
+            data_t dataCopy;
+            memcpy(&dataCopy, data, sizeof(data_t));
+            dataCopy.ptr = NULL;
 
             PacketHeader_t header = {.packetType = ResponseDataStart};
-            ResponseDataCtrlPkt_t startPacket = {
+            TransferDataStartPacket_t startPacket = {
                 .header = header,
-                .owner = data->owner,
-                .dataId = data->id,
-                .dataSize = data->size,
-                .validationTS = data->validationTS};
+                .data = dataCopy
+                };
 
             RFSendPacket(dataReceiver, (uint8_t *)&startPacket, sizeof(startPacket));
 
@@ -85,10 +86,11 @@ void RFHandleReceive()
                 }
 
                 header.packetType = ResponseDataPayload;
-                ResponseDataPayloadPkt_t payloadPkt =
+                TransferDataPayloadPacket_t payloadPkt =
                     {
                         .header = header,
-                        .dataId = packet->dataId,
+                        .owner = data->owner,
+                        .dataId = data->id,
                         .chunkNum = chunkNum,
                         .payloadSize = payloadSize};
                 memcpy(payloadPkt.payload, data->ptr, payloadSize);
@@ -103,7 +105,7 @@ void RFHandleReceive()
 
             // send control message: end
             header.packetType = ResponseDataEnd;
-            ResponseDataCtrlPkt_t endPacket = {.header = header, .dataId = packet->dataId};
+            DataControlPacket_t endPacket = {.header = header, .owner = data->owner, .dataId = data->id};
             RFSendPacket(dataReceiver, (uint8_t *)&endPacket, sizeof(endPacket));
 
             deleteDataTransferLog(response, packet->dataId);
@@ -112,25 +114,24 @@ void RFHandleReceive()
 
         case ResponseDataStart:
         {
-            ResponseDataCtrlPkt_t *packet = (ResponseDataCtrlPkt_t *)packetBuf;
+            TransferDataStartPacket_t *packet = (TransferDataStartPacket_t *)packetBuf;
             if (DEBUG)
-                print2uart("ResponseDataStart: dataId: %x \n", packet->dataId);
+                print2uart("ResponseDataStart: dataId: %x \n", packet->data.id);
 
             // read request log and buffer
-            DataTransferLog_t *log = getDataTransferLog(request, packet->dataId);
+            DataTransferLog_t *log = getDataTransferLog(request, packet->data.id);
             data_t *data = log->xDataObj;
+            void *localDataBuf = data->ptr;
 
-            data->id = packet->dataId;
-            data->owner = packet->owner;
-            data->validationTS = packet->validationTS;
-            data->version = packet->version;
-            data->size = packet->dataSize;
+            *data = packet->data;
+            data->ptr = localDataBuf;   // put back;
+
             break;
         }
 
         case ResponseDataPayload:
         {
-            ResponseDataPayloadPkt_t *packet = (ResponseDataPayloadPkt_t *)packetBuf;
+            TransferDataPayloadPacket_t *packet = (TransferDataPayloadPacket_t *)packetBuf;
 
             if (DEBUG)
                 print2uart("ResponseDataPayload: dataId: %x \n", packet->dataId);
@@ -145,7 +146,7 @@ void RFHandleReceive()
 
         case ResponseDataEnd:
         {
-            ResponseDataCtrlPkt_t *packet = (ResponseDataCtrlPkt_t *)packetBuf;
+            DataControlPacket_t *packet = (DataControlPacket_t *)packetBuf;
             DataTransferLog_t *log = getDataTransferLog(request, packet->dataId);
 
             if (DEBUG)

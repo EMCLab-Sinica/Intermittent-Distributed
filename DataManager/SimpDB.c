@@ -165,8 +165,8 @@ data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t owner,
 
     // send request
     PacketHeader_t header = {.packetType = RequestData};
-    RequestDataPkt_t packet = {.header = header, .owner = owner, .dataId = dataId};
-    RFSendPacket(0, (uint8_t *)&packet, sizeof(RequestDataPkt_t));
+    DataControlPacket_t packet = {.header = header, .owner = owner, .dataId = dataId};
+    RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
 
     if (DEBUG)
     {

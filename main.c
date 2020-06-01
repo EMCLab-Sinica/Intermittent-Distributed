@@ -69,7 +69,7 @@ int main(void)
         initRFQueues();
         enableRFInterrupt();
 
-        xTaskCreate(RFHandleReceive, "RFReceive", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+        xTaskCreate(RFHandleReceive, "RFReceive", 400, NULL, 0, NULL);
         if (nodeAddr == 1)  // testing
         {
             xTaskCreate(localAccessTask, "LocalAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );

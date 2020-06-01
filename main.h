@@ -70,6 +70,7 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
 {
     ( void ) pcTaskName;
     ( void ) pxTask;
+    print2uart("Error: %s Application StackOverflow\n", pcTaskName);
 
     /* Force an assert. */
     configASSERT( ( volatile void * ) NULL );
