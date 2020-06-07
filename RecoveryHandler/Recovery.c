@@ -278,10 +278,12 @@ void failureRecovery(){
 
 /* DataManager Logging */
 void createDataTransferLog(
-    TransferType_e transferType, uint8_t dataId, const Data_t *dataObj, const TaskHandle_t *xFromTask)
+    TransferType_e transferType, uint8_t owner, uint8_t dataId,
+    const Data_t *dataObj, const TaskHandle_t *xFromTask)
 {
     DataTransferLog_t *newDataTransferLog = pvPortMalloc(sizeof(DataTransferLog_t));
 
+    newDataTransferLog->owner = owner;
     newDataTransferLog->dataId = dataId;
     newDataTransferLog->type = transferType;
     if ( transferType == request )
@@ -293,14 +295,14 @@ void createDataTransferLog(
     listInsertEnd(newDataTransferLog, dataTransferLogList);
 }
 
-DataTransferLog_t *getDataTransferLog(TransferType_e transferType, uint8_t dataId)
+DataTransferLog_t *getDataTransferLog(TransferType_e transferType, uint8_t owner, uint8_t dataId)
 {
     DataTransferLog_t *log;
     MyListNode_t *iterator = dataTransferLogList->head;
     while (iterator != NULL)
     {
         log = iterator->data;
-        if (log->dataId == dataId && log->type == transferType)
+        if (log->owner == owner && log->dataId == dataId && log->type == transferType)
         {
             break;
         }
@@ -310,7 +312,7 @@ DataTransferLog_t *getDataTransferLog(TransferType_e transferType, uint8_t dataI
     return log;
 }
 
-void deleteDataTransferLog(TransferType_e transferType, uint8_t dataId)
+void deleteDataTransferLog(TransferType_e transferType, uint8_t owner, uint8_t dataId)
 {
     DataTransferLog_t *log;
     MyListNode_t *current = dataTransferLogList->head;
@@ -318,7 +320,7 @@ void deleteDataTransferLog(TransferType_e transferType, uint8_t dataId)
     while (current != NULL)
     {
         log = current->data;
-        if (log->dataId == dataId && log->type == transferType)
+        if (log->owner == owner && log->dataId == dataId && log->type == transferType)
         {
             previous->next = current->next;
             if (current == dataTransferLogList->head)

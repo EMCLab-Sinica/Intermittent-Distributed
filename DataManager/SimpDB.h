@@ -43,15 +43,14 @@ typedef enum DBSearchMode
     nvmdb
 } DBSearchMode_e;
 
-typedef struct Data //two-version data structure
+typedef struct Data
 {
     int8_t id;
-    int8_t owner;  // ownerAddr of the data
+    int8_t owner; // ownerAddr of the data
     DataVersion_e version;
-    void *ptr; //Should point to VM or NVM(depends on mode)
+    void *ptr; // points to the data location
     uint32_t size;
-    uint64_t validationTS;
-    // uint8_t readTCBNum[MAXREAD]; //store 5 readers' TCB number
+    uint64_t validationTS;  // validTS from last committed task
 
 } Data_t;
 
@@ -60,7 +59,18 @@ typedef struct Database
     Data_t dataRecord[DB_MAX_OBJ];
     uint8_t dataRecordCount;       // end of array
     uint8_t dataIdAutoIncrement; // auto increment for NVM DB
+
 } Database_t;
+
+typedef struct AccessLog
+{
+    uint8_t nodeAddr;
+    uint8_t taskId;
+    bool committed;
+    uint64_t readTime;
+    uint64_t commitTime;
+
+} AccessLog_t;
 
 /* for validation */
 extern unsigned long timeCounter;

@@ -164,7 +164,7 @@ Data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t owner,
     }
 
     /* logging */
-    createDataTransferLog(request, dataId, duplicatedDataObj, xFromTask);
+    createDataTransferLog(request, owner, dataId, duplicatedDataObj, xFromTask);
 
     // send request
     PacketHeader_t header = {.packetType = RequestData};
@@ -189,7 +189,7 @@ Data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t owner,
     if (DEBUG)
         print2uart("readRemoteDB: remote dataId: %d, notified\n", dataId);
 
-    deleteDataTransferLog(request, dataId);
+    deleteDataTransferLog(request, owner, dataId);
 
     Data_t dataRead;
     memcpy(&dataRead, duplicatedDataObj, sizeof(Data_t));

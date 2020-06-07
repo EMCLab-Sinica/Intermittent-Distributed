@@ -24,6 +24,7 @@ typedef enum TransferType
 typedef struct DataTransferLog
 {
     TransferType_e type;
+    uint8_t owner;
     uint8_t dataId;
     Data_t *xDataObj;
     TaskHandle_t *xFromTask;
@@ -51,9 +52,9 @@ void failureRecovery();
 void freePreviousTasks();
 
 /* DataManager Logging */
-void createDataTransferLog(TransferType_e transferType, uint8_t dataId,
-                           const Data_t const *dataObj, const TaskHandle_t const *xFromTask);
-DataTransferLog_t * getDataTransferLog(TransferType_e transferType, uint8_t dataId);
-void deleteDataTransferLog(TransferType_e transferType, uint8_t dataId);
+void createDataTransferLog(TransferType_e transferType, uint8_t owner, uint8_t dataId,
+                           const Data_t *dataObj, const TaskHandle_t *xFromTask);
+DataTransferLog_t *getDataTransferLog(TransferType_e transferType, uint8_t owner, uint8_t dataId);
+void deleteDataTransferLog(TransferType_e transferType, uint8_t owner, uint8_t dataId);
 
 #endif /* RECOVERYHANDLER_RECOVERY_H_ */

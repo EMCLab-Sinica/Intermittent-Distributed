@@ -286,7 +286,7 @@ typedef struct tskTaskControlBlock 			/* The old naming convention is used to pr
 		void * CodeOffset;
 		int SizeOfFunction;
 		int CodeInNVM;
-	#endif 
+	#endif
 	/*------------------------------  Extend to support dynamic function: End ------------------------------*/
 
 	#if ( ( portSTACK_GROWTH > 0 ) || ( configRECORD_STACK_HIGH_ADDRESS == 1 ) )

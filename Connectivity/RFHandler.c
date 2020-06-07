@@ -50,7 +50,7 @@ void RFHandleReceive()
             if (DEBUG)
                 print2uart("RequestData: dataId: %x \n", packet->dataId);
 
-            createDataTransferLog(response, packet->dataId, NULL, NULL);
+            createDataTransferLog(response, packet->owner, packet->dataId, NULL, NULL);
 
             // send control message: start
             Data_t *data = getDataRecord(packet->owner, packet->dataId, all);
@@ -108,7 +108,7 @@ void RFHandleReceive()
             DataControlPacket_t endPacket = {.header = header, .owner = data->owner, .dataId = data->id};
             RFSendPacket(dataReceiver, (uint8_t *)&endPacket, sizeof(endPacket));
 
-            deleteDataTransferLog(response, packet->dataId);
+            deleteDataTransferLog(response, packet->owner, packet->dataId);
             break;
         }
 
@@ -119,7 +119,7 @@ void RFHandleReceive()
                 print2uart("ResponseDataStart: dataId: %x \n", packet->data.id);
 
             // read request log and buffer
-            DataTransferLog_t *log = getDataTransferLog(request, packet->data.id);
+            DataTransferLog_t *log = getDataTransferLog(request, packet->data.owner, packet->data.id);
             Data_t *data = log->xDataObj;
             void *localDataBuf = data->ptr;
 
@@ -136,7 +136,7 @@ void RFHandleReceive()
             if (DEBUG)
                 print2uart("ResponseDataPayload: dataId: %x \n", packet->dataId);
 
-            DataTransferLog_t *log = getDataTransferLog(request, packet->dataId);
+            DataTransferLog_t *log = getDataTransferLog(request, packet->owner, packet->dataId);
             Data_t *data = log->xDataObj;
 
             uint8_t offset = packet->chunkNum * CHUNK_SIZE;
@@ -147,7 +147,7 @@ void RFHandleReceive()
         case ResponseDataEnd:
         {
             DataControlPacket_t *packet = (DataControlPacket_t *)packetBuf;
-            DataTransferLog_t *log = getDataTransferLog(request, packet->dataId);
+            DataTransferLog_t *log = getDataTransferLog(request, packet->owner, packet->dataId);
 
             if (DEBUG)
                 print2uart("End of response of dataId: %d, TaskHandle: %x \n", log->dataId, log->xFromTask);
@@ -161,7 +161,7 @@ void RFHandleReceive()
             }
 
 
-            deleteDataTransferLog(request, packet->dataId);
+            deleteDataTransferLog(request, packet->owner, packet->dataId);
             break;
         }
 
