@@ -4,12 +4,12 @@
  *  Description : This header file is used to define the address maps for atomic commit
  *              ** What we need to protect for atomicity
  *                  * Address of consistency version (map0 and map1)
- *                  * Validity time interval of data (validStart and validEnd)
+ *                  * Validity time interval of data (validStart and objectValidIntervalEnd)
  *              ** call init() to reset data
  */
 #include <stdint.h>
 
-#define DB_MAX_OBJ 16
+#define MAX_DB_OBJ 16
 #define NUMCOMMIT 15
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 

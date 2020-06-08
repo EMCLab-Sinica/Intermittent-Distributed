@@ -14,9 +14,9 @@
 #define OUR //read from NVM/VM, write to VM
 //#define ONEVERSION //all read on NVM/commit to NVM
 
-#define NUMTASK 12
+#define MAX_TASKS 10    // max task "globally"
 #define NUMDATA 40
-#define MAXREAD 5
+#define MAX_READERS 5
 
 //Used for TI applications
 #define ITERFIR 1

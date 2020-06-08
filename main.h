@@ -8,7 +8,7 @@
 volatile uint32_t ulRunTimeCounterOverflows = 0;
 
 #pragma NOINIT(taskRecency)
-unsigned long taskRecency[NUMTASK];
+unsigned long taskRecency[MAX_TASKS];
 
 #pragma NOINIT(ucHeap)
 uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];

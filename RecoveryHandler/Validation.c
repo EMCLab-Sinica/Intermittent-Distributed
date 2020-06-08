@@ -1,7 +1,13 @@
 #include "Validation.h"
+#include "config.h"
 
-
-TimeInterval_t calcValidInterval(uint8_t owner, uint8_t dataId, TimeInterval_t taskInterval)
+void taskCommit(uint8_t taskId, uint8_t commitNum, ...)
 {
+
+}
+
+TimeInterval_t calcValidInterval(DataUUID_t dataId, TimeInterval_t taskInterval)
+{
+    // calculate minimal
 
 }

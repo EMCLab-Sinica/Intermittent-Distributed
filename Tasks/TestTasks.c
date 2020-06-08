@@ -11,7 +11,7 @@ void localAccessTask()
     uint32_t test;
     localDataObject = readLocalDB(1, &test, sizeof(test));
     print2uart("GotData: %d\n", test);
-    
+
     while(1);
 }
 
@@ -31,6 +31,9 @@ void remoteAccessTask()
         vTaskDelay(1000);
         uint32_t test = 0;
         remoteDataObject = readRemoteDB(&myTaskHandle, 1, 1, (void *)&test, sizeof(test));
+
+        test++;
+        // commit(TASK_ID, commitNum, remoteDataObject,...,);
 
         print2uart("GotData: %d\n", test);
     }

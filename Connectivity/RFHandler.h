@@ -42,8 +42,7 @@ typedef struct PacketHeader
 typedef struct DataControlPacket
 {
     PacketHeader_t header;
-    uint8_t owner;
-    uint8_t dataId;
+    DataUUID_t dataId;
 
 } DataControlPacket_t;
 
@@ -57,8 +56,7 @@ typedef struct TransferDataStartPacket
 typedef struct TransferDataPayloadPacket
 {
     PacketHeader_t header;
-    uint8_t owner;
-    uint8_t dataId;
+    DataUUID_t dataId;
     uint8_t payloadSize;
     uint8_t chunkNum;
     uint8_t payload[CHUNK_SIZE];

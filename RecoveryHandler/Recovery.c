@@ -50,7 +50,7 @@ typedef struct tskTaskControlBlock 			/* The old naming convention is used to pr
 		void * CodeOffset;
 		int SizeOfFunction;
 		int CodeInNVM;
-	#endif 
+	#endif
 	/*------------------------------  Extend to support dynamic function: End ------------------------------*/
 
 	#if ( ( portSTACK_GROWTH > 0 ) || ( configRECORD_STACK_HIGH_ADDRESS == 1 ) )
@@ -135,7 +135,7 @@ const size_t xBlockAllocatedBit = ( ( size_t ) 1 ) << ( ( sizeof( size_t ) * hea
 
 /* Used for rerunning unfinished tasks */
 #pragma NOINIT(taskRecord)
-TaskRecord_t taskRecord[NUMTASK];
+TaskRecord_t taskRecord[MAX_TASKS];
 
 /* Logs for all the components */
 #pragma NOINIT(dataTransferLogList)
@@ -165,7 +165,7 @@ void regTaskStart(void *pxNewTCB, void *taskAddress, uint32_t stackSize, uint8_t
     TCB_t *TCB = (TCB_t *)pxNewTCB;
 
     int i;
-    for(i = 0; i < NUMTASK; i++){
+    for(i = 0; i < MAX_TASKS; i++){
         //find a invalid
         if(taskRecord[i].unfinished != 1){
             TaskRecord_t *record = taskRecord+i;
@@ -189,7 +189,7 @@ void regTaskStart(void *pxNewTCB, void *taskAddress, uint32_t stackSize, uint8_t
  * */
 void regTaskEnd(){
     int i;
-    for(i = 0; i < NUMTASK; i++){
+    for(i = 0; i < MAX_TASKS; i++){
         //find the slot
         if(taskRecord[i].unfinished == 1 && taskRecord[i].TCBNum == pxCurrentTCB->uxTCBNumber){
             taskRecord[i].unfinished = 0;
@@ -228,7 +228,7 @@ int prvcheckAdd(void * pv){
  * */
 void freePreviousTasks(){
     int i;
-    for(i = 0; i < NUMTASK; i++){
+    for(i = 0; i < MAX_TASKS; i++){
         //find all unfinished tasks
         if(taskRecord[i].unfinished == 1){
             //see if the address is balid
@@ -252,7 +252,7 @@ void freePreviousTasks(){
  * */
 void failureRecovery(){
     TaskRecord_t *task = NULL;
-    for(int i = 0; i < NUMTASK; i++){
+    for(int i = 0; i < MAX_TASKS; i++){
         task = taskRecord+i;
         //find all unfinished tasks
         if(task->unfinished == 1){
@@ -278,12 +278,11 @@ void failureRecovery(){
 
 /* DataManager Logging */
 void createDataTransferLog(
-    TransferType_e transferType, uint8_t owner, uint8_t dataId,
+    TransferType_e transferType, DataUUID_t dataId,
     const Data_t *dataObj, const TaskHandle_t *xFromTask)
 {
     DataTransferLog_t *newDataTransferLog = pvPortMalloc(sizeof(DataTransferLog_t));
 
-    newDataTransferLog->owner = owner;
     newDataTransferLog->dataId = dataId;
     newDataTransferLog->type = transferType;
     if ( transferType == request )
@@ -295,14 +294,14 @@ void createDataTransferLog(
     listInsertEnd(newDataTransferLog, dataTransferLogList);
 }
 
-DataTransferLog_t *getDataTransferLog(TransferType_e transferType, uint8_t owner, uint8_t dataId)
+DataTransferLog_t *getDataTransferLog(TransferType_e transferType, DataUUID_t dataId)
 {
     DataTransferLog_t *log;
     MyListNode_t *iterator = dataTransferLogList->head;
     while (iterator != NULL)
     {
         log = iterator->data;
-        if (log->owner == owner && log->dataId == dataId && log->type == transferType)
+        if (dataIdEqual(&(log->dataId), &dataId) && log->type == transferType)
         {
             break;
         }
@@ -312,7 +311,7 @@ DataTransferLog_t *getDataTransferLog(TransferType_e transferType, uint8_t owner
     return log;
 }
 
-void deleteDataTransferLog(TransferType_e transferType, uint8_t owner, uint8_t dataId)
+void deleteDataTransferLog(TransferType_e transferType, DataUUID_t dataId)
 {
     DataTransferLog_t *log;
     MyListNode_t *current = dataTransferLogList->head;
@@ -320,7 +319,7 @@ void deleteDataTransferLog(TransferType_e transferType, uint8_t owner, uint8_t d
     while (current != NULL)
     {
         log = current->data;
-        if (log->owner == owner && log->dataId == dataId && log->type == transferType)
+        if (dataIdEqual(&(log->dataId), &dataId) && log->type == transferType)
         {
             previous->next = current->next;
             if (current == dataTransferLogList->head)

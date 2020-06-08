@@ -41,7 +41,7 @@ functionality in an interrupt. */
 static void prvSetupHardware(void);
 
 unsigned short SemphTCB;
-uint8_t nodeAddr = 1;
+uint8_t nodeAddr = 2;
 extern QueueHandle_t RFReceiverQueue;
 
 /*-----------------------------------------------------------*/
@@ -79,7 +79,7 @@ int main(void)
         {
             xTaskCreate(remoteAccessTask, "RemoteAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
         }
-        
+
         vTaskStartScheduler();
 
         // main_DBtest();

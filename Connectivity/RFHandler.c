@@ -48,15 +48,15 @@ void RFHandleReceive()
             const DataControlPacket_t *packet = (DataControlPacket_t *)packetBuf;
             uint8_t dataReceiver = (*packet).header.txAddr;
             if (DEBUG)
-                print2uart("RequestData: dataId: %x \n", packet->dataId);
+                print2uart("RequestData: (%d %d)\n", packet->dataId.owner, packet->dataId.id);
 
-            createDataTransferLog(response, packet->owner, packet->dataId, NULL, NULL);
+            createDataTransferLog(response, packet->dataId, NULL, NULL);
 
             // send control message: start
-            Data_t *data = getDataRecord(packet->owner, packet->dataId, all);
+            Data_t *data = getDataRecord(packet->dataId, all);
             if (data == NULL)
             {
-                print2uart("Can not find data with (%d, %d)...\n", packet->owner, packet->dataId);
+                print2uart("Can not find data with (%d, %d)...\n", packet->dataId.owner, packet->dataId.id);
                 break;
             }
             Data_t dataCopy;
@@ -89,8 +89,7 @@ void RFHandleReceive()
                 TransferDataPayloadPacket_t payloadPkt =
                     {
                         .header = header,
-                        .owner = data->owner,
-                        .dataId = data->id,
+                        .dataId = data->dataId,
                         .chunkNum = chunkNum,
                         .payloadSize = payloadSize};
                 memcpy(payloadPkt.payload, data->ptr, payloadSize);
@@ -105,10 +104,10 @@ void RFHandleReceive()
 
             // send control message: end
             header.packetType = ResponseDataEnd;
-            DataControlPacket_t endPacket = {.header = header, .owner = data->owner, .dataId = data->id};
+            DataControlPacket_t endPacket = {.header = header, .dataId = data->dataId};
             RFSendPacket(dataReceiver, (uint8_t *)&endPacket, sizeof(endPacket));
 
-            deleteDataTransferLog(response, packet->owner, packet->dataId);
+            deleteDataTransferLog(response, packet->dataId);
             break;
         }
 
@@ -116,10 +115,10 @@ void RFHandleReceive()
         {
             TransferDataStartPacket_t *packet = (TransferDataStartPacket_t *)packetBuf;
             if (DEBUG)
-                print2uart("ResponseDataStart: dataId: %x \n", packet->data.id);
+                print2uart("ResponseDataStart: dataId: %x \n", packet->data.dataId.id);
 
             // read request log and buffer
-            DataTransferLog_t *log = getDataTransferLog(request, packet->data.owner, packet->data.id);
+            DataTransferLog_t *log = getDataTransferLog(request, packet->data.dataId);
             Data_t *data = log->xDataObj;
             void *localDataBuf = data->ptr;
 
@@ -136,7 +135,7 @@ void RFHandleReceive()
             if (DEBUG)
                 print2uart("ResponseDataPayload: dataId: %x \n", packet->dataId);
 
-            DataTransferLog_t *log = getDataTransferLog(request, packet->owner, packet->dataId);
+            DataTransferLog_t *log = getDataTransferLog(request, packet->dataId);
             Data_t *data = log->xDataObj;
 
             uint8_t offset = packet->chunkNum * CHUNK_SIZE;
@@ -147,10 +146,10 @@ void RFHandleReceive()
         case ResponseDataEnd:
         {
             DataControlPacket_t *packet = (DataControlPacket_t *)packetBuf;
-            DataTransferLog_t *log = getDataTransferLog(request, packet->owner, packet->dataId);
+            DataTransferLog_t *log = getDataTransferLog(request, packet->dataId);
 
             if (DEBUG)
-                print2uart("End of response of dataId: %d, TaskHandle: %x \n", log->dataId, log->xFromTask);
+                print2uart("End of response of dataId: %d, TaskHandle: %x \n", log->dataId.id, log->xFromTask);
 
             if (xTaskNotifyGive(*(log->xFromTask)) == pdPASS)
             {
@@ -161,7 +160,7 @@ void RFHandleReceive()
             }
 
 
-            deleteDataTransferLog(request, packet->owner, packet->dataId);
+            deleteDataTransferLog(request, packet->dataId);
             break;
         }
 

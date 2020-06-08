@@ -16,11 +16,6 @@
 
 #define VM_WORKING_SIZE 3072 // working space in VM
 
-// used for validation: Task t with Task's TCB = WSRTCB[i], SRBegin[NUMTASK] = min(writer's begin), WSRValid[NUMTASK] = 1
-static unsigned long WSRBegin[NUMTASK]; //The "begin time of every commit operation" for an object "read by task i" is saved in WSRBegin[i]
-static unsigned short WSRTCB[NUMTASK];
-static unsigned char WSRValid[NUMTASK];
-
 // deprecated
 struct working{//working space of data for tasks
     void* address;
@@ -43,34 +38,46 @@ typedef enum DBSearchMode
     nvmdb
 } DBSearchMode_e;
 
+typedef struct TaskUUID // Task Universal Unique Identifier
+{
+    uint8_t nodeAddr;
+    uint8_t taskID;
+
+} TaskUUID_t;
+
+typedef struct DataUUID
+{
+    uint8_t owner;
+    int8_t id;
+
+} DataUUID_t;
+
 typedef struct Data
 {
-    int8_t id;
-    int8_t owner; // ownerAddr of the data
+    DataUUID_t dataId;
     DataVersion_e version;
     void *ptr; // points to the data location
     uint32_t size;
-    uint64_t validationTS;  // validTS from last committed task
+    TaskUUID_t readers[MAX_READERS];
 
 } Data_t;
 
 typedef struct Database
 {
-    Data_t dataRecord[DB_MAX_OBJ];
+    Data_t dataRecord[MAX_DB_OBJ];
     uint8_t dataRecordCount;       // end of array
     uint8_t dataIdAutoIncrement; // auto increment for NVM DB
 
 } Database_t;
 
-typedef struct AccessLog
-{
-    uint8_t nodeAddr;
-    uint8_t taskId;
-    bool committed;
-    uint64_t readTime;
-    uint64_t commitTime;
 
-} AccessLog_t;
+typedef struct TaskAccessRecord
+{
+    bool validRecord;
+    TaskUUID_t taskUUID;
+    uint64_t writeSetReadBegin;
+
+} TaskAccessRecord_t;
 
 /* for validation */
 extern unsigned long timeCounter;
@@ -80,16 +87,15 @@ void NVMDBConstructor();
 void VMDBConstructor();
 void DBDestructor();
 
-Data_t *getDataRecord(uint8_t owner, uint8_t dataId, DBSearchMode_e mode);
-Data_t *readDB(uint8_t dataId);
-Data_t readLocalDB(uint8_t dataId, void* destDataPtr, uint8_t size);
+Data_t *getDataRecord(DataUUID_t dataId, DBSearchMode_e mode);
+Data_t readLocalDB(uint8_t id, void* destDataPtr, uint8_t size);
 Data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
-                    uint8_t dataId, void *destDataPtr, uint8_t size);
+                    uint8_t id, void *destDataPtr, uint8_t size);
 
 Data_t createWorkingSpace(void *dataPtr, uint32_t size);
 Data_t *createVMDBobject(uint8_t size);
 
-int32_t commitLocalDB(Data_t *data, uint32_t size);
+DataUUID_t commitLocalDB(Data_t *data, size_t size);
 
 
 void * getStackVM(int taskID);
@@ -104,6 +110,11 @@ static unsigned long min(unsigned long a, unsigned long b){
         return b;
     else
         return a;
+}
+
+static bool dataIdEqual(DataUUID_t *lhs, DataUUID_t *rhs)
+{
+    return (lhs->owner == rhs->owner) && (lhs->id == rhs->id);
 }
 
 #endif // SIMPDB_H

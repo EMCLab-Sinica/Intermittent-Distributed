@@ -12,18 +12,18 @@
 static uint32_t mapSwitcher[NUMCOMMIT];//16bit * 15 = 240 maximum objects
 /* Protected data for atomicity */
 #pragma NOINIT(map0)
-static void* map0[DB_MAX_OBJ];
-#pragma NOINIT(validBegin0)
-static uint64_t validBegin0[DB_MAX_OBJ];
-#pragma NOINIT(validEnd0)
-static uint64_t validEnd0[DB_MAX_OBJ];
+static void* map0[MAX_DB_OBJ];
+#pragma NOINIT(objectValidIntervalBegin0)
+static uint64_t objectValidIntervalBegin0[MAX_DB_OBJ];
+#pragma NOINIT(objectValidIntervalEnd0)
+static uint64_t objectValidIntervalEnd0[MAX_DB_OBJ];
 
 #pragma NOINIT(map1)
-static void* map1[DB_MAX_OBJ];
-#pragma NOINIT(validBegin1)
-static uint64_t validBegin1[DB_MAX_OBJ];
-#pragma NOINIT(validEnd1)
-static uint64_t validEnd1[DB_MAX_OBJ];
+static void* map1[MAX_DB_OBJ];
+#pragma NOINIT(objectValidIntervalBegin1)
+static uint64_t objectValidIntervalBegin1[MAX_DB_OBJ];
+#pragma NOINIT(objectValidIntervalEnd1)
+static uint64_t objectValidIntervalEnd1[MAX_DB_OBJ];
 
 /*
  * description: reset all the mapSwitcher and maps
@@ -33,13 +33,13 @@ static uint64_t validEnd1[DB_MAX_OBJ];
  void init(){
     memset(mapSwitcher, 0, sizeof(uint32_t) * NUMCOMMIT);
 
-    memset(map0, 0, sizeof(void*) * DB_MAX_OBJ);
-    memset(validBegin0, 0, sizeof(uint64_t) * DB_MAX_OBJ);
-    memset(validEnd0, 0, sizeof(uint64_t) * DB_MAX_OBJ);
+    memset(map0, 0, sizeof(void*) * MAX_DB_OBJ);
+    memset(objectValidIntervalBegin0, 0, sizeof(uint64_t) * MAX_DB_OBJ);
+    memset(objectValidIntervalEnd0, 0, sizeof(uint64_t) * MAX_DB_OBJ);
 
-    memset(map1, 0, sizeof(void*) * DB_MAX_OBJ);
-    memset(validBegin1, 0, sizeof(uint64_t) * DB_MAX_OBJ);
-    memset(validEnd1, 0, sizeof(uint64_t) * DB_MAX_OBJ);
+    memset(map1, 0, sizeof(void*) * MAX_DB_OBJ);
+    memset(objectValidIntervalBegin1, 0, sizeof(uint64_t) * MAX_DB_OBJ);
+    memset(objectValidIntervalEnd1, 0, sizeof(uint64_t) * MAX_DB_OBJ);
 }
 
 
@@ -89,14 +89,14 @@ void commit(uint32_t objectIndex, void *dataAddress, uint64_t vBegin, uint64_t v
     if (CHECK_BIT(mapSwitcher[prefix], postfix) > 0)
     {
         map0[objectIndex] = dataAddress;
-        validBegin0[objectIndex] = vBegin;
-        validEnd0[objectIndex] = vEnd;
+        objectValidIntervalBegin0[objectIndex] = vBegin;
+        objectValidIntervalEnd0[objectIndex] = vEnd;
     }
     else
     {
         map1[objectIndex] = dataAddress;
-        validBegin1[objectIndex] = vBegin;
-        validEnd1[objectIndex] = vEnd;
+        objectValidIntervalBegin1[objectIndex] = vBegin;
+        objectValidIntervalEnd1[objectIndex] = vEnd;
     }
 
     //atomic commit
@@ -113,11 +113,11 @@ unsigned long getBegin(int objectIndex){
     int prefix = objectIndex/16, postfix = objectIndex%16;
     if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
         dummy = 1;
-        return validBegin1[objectIndex];
+        return objectValidIntervalBegin1[objectIndex];
     }
     else{
         dummy = 0;
-        return validBegin0[objectIndex];
+        return objectValidIntervalBegin0[objectIndex];
     }
 }
 
@@ -131,11 +131,11 @@ unsigned long getEnd(int objectIndex){
     int prefix = objectIndex/16,postfix = objectIndex%16;
     if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
         dummy = 1;
-        return validEnd1[objectIndex];
+        return objectValidIntervalEnd1[objectIndex];
     }
     else{
         dummy = 0;
-        return validEnd0[objectIndex];
+        return objectValidIntervalEnd0[objectIndex];
     }
 }
 
@@ -148,11 +148,11 @@ unsigned long getEnd(int objectIndex){
 void dumpAll(){
     int i;
     printf("address maps\n");
-    for(i = 0; i < DB_MAX_OBJ; i++){
+    for(i = 0; i < MAX_DB_OBJ; i++){
         printf("%d: %p\n", i, accessData(i));
     }
     printf("mapSwitcher\n");
-    for(i = 0; i < DB_MAX_OBJ; i++){
+    for(i = 0; i < MAX_DB_OBJ; i++){
         int prefix = i/8, postfix = i%8;
         if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0)
             printf("1");
