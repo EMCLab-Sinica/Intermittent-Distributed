@@ -22,7 +22,7 @@ int circled;
 extern int waitTemp;
 extern int ADCSemph;
 extern int tempID;
-extern unsigned long information[10];
+extern uint64_t  information[10];
 extern int readTemp;
 
 void SenseLog(){

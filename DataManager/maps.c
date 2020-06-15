@@ -49,7 +49,7 @@ volatile int dummy;// the compiler mess up something which will skip compiling t
  * parameters: number of the object
  * return: none
  * */
-void* access(int objectIndex){
+void* access(uint8_t objectIndex){
     uint32_t prefix = objectIndex / 16, postfix = objectIndex % 16;
     if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
         dummy = 1;
@@ -66,7 +66,7 @@ void* access(int objectIndex){
  * parameters: number of the object
  * return: none
  * */
-void* accessData(int objectIndex){
+void* accessData(uint8_t objectIndex){
     uint32_t prefix = objectIndex / 16, postfix = objectIndex % 16;
     if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
         dummy = 1;
@@ -109,7 +109,7 @@ void commit(uint32_t objectIndex, void *dataAddress, uint64_t vBegin, uint64_t v
  * parameters: number of the object
  * return: value of the begin interval
  * */
-unsigned long getBegin(int objectIndex){
+uint64_t getBegin(uint8_t objectIndex){
     int prefix = objectIndex/16, postfix = objectIndex%16;
     if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
         dummy = 1;
@@ -127,7 +127,7 @@ unsigned long getBegin(int objectIndex){
  * parameters: number of the object
  * return: value of the End interval
  * */
-unsigned long getEnd(int objectIndex){
+uint64_t  getEnd(uint8_t objectIndex){
     int prefix = objectIndex/16,postfix = objectIndex%16;
     if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
         dummy = 1;

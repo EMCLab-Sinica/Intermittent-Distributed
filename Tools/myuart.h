@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #define BuadRate 9600
 extern unsigned int FreqLevel;
 extern int uartsetup;
@@ -23,4 +25,4 @@ void print2uartlength(char* str,int length);
 //Convert integer to a string
 char *convert(unsigned int num, int base);
 //Convert long integer to a string
-char *convertl(unsigned long num, int base);
+char *convertl(uint64_t  num, int base);

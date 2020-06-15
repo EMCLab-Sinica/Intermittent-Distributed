@@ -12,6 +12,7 @@
 #include "SimpDB.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "stdbool.h"
 
 
 /* DataManager Logging */
@@ -23,6 +24,7 @@ typedef enum TransferType
 
 typedef struct DataTransferLog
 {
+    bool valid;
     TransferType_e type;
     DataUUID_t dataId;
     Data_t *xDataObj;
@@ -55,5 +57,6 @@ void createDataTransferLog(TransferType_e transferType, DataUUID_t dataId,
                            const Data_t *dataObj, const TaskHandle_t *xFromTask);
 DataTransferLog_t *getDataTransferLog(TransferType_e transferType, DataUUID_t dataId);
 void deleteDataTransferLog(TransferType_e transferType, DataUUID_t dataId);
+
 
 #endif /* RECOVERYHANDLER_RECOVERY_H_ */

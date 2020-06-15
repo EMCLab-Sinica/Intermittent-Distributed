@@ -271,8 +271,8 @@ typedef struct tskTaskControlBlock 			/* The old naming convention is used to pr
 
 	/*------------------------------  Extend to support validation: Start ------------------------------*/
 	#if ( configINTERMITTENT_DISTRIBUTED == 1)
-		unsigned long vBegin;
-		unsigned long vEnd;
+		uint64_t  vBegin;
+		uint64_t  vEnd;
 		/*------------------------------  Extend to support validation: End ------------------------------*/
 		/*------------------------------  Extend to support dynamic stack: Start -------------------------*/
 		void * AddressOfVMStack;

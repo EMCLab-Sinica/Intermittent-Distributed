@@ -48,8 +48,8 @@ any details of its type. */
 
 
 #if ( configINTERMITTENT_DISTRIBUTED== 1)
-	extern unsigned long timeCounter;
-	extern unsigned long taskRecency[12];
+	extern uint64_t  timeCounter;
+	extern uint64_t  taskRecency[12];
 #endif
 /* Each task maintains a count of the critical section nesting depth.  Each
 time a critical section is entered the count is incremented.  Each time a

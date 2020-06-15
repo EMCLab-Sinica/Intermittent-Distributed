@@ -1124,7 +1124,7 @@ TaskHandle_t xTimerGetTimerDaemonTaskHandle( void ) PRIVILEGED_FUNCTION;
  *
  * @param pvParameter1 The value of the callback function's first parameter.
  * The parameter has a void * type to allow it to be used to pass any type.
- * For example, unsigned longs can be cast to a void *, or the void * can be
+ * For example, uint64_t s can be cast to a void *, or the void * can be
  * used to point to a structure.
  *
  * @param ulParameter2 The value of the callback function's second parameter.
@@ -1203,7 +1203,7 @@ BaseType_t xTimerPendFunctionCallFromISR( PendedFunction_t xFunctionToPend, void
   *
   * @param pvParameter1 The value of the callback function's first parameter.
   * The parameter has a void * type to allow it to be used to pass any type.
-  * For example, unsigned longs can be cast to a void *, or the void * can be
+  * For example, uint64_t s can be cast to a void *, or the void * can be
   * used to point to a structure.
   *
   * @param ulParameter2 The value of the callback function's second parameter.

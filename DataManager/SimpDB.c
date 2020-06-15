@@ -21,8 +21,8 @@
 #pragma NOINIT(NVMDatabase)
 static Database_t NVMDatabase;
 
-#pragma NOINIT(taskAccessRecord)
-TaskAccessRecord_t taskAccessRecord[MAX_TASKS];
+#pragma NOINIT(taskAccessObjectLog)
+TaskAccessObjectLog_t taskAccessObjectLog[MAX_GLOBAL_TASKS];
 
 /* Half of RAM for caching (0x2C00~0x3800) */
 #pragma location = 0x2C00 //Space for working at SRAM
@@ -58,9 +58,9 @@ void NVMDBConstructor(){
     }
 
     VMWorkingSpacePos = 0;
-    for (uint8_t i = 0; i < MAX_TASKS; i++)
+    for (uint8_t i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
-        taskAccessRecord[i].validRecord = pdFALSE;
+        taskAccessObjectLog[i].validLog = pdFALSE;
     }
 
     // insert for test
@@ -81,6 +81,20 @@ void VMDBConstructor(){
         VMDatabase.dataRecord[i].ptr = NULL;
         VMDatabase.dataRecord[i].size = 0;
     }
+}
+
+uint64_t getDataBegin(DataUUID_t dataId)
+{
+    Data_t *data;
+    for (uint8_t i = 0; i < MAX_DB_OBJ; i++)
+    {
+        data = NVMDatabase.dataRecord + i;
+        if (dataIdEqual(&(data->dataId), &dataId))
+        {
+            return getBegin(i);
+        }
+    }
+    return UINT64_MAX;
 }
 
 Data_t *getDataRecord(DataUUID_t dataId, DBSearchMode_e mode)

@@ -18,6 +18,7 @@
 #include "RFHandler.h"
 #include <Tasks/TestTasks.h>
 #include "config.h"
+#include "Validation.h"
 
 #ifdef TestStack
 #include "StackInVM.h"
@@ -66,6 +67,7 @@ int main(void)
         pvInitHeapVar();
         NVMDBConstructor();
         VMDBConstructor();
+        initValidationEssentials();
         /* Initialize RF*/
         initRFQueues();
         enableRFInterrupt();

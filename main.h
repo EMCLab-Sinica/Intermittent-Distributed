@@ -8,13 +8,13 @@
 volatile uint32_t ulRunTimeCounterOverflows = 0;
 
 #pragma NOINIT(taskRecency)
-unsigned long taskRecency[MAX_TASKS];
+uint64_t  taskRecency[MAX_GLOBAL_TASKS];
 
 #pragma NOINIT(ucHeap)
 uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
 
 #pragma NOINIT(timeCounter)
-unsigned long timeCounter;
+uint64_t  timeCounter;
 unsigned int FreqLevel = 8;
 int uartsetup = 0;
 
@@ -42,7 +42,7 @@ int avgtempID;
 int avgcapID;
 
 #pragma DATA_SECTION(information, ".map")
-unsigned long information[10];
+uint64_t  information[10];
 
 /* -------------- FreeRTOS related functions --------------- */
 /* Prototypes for the standard FreeRTOS callback/hook functions implemented */

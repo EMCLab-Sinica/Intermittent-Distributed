@@ -35,8 +35,8 @@ typedef struct tskTaskControlBlock 			/* The old naming convention is used to pr
 
 	/*------------------------------  Extend to support validation: Start ------------------------------*/
 	#if ( configINTERMITTENT_DISTRIBUTED == 1)
-		unsigned long vBegin;
-		unsigned long vEnd;
+		uint64_t  vBegin;
+		uint64_t  vEnd;
 		/*------------------------------  Extend to support validation: End ------------------------------*/
 		/*------------------------------  Extend to support dynamic stack: Start -------------------------*/
 		void * AddressOfVMStack;
@@ -135,7 +135,7 @@ const size_t xBlockAllocatedBit = ( ( size_t ) 1 ) << ( ( sizeof( size_t ) * hea
 
 /* Used for rerunning unfinished tasks */
 #pragma NOINIT(taskRecord)
-TaskRecord_t taskRecord[MAX_TASKS];
+TaskRecord_t taskRecord[MAX_GLOBAL_TASKS];
 
 /* Logs for all the components */
 #pragma NOINIT(dataTransferLogList)
@@ -165,7 +165,7 @@ void regTaskStart(void *pxNewTCB, void *taskAddress, uint32_t stackSize, uint8_t
     TCB_t *TCB = (TCB_t *)pxNewTCB;
 
     int i;
-    for(i = 0; i < MAX_TASKS; i++){
+    for(i = 0; i < MAX_GLOBAL_TASKS; i++){
         //find a invalid
         if(taskRecord[i].unfinished != 1){
             TaskRecord_t *record = taskRecord+i;
@@ -189,7 +189,7 @@ void regTaskStart(void *pxNewTCB, void *taskAddress, uint32_t stackSize, uint8_t
  * */
 void regTaskEnd(){
     int i;
-    for(i = 0; i < MAX_TASKS; i++){
+    for(i = 0; i < MAX_GLOBAL_TASKS; i++){
         //find the slot
         if(taskRecord[i].unfinished == 1 && taskRecord[i].TCBNum == pxCurrentTCB->uxTCBNumber){
             taskRecord[i].unfinished = 0;
@@ -212,7 +212,7 @@ int prvcheckAdd(void * pv){
     pxLink = ( void * ) (puc - xHeapStructSize);
 
     /* Check the block is actually allocated. */
-    volatile unsigned long allocbit = pxLink->xBlockSize & xBlockAllocatedBit;
+    volatile uint64_t  allocbit = pxLink->xBlockSize & xBlockAllocatedBit;
     if(allocbit == 0)
         return 0;
     if(pxLink->pxNextFreeBlock != NULL)
@@ -228,7 +228,7 @@ int prvcheckAdd(void * pv){
  * */
 void freePreviousTasks(){
     int i;
-    for(i = 0; i < MAX_TASKS; i++){
+    for(i = 0; i < MAX_GLOBAL_TASKS; i++){
         //find all unfinished tasks
         if(taskRecord[i].unfinished == 1){
             //see if the address is balid
@@ -252,7 +252,7 @@ void freePreviousTasks(){
  * */
 void failureRecovery(){
     TaskRecord_t *task = NULL;
-    for(int i = 0; i < MAX_TASKS; i++){
+    for(int i = 0; i < MAX_GLOBAL_TASKS; i++){
         task = taskRecord+i;
         //find all unfinished tasks
         if(task->unfinished == 1){

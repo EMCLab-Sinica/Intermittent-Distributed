@@ -1,7 +1,7 @@
 /*
  * Semph.h
  *
- *  Created on: 2018¦~3¤ë18¤é
+ *  Created on: 2018ï¿½~3ï¿½ï¿½18ï¿½ï¿½
  *      Author: Meenchen
  */
 
@@ -32,8 +32,8 @@ typedef struct tskTaskControlBlock
     char                pcTaskName[ configMAX_TASK_NAME_LEN ];/*< Descriptive name given to the task when created.  Facilitates debugging only. */ /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
 
     /*------------------------------  Extend to support validation: Start ------------------------------*/
-    unsigned long vBegin;
-    unsigned long vEnd;
+    uint64_t  vBegin;
+    uint64_t  vEnd;
     /*------------------------------  Extend to support validation: End ------------------------------*/
     /*------------------------------  Extend to support dynamic stack: Start ------------------------------*/
     void * AddressOfVMStack;

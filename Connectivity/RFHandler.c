@@ -34,8 +34,6 @@ void RFHandleReceive()
     static uint8_t packetBuf[MAX_PACKET_LEN];
     static PacketHeader_t *packetHeader;
 
-    print2uart("Receive Hander Online\n");
-
     while (1)
     {
         xQueueReceive(RFReceiverQueue, (void *)packetBuf, portMAX_DELAY);

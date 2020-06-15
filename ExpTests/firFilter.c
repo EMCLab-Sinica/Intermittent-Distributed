@@ -1,7 +1,7 @@
 /*
  * firFilter.h
  *
- *  Created on: 2018¦~3¤ë19¤é
+ *  Created on: 2018ï¿½~3ï¿½ï¿½19ï¿½ï¿½
  *      Author: Meenchen
  */
 
@@ -21,9 +21,9 @@
 #include <config.h>
 
 #define TaskID 5
-extern unsigned long timeCounter;
-extern unsigned long taskRecency[12];
-extern unsigned long information[10];
+extern uint64_t  timeCounter;
+extern uint64_t  taskRecency[12];
+extern uint64_t  information[10];
 
 #define FIR_LENGTH 17
 #pragma NOINIT(FCOEFF)

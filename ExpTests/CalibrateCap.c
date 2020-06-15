@@ -11,9 +11,9 @@
 
 extern int capID;
 extern int avgcapID;
-extern unsigned long information[10];
+extern uint64_t  information[10];
 extern int readCap;
-unsigned long averageCap = 0;
+uint64_t  averageCap = 0;
 
 void calibrateCap(){
     //Wait for the first data
@@ -25,7 +25,7 @@ void calibrateCap(){
         registerTCB(IDCAPCALIBRATE);
 
         //read most recent temperature
-        unsigned long t;
+        uint64_t  t;
         DBreadIn(&t, capID);
         if(averageCap == 0)
             averageCap = t;
@@ -35,7 +35,7 @@ void calibrateCap(){
         //commit the average value
         struct working data;
         DBworking(&data, 4, avgcapID);
-        unsigned long* ptr = data.address;
+        uint64_t * ptr = data.address;
         *ptr = averageCap;
         avgcapID = DBcommit(&data,2,1);
 

@@ -41,7 +41,7 @@ typedef enum DBSearchMode
 typedef struct TaskUUID // Task Universal Unique Identifier
 {
     uint8_t nodeAddr;
-    uint8_t taskID;
+    uint8_t id;
 
 } TaskUUID_t;
 
@@ -71,22 +71,23 @@ typedef struct Database
 } Database_t;
 
 
-typedef struct TaskAccessRecord
+typedef struct TaskAccessObjectLog
 {
-    bool validRecord;
-    TaskUUID_t taskUUID;
+    bool validLog;
+    TaskUUID_t taskId;
     uint64_t writeSetReadBegin;
 
-} TaskAccessRecord_t;
+} TaskAccessObjectLog_t;
 
 /* for validation */
-extern unsigned long timeCounter;
+extern uint64_t  timeCounter;
 
 /* DB functions */
 void NVMDBConstructor();
 void VMDBConstructor();
 void DBDestructor();
 
+uint64_t getDataBegin(DataUUID_t dataId);
 Data_t *getDataRecord(DataUUID_t dataId, DBSearchMode_e mode);
 Data_t readLocalDB(uint8_t id, void* destDataPtr, uint8_t size);
 Data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
@@ -105,16 +106,30 @@ void registerTCB(int id);
 void unresgisterTCB(int id);
 
 /* internal functions */
-static unsigned long min(unsigned long a, unsigned long b){
+static uint64_t min(uint64_t a, uint64_t b)
+{
     if (a > b)
         return b;
     else
         return a;
 }
 
+static uint64_t max(uint64_t a, uint64_t b)
+{
+    if (a > b)
+        return a;
+    else
+        return b;
+}
+
 static bool dataIdEqual(DataUUID_t *lhs, DataUUID_t *rhs)
 {
     return (lhs->owner == rhs->owner) && (lhs->id == rhs->id);
+}
+
+static bool taskIdEqual(TaskUUID_t *lhs, TaskUUID_t *rhs)
+{
+    return (lhs->nodeAddr == rhs->nodeAddr) && (lhs->id == rhs->id);
 }
 
 #endif // SIMPDB_H

@@ -1,14 +1,14 @@
 /*
  * math32.h
  *
- *  Created on: 2018¦~3¤ë19¤é
+ *  Created on: 2018ï¿½~3ï¿½ï¿½19ï¿½ï¿½
  *      Author: Meenchen
  */
 
 #include <config.h>
-extern unsigned long timeCounter;
-extern unsigned long taskRecency[12];
-extern unsigned long information[10];
+extern uint64_t  timeCounter;
+extern uint64_t  taskRecency[12];
+extern uint64_t  information[10];
 
 /*******************************************************************************
 *
@@ -17,7 +17,7 @@ extern unsigned long information[10];
 *
 *******************************************************************************/
 #include <math.h>
-typedef unsigned long UInt32;
+typedef uint64_t  UInt32;
 UInt32 add(UInt32 a, UInt32 b)
 {
     return (a + b);

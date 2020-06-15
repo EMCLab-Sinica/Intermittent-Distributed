@@ -13,23 +13,16 @@
 #define NUMCOMMIT 15
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
-/* internal functions */
-static unsigned long max(unsigned long a, unsigned long b){
-    if (a > b)
-        return a;
-    else
-        return b;
-}
 
 /* map functions */
 void init();
-void* access(int objectIndex);
-void accessCache(int objectIndex);
-void* accessData(int objectIndex);
+void* access(uint8_t objectIndex);
+void accessCache(uint8_t objectIndex);
+void* accessData(uint8_t objectIndex);
 void commit(uint32_t objectIndex, void *dataAddress, uint64_t vBegin, uint64_t vEnd);
 void dumpAll();
-unsigned long getBegin(int objectIndex);
-unsigned long getEnd(int objectIndex);
+uint64_t getBegin(uint8_t objectIndex);
+uint64_t getEnd(uint8_t objectIndex);
 
 
 

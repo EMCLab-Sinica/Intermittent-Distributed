@@ -101,7 +101,7 @@ void print2uart(char* format,...)
 {
     char *traverse;
     int i;
-    unsigned long l;
+    uint64_t  l;
     char *s;
 
     //Module 1: Initializing Myprintf's arguments
@@ -129,7 +129,7 @@ void print2uart(char* format,...)
                 EUSCI_A_UART_transmitData(EUSCI_A0_BASE, (uint8_t)i);
                 break;
             case 'l' :
-                l = va_arg(arg,unsigned long);        //Fetch Decimal/Integer argument
+                l = va_arg(arg,uint64_t );        //Fetch Decimal/Integer argument
                 if(l<0)
                 {
                     l = -l;
@@ -194,7 +194,7 @@ char *convert(unsigned int num, int base)
     return(ptr);
 }
 
-char *convertl(unsigned long num, int base)
+char *convertl(uint64_t  num, int base)
 {
     static char Representation[]= "0123456789ABCDEF";
     static char buffer[50];

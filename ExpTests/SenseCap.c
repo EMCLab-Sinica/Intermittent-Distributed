@@ -18,7 +18,7 @@ int Ccircled;
 extern int waitCap;
 extern int ADCSemph;
 extern int capID;
-extern unsigned long information[10];
+extern uint64_t  information[10];
 extern int readCap;
 
 void CapLog(){
@@ -56,7 +56,7 @@ void CapLog(){
         struct working data;
         unsigned int temp = ADC12MEM0;
         DBworking(&data, 4, capID);//4 bytes for long and for create(-1)
-        unsigned long capadd = temp;
+        uint64_t  capadd = temp;
         capadd = (capadd * 2 * 2.5 *1000) / 4095;//ref:https://e2e.ti.com/support/microcontrollers/msp430/f/166/t/432697
         data.address = &capadd;
         capID = DBcommit(&data,4,1);

@@ -3,6 +3,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "TestTasks.h"
+#include "Validation.h"
 
 void localAccessTask()
 {
@@ -33,8 +34,8 @@ void remoteAccessTask()
         remoteDataObject = readRemoteDB(&myTaskHandle, 1, 1, (void *)&test, sizeof(test));
 
         test++;
-        // commit(TASK_ID, commitNum, remoteDataObject,...,);
-
         print2uart("GotData: %d\n", test);
+
+        // taskCommit(1, 1, &remoteDataObject);
     }
 }

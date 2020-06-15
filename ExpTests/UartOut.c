@@ -13,10 +13,10 @@
 extern int avgtempID;
 extern int avgcapID;
 
-extern unsigned long information[10];
+extern uint64_t  information[10];
 
-extern unsigned long timeCounter;
-unsigned long uartCounter;
+extern uint64_t  timeCounter;
+uint64_t  uartCounter;
 
 void DumpOut()
 {

@@ -1,7 +1,7 @@
 /*
  * dvfs.h
  *
- *  Created on: 2016¦~1¤ë26¤é
+ *  Created on: 2016ï¿½~1ï¿½ï¿½26ï¿½ï¿½
  *      Author: WeiMingChen
  */
 
@@ -64,7 +64,7 @@ void setFrequency(int level)
     }
 }
 
-unsigned long getFrequency(int level)
+uint64_t  getFrequency(int level)
 {
     switch(level)
     {
