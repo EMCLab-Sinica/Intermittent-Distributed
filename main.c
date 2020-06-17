@@ -9,6 +9,7 @@
 /* Scheduler include files. */
 #include <FreeRTOS.h>
 #include <task.h>
+#include "timers.h"
 
 #include "CC1101_MSP430.h"
 
@@ -40,10 +41,12 @@ functionality in an interrupt. */
  * Configure the hardware as necessary.
  */
 static void prvSetupHardware(void);
+static void setupTimerTasks(void);
 
 unsigned short SemphTCB;
-uint8_t nodeAddr = 2;
+uint8_t nodeAddr = 1;
 extern QueueHandle_t RFReceiverQueue;
+TimerHandle_t xDBTimerTask;
 
 /*-----------------------------------------------------------*/
 
@@ -63,7 +66,6 @@ int main(void)
         print2uart("First time\n");
         /* Do not call pvPortMalloc before pvInitHeapVar(), it will fail due to the heap is not initialized.
          */
-
         pvInitHeapVar();
         NVMDBConstructor();
         VMDBConstructor();
@@ -71,6 +73,7 @@ int main(void)
         /* Initialize RF*/
         initRFQueues();
         enableRFInterrupt();
+        setupTimerTasks();
 
         xTaskCreate(RFHandleReceive, "RFReceive", 400, NULL, 0, NULL);
         if (nodeAddr == 1)  // testing
@@ -90,8 +93,13 @@ int main(void)
     {
         print2uart("Recovery\n");
         VMDBConstructor();
+        print2uart("DB Recovery\n");
         initRFQueues();
+        print2uart("Init RF queue\n");
         enableRFInterrupt();
+        print2uart("Init RF int\n");
+        setupTimerTasks();
+        print2uart("Init Timer Task\n");
         failureRecovery();
     }
 
@@ -169,6 +177,37 @@ static void prvSetupHardware(void)
     uartinit();
 }
 /*-----------------------------------------------------------*/
+
+static void setupTimerTasks(void)
+{
+    xDBTimerTask = xTimerCreate(/* Just a text name, not used by the RTOS
+                     kernel. */
+                                "Timer",
+                                /* The timer period in ticks, must be
+                     greater than 0. */
+                                pdMS_TO_TICKS(1000),
+                                /* The timers will auto-reload themselves
+                     when they expire. */
+                                pdTRUE,
+                                /* The ID is used to store a count of the
+                     number of times the timer has expired, which
+                     is initialised to 0. */
+                                (void *)0,
+                                /* Each timer calls the same callback when
+                     it expires. */
+                                vRequestDataTimerCallback);
+    if (xDBTimerTask == NULL)
+    {
+        print2uart("TimerTask Creation Failed!\n");
+    }
+    else
+    {
+        if (xTimerStart(xDBTimerTask, 0) != pdPASS)
+        {
+            print2uart("TimerTask Activation Failed!\n");
+        }
+    }
+}
 
 int _system_pre_init(void)
 {

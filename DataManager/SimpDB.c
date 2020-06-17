@@ -34,7 +34,9 @@ static unsigned int VMWorkingSpacePos;
 /* space in VM for working versions*/
 static Database_t VMDatabase;
 
-extern MyList_t *dataTransferLogList;
+extern DataTransferLog_t dataTransferLogs[MAX_GLOBAL_TASKS];
+extern DataTransferLog_t dataRequestLogs[MAX_GLOBAL_TASKS];
+
 extern uint8_t nodeAddr;
 
 /*
@@ -44,7 +46,11 @@ extern uint8_t nodeAddr;
  * */
 void NVMDBConstructor(){
     // create logging
-    dataTransferLogList = makeList();
+    for(unsigned int i = 0 ;i< MAX_GLOBAL_TASKS; i++)
+    {
+        dataTransferLogs[i].valid = false;
+    }
+
     init();
     NVMDatabase.dataIdAutoIncrement = 1; // dataId start from 1
     NVMDatabase.dataRecordCount = 0;
@@ -373,4 +379,18 @@ DataUUID_t commitLocalDB(Data_t *data, size_t size)
     // incase failed at previous stage
     NVMDatabase.dataRecordCount++;
     return data->dataId;
+}
+
+void vRequestDataTimerCallback(TimerHandle_t xTimer)
+{
+    // data request
+    for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
+    {
+        if (dataRequestLogs[i].valid == true)
+        {
+            PacketHeader_t header = {.packetType = RequestData};
+            DataControlPacket_t packet = {.header = header, .dataId = dataRequestLogs[i].dataId};
+            RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
+        }
+    }
 }

@@ -10,6 +10,7 @@
 #include <DataManager/maps.h>
 #include "FreeRTOS.h"
 #include "task.h"
+#include "timers.h"
 #include <stdint.h>
 #include <config.h>
 #include "mylist.h"
@@ -104,6 +105,8 @@ void * getTCBVM(int taskID);
 /* functions for validation*/
 void registerTCB(int id);
 void unresgisterTCB(int id);
+
+void vRequestDataTimerCallback(TimerHandle_t xTimer);
 
 /* internal functions */
 static uint64_t min(uint64_t a, uint64_t b)

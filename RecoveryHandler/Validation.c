@@ -424,6 +424,6 @@ InboundValidationRecord_t *getInboundRecord(TaskUUID_t *taskId)
             }
         }
     }
-
+    return NULL;
 
 }

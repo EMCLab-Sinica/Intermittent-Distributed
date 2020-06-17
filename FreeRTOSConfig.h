@@ -167,7 +167,7 @@ CLI. */
 	#ifdef __LARGE_DATA_MODEL__
 		#define configMINIMAL_STACK_SIZE		( ( unsigned short ) 85 )
 	#else
-		#define configMINIMAL_STACK_SIZE		( ( unsigned short ) 140 )
+		#define configMINIMAL_STACK_SIZE		( ( unsigned short ) 160 )
 	#endif
 #endif /* IAR_MSP */
 

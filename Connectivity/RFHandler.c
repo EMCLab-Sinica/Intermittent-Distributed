@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <FreeRTOS.h>
 #include <task.h>
+#include "queue.h"
 #include "Recovery.h"
 #include "RFHandler.h"
 #include "CC1101_MSP430.h"
@@ -11,21 +12,30 @@
 
 #define  DEBUG 1
 
+#pragma NOINIT(RFReceiverQueue);
 QueueHandle_t RFReceiverQueue;
-extern MyList_t *dataTransferLogList;
+
+extern DataTransferLog_t dataRequestLogs[MAX_GLOBAL_TASKS];
 extern uint8_t nodeAddr;
+extern int firstTime;
 
 uint8_t initRFQueues()
 {
-    /* Create a queue capable of containing 5 rf packets. */
-    RFReceiverQueue = xQueueCreate(2, MAX_PACKET_LEN);
-    if (RFReceiverQueue == NULL)
+    if (firstTime != 1)
     {
-        print2uart("Error: RF Receiver Queue init failed\n");
-        while (1)
-            ;
+        RFReceiverQueue = xQueueCreate(5, MAX_PACKET_LEN);
+        if (RFReceiverQueue == NULL)
+        {
+            print2uart("Error: RF Receiver Queue init failed\n");
+        }
     }
-    xQueueReset(RFReceiverQueue);
+    else
+    {
+        vQueueDelete(RFReceiverQueue);
+        RFReceiverQueue = xQueueCreate(5, MAX_PACKET_LEN);
+    }
+    
+
     return TRUE;
 }
 
@@ -36,6 +46,7 @@ void RFHandleReceive()
 
     while (1)
     {
+        print2uart("RFHandler read queue\n");
         xQueueReceive(RFReceiverQueue, (void *)packetBuf, portMAX_DELAY);
         packetHeader = (PacketHeader_t *)packetBuf;
 
@@ -156,7 +167,6 @@ void RFHandleReceive()
             {
                 print2uart("Wake up failed\n");
             }
-
 
             deleteDataTransferLog(request, packet->dataId);
             break;
