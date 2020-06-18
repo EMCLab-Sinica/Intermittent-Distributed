@@ -14,8 +14,8 @@
 #include "driverlib.h"
 
 #include "FreeRTOS.h"
+#include "config.h"
 
-#define CYCLE_PER_US 16
 
 //-------------------[global default settings 868 Mhz]-------------------
 static const uint8_t CC1101_GFSK_1_2_kb[] = {

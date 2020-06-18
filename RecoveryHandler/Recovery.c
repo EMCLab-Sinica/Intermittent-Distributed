@@ -14,6 +14,8 @@
 #include "driverlib.h"
 #include "mylist.h"
 
+#define DEBUG 1
+
 /*
  * Task control block.  A task control block (TCB) is allocated for each task,
  * and stores task state information, including a pointer to the task's context
@@ -138,10 +140,7 @@ const size_t xBlockAllocatedBit = ((size_t)1) << ((sizeof(size_t) * heapBITS_PER
 TaskRecord_t taskRecord[MAX_GLOBAL_TASKS];
 
 /* Logs for all the components */
-#pragma NOINIT(dataTransferLogs)
-DataTransferLog_t dataTransferLogs[MAX_GLOBAL_TASKS];
-
-DataTransferLog_t dataRequestLogs[MAX_GLOBAL_TASKS];
+DataRequestLog_t dataRequestLogs[MAX_GLOBAL_TASKS];
 
 extern tskTCB *volatile pxCurrentTCB;
 extern unsigned char volatile stopTrack;
@@ -294,94 +293,54 @@ void failureRecovery()
 }
 
 /* DataManager Logging */
-void createDataTransferLog(
-    TransferType_e transferType, DataUUID_t dataId,
-    const Data_t *dataObj, const TaskHandle_t *xFromTask)
+DataRequestLog_t* createDataRequestLog(TaskUUID_t taskId, DataUUID_t dataId,
+                          const Data_t *xToDataObj, const TaskHandle_t *xFromTask)
 {
-    DataTransferLog_t *log = NULL;
-    if (transferType == request)
+    DataRequestLog_t *log = NULL;
+    for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
-        for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
+        log = dataRequestLogs + i;
+        if (log->valid == false)
         {
-            log = dataRequestLogs + i;
-            if (log->valid == false)
-            {
-                break;
-            }
+            log->xToDataObj = (Data_t *)xToDataObj;
+            log->xFromTask = (TaskHandle_t *)xFromTask;
+            log->dataId = dataId;
+            log->taskId = taskId;
+            log->valid = true;
+            break;
         }
-        log->xDataObj = (Data_t *)dataObj;
-        log->xFromTask = (TaskHandle_t *)xFromTask;
+        if(DEBUG)
+            print2uart("CreateDataRequestLog Failed\n");
     }
-    else if (transferType == response)
-    {
-        for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
-        {
-            log = dataTransferLogs + i;
-            if (log->valid == false)
-            {
-                break;
-            }
-        }
-    }
-    log->dataId = dataId;
-    log->type = transferType;
-    log->valid = true;
-}
-
-DataTransferLog_t *getDataTransferLog(TransferType_e transferType, DataUUID_t dataId)
-{
-    DataTransferLog_t *log = NULL;
-    if (transferType == request)
-    {
-        for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
-        {
-            log = dataRequestLogs + i;
-            if (dataIdEqual(&(log->dataId), &dataId))
-            {
-                break;
-            }
-        }
-    }
-    else if (transferType == response)
-    {
-        for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
-        {
-            log = dataTransferLogs + i;
-            if (dataIdEqual(&(log->dataId), &dataId))
-            {
-                break;
-            }
-        }
-    }
-
     return log;
 }
 
-void deleteDataTransferLog(TransferType_e transferType, DataUUID_t dataId)
+DataRequestLog_t *getDataRequestLog(TaskUUID_t taskId, DataUUID_t dataId)
 {
-    DataTransferLog_t *log;
-    if (transferType == request)
+    DataRequestLog_t *log = NULL;
+    for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
-        for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
+        log = dataRequestLogs + i;
+        if (dataIdEqual(&(log->dataId), &dataId) && taskIdEqual(&(log->taskId), &taskId))
         {
-            log = dataRequestLogs + i;
-            if (dataIdEqual(&(log->dataId), &dataId))
-            {
-                log->valid = false;
-                break;
-            }
+            break;
         }
     }
-    else if (transferType == response)
+    return log;
+}
+
+void deleteDataRequestLog(TaskUUID_t taskId, DataUUID_t dataId)
+{
+    DataRequestLog_t *log;
+    for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
-        for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
+        log = dataRequestLogs + i;
+        if (dataIdEqual(&(log->dataId), &dataId) && taskIdEqual(&(log->taskId), &taskId))
         {
-            log = dataTransferLogs + i;
-            if (dataIdEqual(&(log->dataId), &dataId))
-            {
-                log->valid = false;
-                break;
-            }
+            log->valid = false;
+            break;
         }
     }
+
+    return;
 }

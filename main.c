@@ -20,16 +20,8 @@
 #include <Tasks/TestTasks.h>
 #include "config.h"
 #include "Validation.h"
-
-#ifdef TestStack
-#include "StackInVM.h"
-#endif
-#ifdef TestDB
-#include "DBTest.h"
-#endif
-#ifdef TestFail
-#include <FailureTest.h>
-#endif
+#include "DBServiceRoutine.h"
+#include "RFHandler.h"
 
 /* Standard demo includes, used so the tick hook can exercise some FreeRTOS
 functionality in an interrupt. */
@@ -44,17 +36,15 @@ static void prvSetupHardware(void);
 static void setupTimerTasks(void);
 
 unsigned short SemphTCB;
-uint8_t nodeAddr = 1;
-extern QueueHandle_t RFReceiverQueue;
-TimerHandle_t xDBTimerTask;
+uint8_t nodeAddr = 2;
+extern QueueHandle_t DBServiceRoutinePacketQueue;
+
+TaskHandle_t DBSrvTaskHandle = NULL;
 
 /*-----------------------------------------------------------*/
 
 int main(void)
 {
-    //ADC's resource
-    ADCSemph = 0;
-
     /* Configure the hardware ready to run the demo. */
     prvSetupHardware();
     print2uart("Node id: %d\n", nodeAddr);
@@ -69,13 +59,12 @@ int main(void)
         pvInitHeapVar();
         NVMDBConstructor();
         VMDBConstructor();
-        initValidationEssentials();
         /* Initialize RF*/
         initRFQueues();
         enableRFInterrupt();
-        setupTimerTasks();
 
-        xTaskCreate(RFHandleReceive, "RFReceive", 400, NULL, 0, NULL);
+        xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
+        xTaskCreate(vRequestDataTimer, "DBSrvTimer", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
         if (nodeAddr == 1)  // testing
         {
             xTaskCreate(localAccessTask, "LocalAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
@@ -85,6 +74,7 @@ int main(void)
             xTaskCreate(remoteAccessTask, "RemoteAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
         }
 
+        sendWakeupSignal();
         vTaskStartScheduler();
 
         // main_DBtest();
@@ -93,13 +83,10 @@ int main(void)
     {
         print2uart("Recovery\n");
         VMDBConstructor();
-        print2uart("DB Recovery\n");
         initRFQueues();
-        print2uart("Init RF queue\n");
         enableRFInterrupt();
-        print2uart("Init RF int\n");
-        setupTimerTasks();
-        print2uart("Init Timer Task\n");
+
+        sendWakeupSignal();
         failureRecovery();
     }
 
@@ -178,37 +165,6 @@ static void prvSetupHardware(void)
 }
 /*-----------------------------------------------------------*/
 
-static void setupTimerTasks(void)
-{
-    xDBTimerTask = xTimerCreate(/* Just a text name, not used by the RTOS
-                     kernel. */
-                                "Timer",
-                                /* The timer period in ticks, must be
-                     greater than 0. */
-                                pdMS_TO_TICKS(1000),
-                                /* The timers will auto-reload themselves
-                     when they expire. */
-                                pdTRUE,
-                                /* The ID is used to store a count of the
-                     number of times the timer has expired, which
-                     is initialised to 0. */
-                                (void *)0,
-                                /* Each timer calls the same callback when
-                     it expires. */
-                                vRequestDataTimerCallback);
-    if (xDBTimerTask == NULL)
-    {
-        print2uart("TimerTask Creation Failed!\n");
-    }
-    else
-    {
-        if (xTimerStart(xDBTimerTask, 0) != pdPASS)
-        {
-            print2uart("TimerTask Activation Failed!\n");
-        }
-    }
-}
-
 int _system_pre_init(void)
 {
     /* Stop Watchdog timer. */
@@ -245,7 +201,7 @@ __interrupt void Port_8(void)
 {
     static uint8_t buf[MAX_PACKET_LEN];
     static uint8_t my_addr, pktlen, src_addr;
-    static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    static BaseType_t xHigherPriorityTaskWoken = pdTRUE;
     static BaseType_t xSendQueueResult;
     if (GDO2_INT_FLAG_IS_SET())
     {
@@ -264,11 +220,26 @@ __interrupt void Port_8(void)
 
         if (packetHeader->rxAddr == my_addr || packetHeader->txAddr == BROADCAST_ADDRESS)
         {
-            /* Post the byte. */
-            xSendQueueResult = xQueueSendToBackFromISR(RFReceiverQueue, buf, NULL);
-            if (xSendQueueResult != pdTRUE)
+            if (packetHeader->packetType <= ResponseData)
             {
-                print2uart("Send to queue failed\n");
+                xSendQueueResult = xQueueSendToBackFromISR(DBServiceRoutinePacketQueue,
+                                                           buf, NULL);
+                if (xSendQueueResult != pdTRUE)
+                {
+                    print2uart("Send to queue failed\n");
+                }
+            }
+            else if(packetHeader->packetType == DeviceWakeUp)
+            {
+                BaseType_t xWakeupHigherPriorityTaskWoken = pdFALSE;
+                if (DBSrvTaskHandle == NULL)
+                {
+                    print2uart("WARNING!\n");
+                }
+                else
+                {
+                    vTaskNotifyGiveFromISR(DBSrvTaskHandle, &xWakeupHigherPriorityTaskWoken);
+                }
             }
         }
 
@@ -300,8 +271,6 @@ __interrupt void ADC12_ISR(void)
         break;                    // Vector 10:  ADC12IN
     case ADC12IV_ADC12IFG0:       // Vector 12:  ADC12MEM0
         ADC12IFGR0 &= ~ADC12IFG0; // Clear interrupt flag
-        waitCap = 0;
-        waitTemp = 0;
         __bic_SR_register_on_exit(LPM3_bits); // Exit active CPU
         break;
     case ADC12IV_ADC12IFG1: // Vector 14:  ADC12MEM1

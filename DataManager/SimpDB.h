@@ -91,7 +91,7 @@ void DBDestructor();
 uint64_t getDataBegin(DataUUID_t dataId);
 Data_t *getDataRecord(DataUUID_t dataId, DBSearchMode_e mode);
 Data_t readLocalDB(uint8_t id, void* destDataPtr, uint8_t size);
-Data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
+Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
                     uint8_t id, void *destDataPtr, uint8_t size);
 
 Data_t createWorkingSpace(void *dataPtr, uint32_t size);
@@ -107,6 +107,7 @@ void registerTCB(int id);
 void unresgisterTCB(int id);
 
 void vRequestDataTimerCallback(TimerHandle_t xTimer);
+void vRequestDataTimer();
 
 /* internal functions */
 static uint64_t min(uint64_t a, uint64_t b)

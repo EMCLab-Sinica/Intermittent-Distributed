@@ -8,6 +8,7 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
+#define CYCLE_PER_US 16
 
 //#define ONNVM //read/write on NVM
 //#define ONVM // read/write on VM: need to copy all data once require to read after power resumes

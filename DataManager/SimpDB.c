@@ -34,22 +34,15 @@ static unsigned int VMWorkingSpacePos;
 /* space in VM for working versions*/
 static Database_t VMDatabase;
 
-extern DataTransferLog_t dataTransferLogs[MAX_GLOBAL_TASKS];
-extern DataTransferLog_t dataRequestLogs[MAX_GLOBAL_TASKS];
-
+extern DataRequestLog_t dataRequestLogs[MAX_GLOBAL_TASKS];
 extern uint8_t nodeAddr;
-
+extern TaskHandle_t DBSrvTaskHandle;
 /*
  * NVMDBConstructor(): initialize all data structure in the database
  * parameters: none
  * return: none
  * */
 void NVMDBConstructor(){
-    // create logging
-    for(unsigned int i = 0 ;i< MAX_GLOBAL_TASKS; i++)
-    {
-        dataTransferLogs[i].valid = false;
-    }
 
     init();
     NVMDatabase.dataIdAutoIncrement = 1; // dataId start from 1
@@ -79,6 +72,11 @@ void NVMDBConstructor(){
 }
 
 void VMDBConstructor(){
+    for(unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
+    {
+        dataRequestLogs[i].valid = false;
+    }
+
     VMDatabase.dataIdAutoIncrement = 1; // dataId start from 1
     VMDatabase.dataRecordCount = 0;
     DataUUID_t initId = {.owner = 0, .id = -1};
@@ -182,48 +180,51 @@ Data_t readLocalDB(uint8_t id, void* destDataPtr, uint8_t size)
     return dataWorking;
 }
 
-Data_t readRemoteDB(const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
+Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
                     uint8_t id, void *destDataPtr, uint8_t size)
 {
-    Data_t *duplicatedDataObj;
+    Data_t *dataBuffer;
     DataUUID_t dataId = {.owner = remoteAddr, .id = id};
     // see if we already have the duplicated copy of the data object
-    duplicatedDataObj = getDataRecord(dataId, vmdb);
-    if (duplicatedDataObj == NULL)
+    dataBuffer = getDataRecord(dataId, vmdb);
+    if (dataBuffer == NULL)
     {
-        duplicatedDataObj = createVMDBobject(size);
+        dataBuffer = createVMDBobject(size);
+        dataBuffer->dataId = dataId;
+        dataBuffer->version = duplicated;
+        dataBuffer->size = size;
     }
 
     /* logging */
-    createDataTransferLog(request, dataId, duplicatedDataObj, xFromTask);
+    DataRequestLog_t *log = createDataRequestLog(taskId, dataId, dataBuffer, xFromTask);
+    if(log == NULL)
+    {
+        printf("DataRequestLog create failed!");
+        while(1);
+    }
 
     // send request
-    PacketHeader_t header = {.packetType = RequestData};
-    DataControlPacket_t packet = {.header = header, .dataId = dataId};
+    RequestDataPacket_t packet = {.header.packetType = RequestData,
+                                  .taskId = taskId,
+                                  .dataId = dataId};
     RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
 
     if (DEBUG)
     {
-        print2uart("readRemoteDB: read remote dataId:(%d, %d), wait for notification\n", remoteAddr, id);
+        print2uart("readRemoteDB: task (%d, %d), read remote dataId:(%d, %d), wait for notification\n",
+                   taskId.nodeAddr, taskId.id, remoteAddr, id);
     }
 
-    /* Block indefinitely (without a timeout, so no need to check the function's
-        return value) to wait for a notification.  Here the RTOS task notification
-        is being used as a binary semaphore, so the notification value is cleared
-        to zero on exit.  NOTE!  Real applications should not block indefinitely,
-        but instead time out occasionally in order to handle error conditions
-        that may prevent the interrupt from sending any more notifications. */
     ulTaskNotifyTake(pdTRUE,         /* Clear the notification value before exiting. */
                      portMAX_DELAY); /* Block indefinitely. */
 
     if (DEBUG)
         print2uart("readRemoteDB: remote dataId: %d, notified\n", id);
 
-    deleteDataTransferLog(request, dataId);
+    log->valid = false;
 
-    Data_t dataRead;
-    memcpy(&dataRead, duplicatedDataObj, sizeof(Data_t));
-    memcpy(destDataPtr, duplicatedDataObj->ptr, duplicatedDataObj->size);
+    Data_t dataRead = *dataBuffer;
+    memcpy(destDataPtr, dataBuffer->ptr, dataBuffer->size);
     dataRead.ptr = destDataPtr;
     dataRead.version = working;
     return dataRead;
@@ -381,16 +382,26 @@ DataUUID_t commitLocalDB(Data_t *data, size_t size)
     return data->dataId;
 }
 
-void vRequestDataTimerCallback(TimerHandle_t xTimer)
+// void vRequestDataTimerCallback(TimerHandle_t xTimer)
+void vRequestDataTimer()
 {
-    // data request
-    for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
+    DBSrvTaskHandle = xTaskGetCurrentTaskHandle();
+    while (1)
     {
-        if (dataRequestLogs[i].valid == true)
+        // wait for device wake up
+        ulTaskNotifyTake( pdTRUE,          /* Clear the notification value before
+                                           exiting. */
+                          portMAX_DELAY ); /* Block indefinitely. */
+        print2uart("TIMER WAKEDUP!!!!\n");
+        for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
         {
-            PacketHeader_t header = {.packetType = RequestData};
-            DataControlPacket_t packet = {.header = header, .dataId = dataRequestLogs[i].dataId};
-            RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
+            if (dataRequestLogs[i].valid == true)
+            {
+                RequestDataPacket_t packet = {.header.packetType = RequestData,
+                                              .taskId = dataRequestLogs[i].taskId,
+                                              .dataId = dataRequestLogs[i].dataId};
+                RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
+            }
         }
     }
 }

@@ -16,21 +16,15 @@
 
 
 /* DataManager Logging */
-typedef enum TransferType
-{
-    request,
-    response
-} TransferType_e;
-
-typedef struct DataTransferLog
+typedef struct DataRequestLog
 {
     bool valid;
-    TransferType_e type;
     DataUUID_t dataId;
-    Data_t *xDataObj;
+    TaskUUID_t taskId;
+    Data_t *xToDataObj;
     TaskHandle_t *xFromTask;
 
-} DataTransferLog_t;
+} DataRequestLog_t;
 
 typedef struct TaskRecord
 {
@@ -53,10 +47,9 @@ void failureRecovery();
 void freePreviousTasks();
 
 /* DataManager Logging */
-void createDataTransferLog(TransferType_e transferType, DataUUID_t dataId,
-                           const Data_t *dataObj, const TaskHandle_t *xFromTask);
-DataTransferLog_t *getDataTransferLog(TransferType_e transferType, DataUUID_t dataId);
-void deleteDataTransferLog(TransferType_e transferType, DataUUID_t dataId);
+DataRequestLog_t *createDataRequestLog(TaskUUID_t taskId, DataUUID_t dataId, const Data_t *dataObj, const TaskHandle_t *xFromTask);
+DataRequestLog_t *getDataRequestLog(TaskUUID_t taskId, DataUUID_t dataId);
+void deleteDataRequestLog(TaskUUID_t taskId, DataUUID_t dataId);
 
 
 #endif /* RECOVERYHANDLER_RECOVERY_H_ */

@@ -78,7 +78,7 @@ __persistent keyword to be used.  See http://www.freertos.org/a00111.html#heap_4
 
 /* Software timer related definitions. */
 #define configUSE_TIMERS				1
-#define configTIMER_TASK_PRIORITY		( configMAX_PRIORITIES - 1 )
+#define configTIMER_TASK_PRIORITY		0
 #define configTIMER_QUEUE_LENGTH		5
 #define configTIMER_TASK_STACK_DEPTH	( configMINIMAL_STACK_SIZE )
 

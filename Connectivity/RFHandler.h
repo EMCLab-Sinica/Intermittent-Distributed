@@ -23,10 +23,9 @@ pkt_len [1byte] | rx_addr [1byte] | tx_addr [1byte] | request_type [1byte] | pay
 typedef enum PacketType
 {
     RequestData,
-    ResponseDataStart,
-    ResponseDataPayload,
-    ResponseDataEnd,
+    ResponseData,
     SyncCounter,
+    DeviceWakeUp,
 
     // Validation Phase 1
     VPhase1Request,
@@ -53,29 +52,22 @@ typedef struct PacketHeader
 
 } PacketHeader_t;
 
-typedef struct DataControlPacket
+typedef struct RequestDataPacket 
 {
     PacketHeader_t header;
+    TaskUUID_t taskId;
     DataUUID_t dataId;
 
-} DataControlPacket_t;
+} RequestDataPacket_t;
 
-typedef struct TransferDataStartPacket
+typedef struct ResponseDataPacket
 {
     PacketHeader_t header;
+    TaskUUID_t taskId;
     Data_t data;
+    uint8_t dataPayload[16]; // max 16bytes
 
-} TransferDataStartPacket_t;
-
-typedef struct TransferDataPayloadPacket
-{
-    PacketHeader_t header;
-    DataUUID_t dataId;
-    uint8_t payloadSize;
-    uint8_t chunkNum;
-    uint8_t payload[CHUNK_SIZE];
-
-} TransferDataPayloadPacket_t;
+} ResponseDataPacket_t;
 
 typedef struct SyncCounterPacket
 {
@@ -83,6 +75,12 @@ typedef struct SyncCounterPacket
     uint64_t timeCounter;
 
 } SyncCounterPkt_t;
+
+typedef struct DeviceWakeUpPacket
+{
+    PacketHeader_t header;
+
+} DeviceWakeUpPacket_t;
 
 // Validation Phase 1
 typedef struct VPhase1RequestPacket
@@ -138,7 +136,6 @@ typedef struct VPhase2ResponsePacket
 
 void RFSendPacket(uint8_t rxAddr, uint8_t *txBuffer, uint8_t pktlen);
 uint8_t initRFQueues();
-void RFHandleReceive();
-
+void sendWakeupSignal();
 
 #endif // RFHANDLER_H

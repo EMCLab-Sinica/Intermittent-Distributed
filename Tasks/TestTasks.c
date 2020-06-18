@@ -5,6 +5,8 @@
 #include "TestTasks.h"
 #include "Validation.h"
 
+extern uint8_t nodeAddr;
+
 void localAccessTask()
 {
     print2uart("LocalAccess\n");
@@ -18,7 +20,7 @@ void localAccessTask()
 
 void remoteAccessTask()
 {
-    print2uart("RemoteAccess\n");
+    TaskUUID_t taskId = {.nodeAddr = nodeAddr, .id = 1};
     const TaskHandle_t myTaskHandle = xTaskGetHandle("RemoteAccess");
     if (myTaskHandle == NULL)
     {
@@ -29,9 +31,8 @@ void remoteAccessTask()
     Data_t remoteDataObject;
     while (1)
     {
-        vTaskDelay(1000);
         uint32_t test = 0;
-        remoteDataObject = readRemoteDB(&myTaskHandle, 1, 1, (void *)&test, sizeof(test));
+        remoteDataObject = readRemoteDB(taskId, &myTaskHandle, 1, 1, (void *)&test, sizeof(test));
 
         test++;
         print2uart("GotData: %d\n", test);
