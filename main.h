@@ -7,14 +7,11 @@
 /* Used for maintaining a 32-bit run time stats counter from a 16-bit timer. */
 volatile uint32_t ulRunTimeCounterOverflows = 0;
 
-#pragma NOINIT(taskRecency)
-uint64_t  taskRecency[MAX_GLOBAL_TASKS];
-
 #pragma NOINIT(ucHeap)
 uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
 
 #pragma NOINIT(timeCounter)
-uint64_t  timeCounter;
+unsigned long long timeCounter;
 unsigned int FreqLevel = 8;
 int uartsetup = 0;
 

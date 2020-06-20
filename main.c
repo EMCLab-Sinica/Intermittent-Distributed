@@ -38,6 +38,7 @@ static void setupTimerTasks(void);
 unsigned short SemphTCB;
 uint8_t nodeAddr = 2;
 extern QueueHandle_t DBServiceRoutinePacketQueue;
+extern unsigned int volatile stopTrack;
 
 TaskHandle_t DBSrvTaskHandle = NULL;
 
@@ -54,30 +55,38 @@ int main(void)
     if (firstTime != 1)
     {
         print2uart("First time\n");
+        timeCounter = 0;
         /* Do not call pvPortMalloc before pvInitHeapVar(), it will fail due to the heap is not initialized.
          */
         pvInitHeapVar();
+        initRecoveryEssential();
         NVMDBConstructor();
         VMDBConstructor();
         /* Initialize RF*/
         initRFQueues();
         enableRFInterrupt();
 
+        stopTrack = 1;
+        // system task
         xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
         xTaskCreate(vRequestDataTimer, "DBSrvTimer", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+        stopTrack = 0;
         if (nodeAddr == 1)  // testing
         {
             xTaskCreate(localAccessTask, "LocalAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
         }
         else if (nodeAddr == 2)
         {
-            xTaskCreate(remoteAccessTask, "RemoteAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
+            xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
+        }
+        else if (nodeAddr == 3)
+        {
+            xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
         }
 
         sendWakeupSignal();
         vTaskStartScheduler();
 
-        // main_DBtest();
     }
     else
     {
@@ -85,9 +94,17 @@ int main(void)
         VMDBConstructor();
         initRFQueues();
         enableRFInterrupt();
+        failureRecovery();
+        BaseType_t xReturned;
+
+        stopTrack = 1;
+        xReturned =  xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
+        xReturned = xTaskCreate(vRequestDataTimer, "DBSrvTimer", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+        stopTrack = 0;
 
         sendWakeupSignal();
-        failureRecovery();
+        /* Start the scheduler. */
+        vTaskStartScheduler();
     }
 
     /* If all is well, the scheduler will now be running, and the following

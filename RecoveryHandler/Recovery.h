@@ -41,10 +41,12 @@ typedef struct TaskRecord
 
 void taskRerun();
 void taskRerun();
-void regTaskStart(void *pxNewTCB, void *taskAddress, uint32_t stackSize, uint8_t stopTrack);
+void regTaskStart(void *pxNewTCB, void *taskAddress, uint32_t stackSize, unsigned int stopTrack);
 void regTaskEnd();
 void failureRecovery();
 void freePreviousTasks();
+
+void initRecoveryEssential();
 
 /* DataManager Logging */
 DataRequestLog_t *createDataRequestLog(TaskUUID_t taskId, DataUUID_t dataId, const Data_t *dataObj, const TaskHandle_t *xFromTask);

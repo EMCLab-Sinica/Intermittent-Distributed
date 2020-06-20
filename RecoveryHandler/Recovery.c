@@ -13,6 +13,7 @@
 #include "Tools/myuart.h"
 #include "driverlib.h"
 #include "mylist.h"
+#include "RFHandler.h"
 
 #define DEBUG 1
 
@@ -143,7 +144,7 @@ TaskRecord_t taskRecord[MAX_GLOBAL_TASKS];
 DataRequestLog_t dataRequestLogs[MAX_GLOBAL_TASKS];
 
 extern tskTCB *volatile pxCurrentTCB;
-extern unsigned char volatile stopTrack;
+extern unsigned int volatile stopTrack;
 
 /*
  * taskRerun(): rerun the current task invoking this function
@@ -157,17 +158,24 @@ void taskRerun()
     vTaskDelete(NULL); //delete the current TCB
 }
 
+void initRecoveryEssential()
+{
+    for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
+    {
+        taskRecord[i].unfinished = 0;
+    }
+}
+
 /*
  * regTaskEnd(): mark the assigned task as started
  * parameters: none
  * return: none
  * */
-void regTaskStart(void *pxNewTCB, void *taskAddress, uint32_t stackSize, uint8_t stopTrack)
+void regTaskStart(void *pxNewTCB, void *taskAddress, uint32_t stackSize, unsigned int stopTrack)
 {
     TCB_t *TCB = (TCB_t *)pxNewTCB;
 
-    int i;
-    for (i = 0; i < MAX_GLOBAL_TASKS; i++)
+    for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
         //find a invalid
         if (taskRecord[i].unfinished != 1)
@@ -242,7 +250,7 @@ void freePreviousTasks()
         //find all unfinished tasks
         if (taskRecord[i].unfinished == 1)
         {
-            //see if the address is balid
+            //see if the address is valid
             if (prvcheckAdd(taskRecord[i].TCB) == 1)
             {
                 dprint2uart("Delete: %d\r\n", taskRecord[i].TCBNum);
@@ -250,7 +258,6 @@ void freePreviousTasks()
                 TCB_t *tcb = taskRecord[i].TCB;
                 vPortFree(tcb->pxStack);
                 vPortFree(tcb);
-                taskRecord[i].unfinished = 1;
             }
         }
     }
@@ -285,11 +292,10 @@ void failureRecovery()
                 xTaskCreate(task->address, task->taskName, task->stackSize, NULL, task->priority, NULL);
                 dprint2uart("Recovery Create: %d\r\n", task->TCBNum);
             }
-            dprint2uart("Rend: xPortGetFreeHeapSize = %l\r\n", xPortGetFreeHeapSize());
+            dprint2uart("Rend: xPortGetFreeHeapSize = %d\r\n", xPortGetFreeHeapSize());
         }
     }
-    /* Start the scheduler. */
-    vTaskStartScheduler();
+
 }
 
 /* DataManager Logging */

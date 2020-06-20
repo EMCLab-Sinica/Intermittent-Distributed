@@ -368,7 +368,7 @@ PRIVILEGED_DATA TCB_t * volatile pxCurrentTCB = NULL;
 	PRIVILEGED_DATA int CodeToNVM = 1; //0: RAM, 1:FRAM
 	/*------------------------------  Extend to support dynamic caching: End ------------------------------*/
 	/* Extend for recovery: indicate whether we are in a middle of recovery */
-	unsigned char volatile stopTrack = 0;
+	unsigned int volatile stopTrack = 0;
 #endif
 
 /* Lists for ready and blocked tasks. --------------------

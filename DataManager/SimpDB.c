@@ -16,12 +16,12 @@
 #include "myuart.h"
 #include "config.h"
 
-#define DEBUG 1 // control debug message
+#define DEBUG 0 // control debug message
+#define INFO 1 // control debug message
 
 #pragma NOINIT(NVMDatabase)
 static Database_t NVMDatabase;
 
-#pragma NOINIT(taskAccessObjectLog)
 TaskAccessObjectLog_t taskAccessObjectLog[MAX_GLOBAL_TASKS];
 
 /* Half of RAM for caching (0x2C00~0x3800) */
@@ -209,7 +209,7 @@ Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask, uint
                                   .dataId = dataId};
     RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
 
-    if (DEBUG)
+    if (INFO)
     {
         print2uart("readRemoteDB: task (%d, %d), read remote dataId:(%d, %d), wait for notification\n",
                    taskId.nodeAddr, taskId.id, remoteAddr, id);
@@ -392,7 +392,6 @@ void vRequestDataTimer()
         ulTaskNotifyTake( pdTRUE,          /* Clear the notification value before
                                            exiting. */
                           portMAX_DELAY ); /* Block indefinitely. */
-        print2uart("TIMER WAKEDUP!!!!\n");
         for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
         {
             if (dataRequestLogs[i].valid == true)

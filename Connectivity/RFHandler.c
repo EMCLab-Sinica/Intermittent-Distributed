@@ -42,8 +42,8 @@ void sendWakeupSignal()
 {
     DeviceWakeUpPacket_t packet = {.header.packetType = DeviceWakeUp};
     RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
-    // delay 10ms incase of RF traffic jamming
-    __delay_cycles(10000 * CYCLE_PER_US);
+    // delay 5ms incase of RF traffic jamming
+    __delay_cycles(5000 * CYCLE_PER_US);
 }
 
 

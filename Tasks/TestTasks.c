@@ -6,6 +6,7 @@
 #include "Validation.h"
 
 extern uint8_t nodeAddr;
+extern unsigned long long timeCounter;
 
 void localAccessTask()
 {
@@ -15,7 +16,14 @@ void localAccessTask()
     localDataObject = readLocalDB(1, &test, sizeof(test));
     print2uart("GotData: %d\n", test);
 
-    while(1);
+    while(1)
+    {
+        for (unsigned int i = 0; i < 10; i++)
+        {
+            unsigned int j = i * i;
+        }
+        vTaskDelay(500);
+    }
 }
 
 void remoteAccessTask()
@@ -29,13 +37,18 @@ void remoteAccessTask()
     }
 
     Data_t remoteDataObject;
+    unsigned long long reqTime = 0;
     while (1)
     {
         uint32_t test = 0;
+        reqTime = timeCounter;
         remoteDataObject = readRemoteDB(taskId, &myTaskHandle, 1, 1, (void *)&test, sizeof(test));
 
         test++;
-        print2uart("GotData: %d\n", test);
+
+        print2uart("GotData: %d, %ld\n", test, timeCounter - reqTime);
+
+        vTaskDelay(100);
 
         // taskCommit(1, 1, &remoteDataObject);
     }

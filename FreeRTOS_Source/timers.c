@@ -137,12 +137,12 @@ PRIVILEGED_DATA static List_t xActiveTimerList2;
 PRIVILEGED_DATA static List_t *pxCurrentTimerList;
 PRIVILEGED_DATA static List_t *pxOverflowTimerList;
 
-// #if ( configINTERMITTENT_DISTRIBUTED == 1 )
+#if ( configINTERMITTENT_DISTRIBUTED == 1 )
 	/* A queue that is used to send commands to the timer service task. */
-	// #pragma NOINIT(xTimerQueue)
-	PRIVILEGED_DATA static QueueHandle_t xTimerQueue = NULL;
+	#pragma NOINIT(xTimerQueue)
+	PRIVILEGED_DATA static QueueHandle_t xTimerQueue;
 	PRIVILEGED_DATA static TaskHandle_t xTimerTaskHandle = NULL;
-// #endif
+#endif
 
 /*lint -restore */
 

@@ -4,7 +4,8 @@
 #include "DBServiceRoutine.h"
 #include "myuart.h"
 
-#define  DEBUG 1
+#define  DEBUG 0
+#define INFO 1
 
 #pragma NOINIT(DBServiceRoutinePacketQueue);
 QueueHandle_t DBServiceRoutinePacketQueue;
@@ -13,6 +14,7 @@ void DBServiceRoutine()
 {
     static uint8_t packetBuf[MAX_PACKET_LEN];
     static PacketHeader_t *packetHeader;
+    print2uart("DB Service Routine Online\n");
 
     while (1)
     {
@@ -24,8 +26,9 @@ void DBServiceRoutine()
         case RequestData:
         {
             const RequestDataPacket_t *packet = (RequestDataPacket_t *)packetBuf;
-            if (DEBUG)
-                print2uart("RequestData: (%d %d)\n", packet->dataId.owner, packet->dataId.id);
+            if (INFO)
+                print2uart("RequestData: (%d, %d), from task (%d, %d)\n",
+                           packet->dataId.owner, packet->dataId.id, packet->taskId.nodeAddr, packet->taskId.id);
 
             Data_t *data = getDataRecord(packet->dataId, all);
             if (data == NULL)
