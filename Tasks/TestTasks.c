@@ -38,15 +38,21 @@ void remoteAccessTask()
 
     Data_t remoteDataObject;
     unsigned long long reqTime = 0;
+    unsigned long long timeElapsed = 0;
+    volatile TickType_t tick0 = 0;
+    volatile TickType_t tick1 = 0;
     while (1)
     {
         uint32_t test = 0;
+        // tick0 = xTaskGetTickCount();
         reqTime = timeCounter;
         remoteDataObject = readRemoteDB(taskId, &myTaskHandle, 1, 1, (void *)&test, sizeof(test));
+        timeElapsed = timeCounter - reqTime;
+        print2uart("GotData timeElapsed: %l\n", timeElapsed);
 
         test++;
+        // print2uart("GotData: %d\n", test);
 
-        print2uart("GotData: %d, %ld\n", test, timeCounter - reqTime);
 
         vTaskDelay(100);
 

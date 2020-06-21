@@ -128,6 +128,7 @@ void print2uart(char* format,...)
                 i = va_arg(arg,int);        //Fetch char argument
                 EUSCI_A_UART_transmitData(EUSCI_A0_BASE, (uint8_t)i);
                 break;
+                //FIXME: Fix %ul
             case 'l' :
                 l = va_arg(arg,uint64_t );        //Fetch Decimal/Integer argument
                 if(l<0)
@@ -144,6 +145,11 @@ void print2uart(char* format,...)
                     i = -i;
                     EUSCI_A_UART_transmitData(EUSCI_A0_BASE, (uint8_t)'-');
                 }
+                print2uart(convert(i,10));
+                break;
+            
+            case 'u' :
+                i = va_arg(arg,unsigned int);        //Fetch Decimal/Integer argument
                 print2uart(convert(i,10));
                 break;
             case 's':
