@@ -20,7 +20,8 @@ typedef enum ValidationStage
     validationPhase1,
     commitPhase1,
     validationPhase2,
-    commitPhase2
+    commitPhase2,
+    finish
 
 } ValidationStage_e;
 

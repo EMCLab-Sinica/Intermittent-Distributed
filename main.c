@@ -28,6 +28,7 @@ functionality in an interrupt. */
 #include "driverlib.h"
 #include "main.h"
 
+
 /*-----------------------------------------------------------*/
 /*
  * Configure the hardware as necessary.
@@ -36,7 +37,7 @@ static void prvSetupHardware(void);
 static void setupTimerTasks(void);
 
 unsigned short SemphTCB;
-uint8_t nodeAddr = 2;
+uint8_t nodeAddr = NODEADDR;
 extern QueueHandle_t DBServiceRoutinePacketQueue;
 extern unsigned int volatile stopTrack;
 
@@ -48,13 +49,12 @@ int main(void)
 {
     /* Configure the hardware ready to run the demo. */
     prvSetupHardware();
-    print2uart("Node id: %d\n", nodeAddr);
 
     initRF(&nodeAddr);
 
     if (firstTime != 1)
     {
-        print2uart("First time\n");
+        print2uart("Node id: %d FirstTime\n", nodeAddr);
         timeCounter = 0;
         /* Do not call pvPortMalloc before pvInitHeapVar(), it will fail due to the heap is not initialized.
          */
@@ -90,7 +90,7 @@ int main(void)
     }
     else
     {
-        print2uart("Recovery\n");
+        print2uart("Node id: %d Recovery\n", nodeAddr);
         VMDBConstructor();
         initRFQueues();
         enableRFInterrupt();

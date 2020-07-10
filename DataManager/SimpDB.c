@@ -17,7 +17,7 @@
 #include "config.h"
 
 #define DEBUG 0 // control debug message
-#define INFO 1 // control debug message
+#define INFO 0 // control debug message
 
 #pragma NOINIT(NVMDatabase)
 static Database_t NVMDatabase;

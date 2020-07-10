@@ -16,6 +16,7 @@
 #include "FreeRTOS.h"
 #include "config.h"
 
+extern uint8_t nodeAddr;
 
 //-------------------[global default settings 868 Mhz]-------------------
 static const uint8_t CC1101_GFSK_1_2_kb[] = {
@@ -40,32 +41,33 @@ static const uint8_t CC1101_GFSK_1_2_kb[] = {
     0x13, // MDMCFG2       Modem Configuration
     0xA0, // MDMCFG1       Modem Configuration
     0xF8, // MDMCFG0       Modem Configuration
-    0x15, // DEVIATN       Modem Deviation Setting
-    0x07, // MCSM2         Main Radio Control State Machine Configuration
-    0x0C, // MCSM1         Main Radio Control State Machine Configuration
-    0x18, // MCSM0         Main Radio Control State Machine Configuration
-    0x16, // FOCCFG        Frequency Offset Compensation Configuration
-    0x6C, // BSCFG         Bit Synchronization Configuration
-    0x03, // AGCCTRL2      AGC Control
-    0x40, // AGCCTRL1      AGC Control
-    0x91, // AGCCTRL0      AGC Control
-    0x02, // WOREVT1       High Byte Event0 Timeout
-    0x26, // WOREVT0       Low Byte Event0 Timeout
-    0x09, // WORCTRL       Wake On Radio Control
-    0x56, // FREND1        Front End RX Configuration
-    0x17, // FREND0        Front End TX Configuration
-    0xA9, // FSCAL3        Frequency Synthesizer Calibration
-    0x0A, // FSCAL2        Frequency Synthesizer Calibration
-    0x00, // FSCAL1        Frequency Synthesizer Calibration
-    0x11, // FSCAL0        Frequency Synthesizer Calibration
-    0x41, // RCCTRL1       RC Oscillator Configuration
-    0x00, // RCCTRL0       RC Oscillator Configuration
-    0x59, // FSTEST        Frequency Synthesizer Calibration Control,
-    0x7F, // PTEST         Production Test
-    0x3F, // AGCTEST       AGC Test
-    0x81, // TEST2         Various Test Settings
-    0x3F, // TEST1         Various Test Settings
-    0x0B  // TEST0         Various Test Settings
+    // 0x15, // DEVIATN       Modem Deviation Setting
+    (1 << 5 & NODEADDR), // DEVIATN       Modem Deviation Setting
+    0x07,                // MCSM2         Main Radio Control State Machine Configuration
+    0x0C,                // MCSM1         Main Radio Control State Machine Configuration
+    0x18,                // MCSM0         Main Radio Control State Machine Configuration
+    0x16,                // FOCCFG        Frequency Offset Compensation Configuration
+    0x6C,                // BSCFG         Bit Synchronization Configuration
+    0x03,                // AGCCTRL2      AGC Control
+    0x40,                // AGCCTRL1      AGC Control
+    0x91,                // AGCCTRL0      AGC Control
+    0x02,                // WOREVT1       High Byte Event0 Timeout
+    0x26,                // WOREVT0       Low Byte Event0 Timeout
+    0x09,                // WORCTRL       Wake On Radio Control
+    0x56,                // FREND1        Front End RX Configuration
+    0x17,                // FREND0        Front End TX Configuration
+    0xA9,                // FSCAL3        Frequency Synthesizer Calibration
+    0x0A,                // FSCAL2        Frequency Synthesizer Calibration
+    0x00,                // FSCAL1        Frequency Synthesizer Calibration
+    0x11,                // FSCAL0        Frequency Synthesizer Calibration
+    0x41,                // RCCTRL1       RC Oscillator Configuration
+    0x00,                // RCCTRL0       RC Oscillator Configuration
+    0x59,                // FSTEST        Frequency Synthesizer Calibration Control,
+    0x7F,                // PTEST         Production Test
+    0x3F,                // AGCTEST       AGC Test
+    0x81,                // TEST2         Various Test Settings
+    0x3F,                // TEST1         Various Test Settings
+    0x0B                 // TEST0         Various Test Settings
 };
 
 static const uint8_t CC1101_GFSK_38_4_kb[] = {
@@ -388,6 +390,8 @@ uint8_t initRF(volatile uint8_t *my_addr)
 
     partnum = spi_read_register(PARTNUM); //reads CC1101 partnumber
     version = spi_read_register(VERSION); //reads CC1101 version number
+
+    spi_write_register(MCSM1, 3 << 4); //FS Autocalibration
 
     //checks if valid Chip ID is found. Usualy 0x03 or 0x14. if not -> abort
     if (version == 0x00 || version == 0xFF)

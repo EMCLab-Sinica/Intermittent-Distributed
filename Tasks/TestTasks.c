@@ -10,11 +10,9 @@ extern unsigned long long timeCounter;
 
 void localAccessTask()
 {
-    print2uart("LocalAccess\n");
     Data_t localDataObject;
     uint32_t test;
     localDataObject = readLocalDB(1, &test, sizeof(test));
-    print2uart("GotData: %d\n", test);
 
     while(1)
     {
@@ -48,12 +46,10 @@ void remoteAccessTask()
         reqTime = timeCounter;
         remoteDataObject = readRemoteDB(taskId, &myTaskHandle, 1, 1, (void *)&test, sizeof(test));
         timeElapsed = timeCounter - reqTime;
-        print2uart("GotData timeElapsed: %l\n", timeElapsed);
+        print2uart("%l\n", timeElapsed);
 
         test++;
         // print2uart("GotData: %d\n", test);
-
-
         vTaskDelay(100);
 
         // taskCommit(1, 1, &remoteDataObject);

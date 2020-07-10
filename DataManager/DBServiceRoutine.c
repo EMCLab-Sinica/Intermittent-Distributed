@@ -5,7 +5,7 @@
 #include "myuart.h"
 
 #define  DEBUG 0
-#define INFO 1
+#define INFO 0
 
 #pragma NOINIT(DBServiceRoutinePacketQueue);
 QueueHandle_t DBServiceRoutinePacketQueue;
@@ -14,7 +14,6 @@ void DBServiceRoutine()
 {
     static uint8_t packetBuf[MAX_PACKET_LEN];
     static PacketHeader_t *packetHeader;
-    print2uart("DB Service Routine Online\n");
 
     while (1)
     {
