@@ -13,7 +13,7 @@
 #include "timers.h"
 #include <stdint.h>
 #include <config.h>
-#include "mylist.h"
+#include <stdbool.h>
 
 #define VM_WORKING_SIZE 3072 // working space in VM
 
@@ -52,6 +52,24 @@ typedef struct DataUUID
     int8_t id;
 
 } DataUUID_t;
+
+// Data info without real content, used for packet transmission
+typedef struct dataHeader
+{
+    DataUUID_t dataId;
+    DataVersion_e version;
+
+} DataHeader_t;
+
+// Data without validation info, used for packet transmission
+typedef struct DataRecord
+{
+    DataUUID_t dataId;
+    DataVersion_e version;
+    void *ptr; // points to the data location
+    uint32_t size;
+
+} DataRecord_t;
 
 typedef struct Data
 {

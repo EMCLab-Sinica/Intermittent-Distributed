@@ -4,11 +4,32 @@
 #include "DBServiceRoutine.h"
 #include "myuart.h"
 
-#define  DEBUG 0
-#define INFO 0
+#define  DEBUG 1
+#define INFO 1
 
 #pragma NOINIT(DBServiceRoutinePacketQueue);
 QueueHandle_t DBServiceRoutinePacketQueue;
+extern int firstTime;
+
+uint8_t initDBSrvQueues()
+{
+    if (firstTime != 1)
+    {
+        DBServiceRoutinePacketQueue = xQueueCreate(5, MAX_PACKET_LEN);
+        if (DBServiceRoutinePacketQueue == NULL)
+        {
+            print2uart("Error: DB Service Routine Queue init failed\n");
+        }
+    }
+    else
+    {
+        vQueueDelete(DBServiceRoutinePacketQueue);
+        DBServiceRoutinePacketQueue = xQueueCreate(5, MAX_PACKET_LEN);
+    }
+
+
+    return TRUE;
+}
 
 void DBServiceRoutine()
 {
@@ -38,7 +59,7 @@ void DBServiceRoutine()
             ResponseDataPacket_t resPacket = {.header.packetType = ResponseData};
             resPacket.data = *data;
             resPacket.taskId = packet->taskId;
-            memcpy(&(resPacket.dataPayload), data->ptr, data->size);
+            memcpy(&(resPacket.dataContent), data->ptr, data->size);
 
             RFSendPacket(packet->header.txAddr, (uint8_t *)&resPacket, sizeof(resPacket));
 
@@ -61,7 +82,7 @@ void DBServiceRoutine()
                 break;
             }
 
-            memcpy(log->xToDataObj->ptr, packet->dataPayload, packet->data.size);
+            memcpy(log->xToDataObj->ptr, packet->dataContent, packet->data.size);
 
             if (xTaskNotifyGive(*(log->xFromTask)) != pdPASS)
             {

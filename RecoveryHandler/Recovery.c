@@ -12,7 +12,6 @@
 #include "task.h"
 #include "Tools/myuart.h"
 #include "driverlib.h"
-#include "mylist.h"
 #include "RFHandler.h"
 
 #define DEBUG 1

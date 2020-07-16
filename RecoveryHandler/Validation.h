@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "SimpDB.h"
-#include "mylist.h"
 
 typedef struct TimeInterval
 {
@@ -31,7 +30,7 @@ typedef struct OutboundValidationRecord
     ValidationStage_e stage;
     TaskUUID_t taskId;
     uint8_t writeSetNum;
-    TaskHandle_t taskHandle;
+    TaskHandle_t *taskHandle;
     Data_t writeSet[MAX_TASK_READ_OBJ];
     TimeInterval_t taskValidInterval;
 
@@ -54,8 +53,11 @@ typedef struct OutboundValidationRecord
 
  } InboundValidationRecord_t;
 
-void taskCommit(uint8_t taskId, uint8_t commitNum, ...);
+ void taskCommit(uint8_t tid, TaskHandle_t *fromTask, uint8_t commitNum, ...);
+ void initValidationEssentials();
+uint8_t initValidationQueues();
 
-void remoteValidationTask();
+void outboundValidationHandler();
+void inboundValidationHandler();
 
 #endif

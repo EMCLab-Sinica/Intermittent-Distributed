@@ -7,7 +7,6 @@
 #include "CC1101_MSP430.h"
 #include "config.h"
 
-#include "mylist.h"
 #include "myuart.h"
 
 #define  DEBUG 1
@@ -16,27 +15,7 @@
 extern uint8_t nodeAddr;
 extern int firstTime;
 
-extern QueueHandle_t DBServiceRoutinePacketQueue;
 
-uint8_t initRFQueues()
-{
-    if (firstTime != 1)
-    {
-        DBServiceRoutinePacketQueue = xQueueCreate(5, MAX_PACKET_LEN);
-        if (DBServiceRoutinePacketQueue == NULL)
-        {
-            print2uart("Error: DB Service Routine Queue init failed\n");
-        }
-    }
-    else
-    {
-        vQueueDelete(DBServiceRoutinePacketQueue);
-        DBServiceRoutinePacketQueue = xQueueCreate(5, MAX_PACKET_LEN);
-    }
-
-
-    return TRUE;
-}
 
 void sendWakeupSignal()
 {

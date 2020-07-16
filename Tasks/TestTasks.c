@@ -52,6 +52,6 @@ void remoteAccessTask()
         // print2uart("GotData: %d\n", test);
         vTaskDelay(100);
 
-        // taskCommit(1, 1, &remoteDataObject);
+        taskCommit(taskId.id, &myTaskHandle, 1, &remoteDataObject);
     }
 }

@@ -8,7 +8,6 @@
 #define RECOVERYHANDLER_RECOVERY_H_
 
 #include <config.h>
-#include "mylist.h"
 #include "SimpDB.h"
 #include "FreeRTOS.h"
 #include "task.h"

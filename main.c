@@ -39,6 +39,7 @@ static void setupTimerTasks(void);
 unsigned short SemphTCB;
 uint8_t nodeAddr = NODEADDR;
 extern QueueHandle_t DBServiceRoutinePacketQueue;
+extern QueueHandle_t validationRequestPacketsQueue;
 extern unsigned int volatile stopTrack;
 
 TaskHandle_t DBSrvTaskHandle = NULL;
@@ -62,14 +63,18 @@ int main(void)
         initRecoveryEssential();
         NVMDBConstructor();
         VMDBConstructor();
+        initValidationEssentials();
         /* Initialize RF*/
-        initRFQueues();
+        initDBSrvQueues();
+        initValidationQueues();
         enableRFInterrupt();
 
         stopTrack = 1;
         // system task
-        xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
-        xTaskCreate(vRequestDataTimer, "DBSrvTimer", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+        xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 0, NULL);
+        xTaskCreate(inboundValidationHandler, "inboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+        xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+        xTaskCreate(vRequestDataTimer, "DBSrvTimer", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
         stopTrack = 0;
         if (nodeAddr == 1)  // testing
         {
@@ -92,14 +97,17 @@ int main(void)
     {
         print2uart("Node id: %d Recovery\n", nodeAddr);
         VMDBConstructor();
-        initRFQueues();
+        initDBSrvQueues();
+        initValidationQueues();
         enableRFInterrupt();
         failureRecovery();
         BaseType_t xReturned;
 
         stopTrack = 1;
-        xReturned =  xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
-        xReturned = xTaskCreate(vRequestDataTimer, "DBSrvTimer", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+        xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
+        xTaskCreate(inboundValidationHandler, "inboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+        xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+        xTaskCreate(vRequestDataTimer, "DBSrvTimer", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
         stopTrack = 0;
 
         sendWakeupSignal();
@@ -256,6 +264,16 @@ __interrupt void Port_8(void)
                 else
                 {
                     vTaskNotifyGiveFromISR(DBSrvTaskHandle, &xWakeupHigherPriorityTaskWoken);
+                }
+            }
+            
+            else if(packetHeader->packetType >= ValidationP1Request)
+            {
+                xSendQueueResult = xQueueSendToBackFromISR(validationRequestPacketsQueue,
+                                                           buf, NULL);
+                if (xSendQueueResult != pdTRUE)
+                {
+                    print2uart("Send to validation queue failed\n");
                 }
             }
         }
