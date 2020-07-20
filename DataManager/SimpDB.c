@@ -14,6 +14,7 @@
 #include "RFHandler.h"
 #include "myuart.h"
 #include "config.h"
+#include <string.h>
 
 #define DEBUG 1 // control debug message
 #define INFO 1 // control debug message

@@ -4,7 +4,7 @@
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_PROGRAM.MSP430FR5994.ccxml.TI MSP430 USB1/MSP430" value="${build_artifact:IntermittentDistributed_MSP430}"/>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_PROJECT.MSP430FR5994.ccxml.TI MSP430 USB1/MSP430" value="IntermittentDistributed_MSP430"/>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_TARGET_CONFIG" value="${target_config_active_default:IntermittentDistributed_MSP430}"/>
-<stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.MSP430FR5994.ccxml.TI MSP430 USB1/MSP430" value="/Users/daniel/NTUGoogleDrive/Research/Code/IntermittentDistributed_MSP430/Large_Data/IntermittentDistributed_MSP430.out"/>
+<stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.MSP430FR5994.ccxml.TI MSP430 USB1/MSP430" value="/Users/daniel/projects/Intermittent-Distributed/Large_Data/IntermittentDistributed_MSP430.out"/>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
 <listEntry value="/IntermittentDistributed_MSP430"/>
 </listAttribute>

@@ -161,7 +161,7 @@ void initRecoveryEssential()
 {
     for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
-        taskRecord[i].unfinished = 0;
+        taskRecord[i].taskStatus = invalid;
     }
 }
 
@@ -177,7 +177,7 @@ void regTaskStart(void *pxNewTCB, void *taskAddress, uint32_t stackSize, unsigne
     for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
         //find a invalid
-        if (taskRecord[i].unfinished != 1)
+        if (taskRecord[i].taskStatus == invalid)
         {
             TaskRecord_t *record = taskRecord + i;
             strcpy(record->taskName, TCB->pcTaskName);
@@ -187,7 +187,7 @@ void regTaskStart(void *pxNewTCB, void *taskAddress, uint32_t stackSize, unsigne
             record->TCB = TCB;
             record->schedulerTask = stopTrack;
             record->stackSize = stackSize;
-            record->unfinished = 1;
+            record->taskStatus = running;
             break;
         }
     }
@@ -203,10 +203,9 @@ void regTaskEnd()
     int i;
     for (i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
-        //find the slot
-        if (taskRecord[i].unfinished == 1 && taskRecord[i].TCBNum == pxCurrentTCB->uxTCBNumber)
+        if (taskRecord[i].taskStatus == finished && taskRecord[i].TCBNum == pxCurrentTCB->uxTCBNumber)
         {
-            taskRecord[i].unfinished = 0;
+            taskRecord[i].taskStatus= invalid;
             return;
         }
     }
@@ -246,8 +245,8 @@ void freePreviousTasks()
     int i;
     for (i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
-        //find all unfinished tasks
-        if (taskRecord[i].unfinished == 1)
+        //find all running tasks
+        if (taskRecord[i].taskStatus == running)
         {
             //see if the address is valid
             if (prvcheckAdd(taskRecord[i].TCB) == 1)
@@ -263,7 +262,7 @@ void freePreviousTasks()
 }
 
 /*
- * failureRecovery(): recover all unfinished tasks after power failure
+ * failureRecovery(): recover all running tasks after power failure
  * parameters: none
  * return: none
  * */
@@ -273,8 +272,8 @@ void failureRecovery()
     for (int i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
         task = taskRecord + i;
-        //find all unfinished tasks
-        if (task->unfinished == 1)
+        //find all running tasks
+        if (task->taskStatus == running)
         {
             //see if the address is valid
             if (prvcheckAdd(task->TCB) == 1)
@@ -285,7 +284,7 @@ void failureRecovery()
                 vPortFree(tcb->pxStack);
                 vPortFree(tcb);
             }
-            task->unfinished = 0;
+            task->taskStatus = invalid;
             if (!(task->schedulerTask))
             {
                 xTaskCreate(task->address, task->taskName, task->stackSize, NULL, task->priority, NULL);
