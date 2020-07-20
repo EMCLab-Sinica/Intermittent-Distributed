@@ -4,6 +4,7 @@
 #include "RFHandler.h"
 #include <stdbool.h>
 #include "myuart.h"
+#include <string.h>
 
 #define DEBUG 1
 #define INFO 1
@@ -226,7 +227,7 @@ void outboundValidationHandler()
     OutboundValidationRecord_t *outboundRecord = NULL;
     while (1)
     {
-        vTaskDelay(900);
+        vTaskDelay(600);
         // Outbound Validation
         for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
         {

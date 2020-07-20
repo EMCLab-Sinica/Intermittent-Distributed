@@ -19,10 +19,11 @@
 extern uint8_t nodeAddr;
 
 //-------------------[global default settings 868 Mhz]-------------------
+// our settings
 static const uint8_t CC1101_GFSK_1_2_kb[] = {
     0x07, // IOCFG2        GDO2 Output Pin Configuration
     0x2E, // IOCFG1        GDO1 Output Pin Configuration
-    0x80, // IOCFG0        GDO0 Output Pin Configuration
+    0x09, // IOCFG0        GDO0 Output Pin Configuration
     0x07, // FIFOTHR       RX FIFO and TX FIFO Thresholds
     0x57, // SYNC1         Sync Word, High Byte
     0x43, // SYNC0         Sync Word, Low Byte
@@ -44,7 +45,7 @@ static const uint8_t CC1101_GFSK_1_2_kb[] = {
     // 0x15, // DEVIATN       Modem Deviation Setting
     (1 << 5 & NODEADDR), // DEVIATN       Modem Deviation Setting
     0x07,                // MCSM2         Main Radio Control State Machine Configuration
-    0x0C,                // MCSM1         Main Radio Control State Machine Configuration
+    0x3C,                // MCSM1         Main Radio Control State Machine Configuration
     0x18,                // MCSM0         Main Radio Control State Machine Configuration
     0x16,                // FOCCFG        Frequency Offset Compensation Configuration
     0x6C,                // BSCFG         Bit Synchronization Configuration
@@ -677,50 +678,20 @@ uint8_t send_packet(uint8_t my_addr, uint8_t rx_addr, uint8_t *txbuffer,
 
     do //send package out with retries
     {
+        // wait for channel clear assertion
+        while (GDO0_PIN_IS_HIGH())
+        {
+            __delay_cycles(50 * CYCLE_PER_US);
+        };
         tx_payload_burst(my_addr, rx_addr, txbuffer, pktlen); //loads the data in CC1101 buffer
         transmit();                                           //sends data over air
         receive();                                            //receive mode
 
         return TRUE;
 
-        /*========================READ ME============================
+        // ackWaitCounter = 0;                                     //resets the ACK_Timeout
+        // tx_retries_count++;                                     //increase tx retry counter
 
-        The below part is for advanced communication purposes.
-        It works but commeted out to keep things simple.
-        You can uncomment it to access the features (like message delivery confirmation).
-        Read the inline comments below carefully.
-
-        =============================================================*/
-
-        /*----------------------------------------------------------------
-        if(rx_addr == BROADCAST_ADDRESS){                       //no wait acknowledge if send to broadcast address or tx_retries = 0
-            return TRUE;                                        //successful send to BROADCAST_ADDRESS
-        }
-
-        while (ackWaitCounter < ACK_TIMEOUT )                   //wait for an acknowledge
-        {
-            if (packet_available() == TRUE)                     //if RF package received check package acknowge
-            {
-                from_src_addr = rx_addr;                          //the original message src_addr address
-                rx_fifo_erase(rxbuffer);                        //erase RX software buffer
-                rx_payload_burst(rxbuffer, pktlen_ack);         //reads package in buffer
-                check_acknowledge(rxbuffer, pktlen_ack, from_src_addr, my_addr); //check if received message is an acknowledge from client
-                return TRUE;                                    //package successfully send
-            }
-            else{
-                ackWaitCounter++;                               //increment ACK wait counter
-                delay(1);                                       //delay to give receiver time
-            }
-        }
-
-        ackWaitCounter = 0;                                     //resets the ACK_Timeout
-        tx_retries_count++;                                     //increase tx retry counter
-
-        if(debug_level > 0){                                    //debug output messages
-            // Serial.print(F(" #:"));
-            uart_puthex_byte(tx_retries_count-1);
-            // Serial.println();
-      }*/
     } while (tx_retries_count <= tx_retries); //while count of retries is reaches
 
     return FALSE; //send failed. too many retries
