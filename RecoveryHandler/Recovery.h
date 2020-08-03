@@ -35,7 +35,7 @@ typedef enum TaskStatus
 
 typedef struct TaskRecord
 {
-    TaskStatus_e taskStatus; // 1: running, others for invalid
+    TaskStatus_e taskStatus;
     uint8_t priority;
     uint16_t TCBNum;
     uint8_t schedulerTask; // if it is schduler's task, we don't need to recreate it because the shceduler does

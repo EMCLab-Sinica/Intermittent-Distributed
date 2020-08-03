@@ -51,6 +51,11 @@ void initValidationEssentials()
     for (int i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
         outRecord = outboundValidationRecords + i;
+        for(int i = 0; i < MAX_TASK_READ_OBJ; i++)
+        {
+            // maximum of data size
+            outRecord->writeSet[i].ptr = pvPortMalloc(sizeof(unsigned long long));
+        }
         outRecord->validRecord = pdFALSE;
         outRecord->writeSetNum = 0;
         memset(outRecord->validationPhase1VIShrinked, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
@@ -118,8 +123,9 @@ void taskCommit(uint8_t tid, TaskHandle_t *fromTask, uint8_t commitNum, ...)
         {
             data = va_arg(vl, Data_t *);
             currentWriteSet = currentLog->writeSet + i;
+            void * tempPtr = currentWriteSet->ptr;
             *currentWriteSet = *data;
-            currentWriteSet->ptr = pvPortMalloc(sizeof(data->size));
+            currentWriteSet->ptr = tempPtr;
             memcpy(currentWriteSet->ptr, data->ptr, data->size);
             currentWriteSet->version = modified;
 
@@ -322,12 +328,12 @@ void outboundValidationHandler()
                 case finish:
                 {
                     xTaskNotifyGive(*outboundRecord->taskHandle);
-                    outboundRecord->validRecord = false;
                     outboundRecord->writeSetNum = 0;
                     memset(outboundRecord->validationPhase1VIShrinked, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
                     memset(outboundRecord->commitPhase1Replied, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
                     memset(outboundRecord->validationPhase2Passed, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
                     memset(outboundRecord->commitPhase2Done, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
+                    outboundRecord->validRecord = false;
                 }
 
                 default:

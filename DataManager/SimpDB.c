@@ -207,16 +207,19 @@ Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask, uint
     RequestDataPacket_t packet = {.header.packetType = RequestData,
                                   .taskId = taskId,
                                   .dataId = dataId};
-    RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
-
     if (INFO)
     {
         print2uart("readRemoteDB: task (%d, %d), read remote dataId:(%d, %d), wait for notification\n",
                    taskId.nodeAddr, taskId.id, remoteAddr, id);
     }
+    uint32_t ulNotificationValue;
+    do
+    {
+        RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
+        ulNotificationValue = ulTaskNotifyTake(pdFALSE,               /* Clear the notification value before exiting. */
+                                       pdMS_TO_TICKS(2000)); /* Block indefinitely. */
+    } while(ulNotificationValue != 1);
 
-    ulTaskNotifyTake(pdTRUE,         /* Clear the notification value before exiting. */
-                     portMAX_DELAY); /* Block indefinitely. */
 
     if (DEBUG)
         print2uart("readRemoteDB: remote dataId: %d, notified\n", id);
