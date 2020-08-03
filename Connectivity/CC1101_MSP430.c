@@ -681,7 +681,7 @@ uint8_t send_packet(uint8_t my_addr, uint8_t rx_addr, uint8_t *txbuffer,
         // wait for channel clear assertion
         while (GDO0_PIN_IS_HIGH())
         {
-            __delay_cycles(500);
+            __delay_cycles(50 * CYCLE_PER_US);
         };
         tx_payload_burst(my_addr, rx_addr, txbuffer, pktlen); //loads the data in CC1101 buffer
         transmit();                                           //sends data over air
