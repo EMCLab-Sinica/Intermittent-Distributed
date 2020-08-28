@@ -608,14 +608,12 @@ void wor_reset()
 //-------------------------------[end]------------------------------------------
 
 //-------------------------[tx_payload_burst]-----------------------------------
-uint8_t tx_payload_burst(uint8_t my_addr, uint8_t rx_addr,
-                         uint8_t *txbuffer, uint8_t pktlen)
+uint8_t tx_payload_burst(uint8_t rx_addr, uint8_t *txbuffer, uint8_t pktlen)
 {
 
 
     txbuffer[0] = pktlen - 1;   // This byte is not included (according to the document)
     txbuffer[1] = rx_addr;
-    txbuffer[2] = my_addr;
 
     spi_write_burst(TXFIFO_BURST, txbuffer, pktlen); //writes TX_Buffer +1 because of pktlen must be also transfered
 
@@ -671,7 +669,7 @@ uint8_t rx_payload_burst(uint8_t rxbuffer[], uint8_t *pktlen)
 //-------------------------------[end]------------------------------------------
 
 //---------------------------[send packet]--------------------------------------
-uint8_t send_packet(uint8_t my_addr, uint8_t rx_addr, uint8_t *txbuffer,
+uint8_t send_packet(uint8_t rx_addr, uint8_t *txbuffer,
                     uint8_t pktlen, uint8_t tx_retries)
 {
     // uint8_t pktlen_ack; //default package len for ACK
@@ -689,7 +687,7 @@ uint8_t send_packet(uint8_t my_addr, uint8_t rx_addr, uint8_t *txbuffer,
     do //send package out with retries
     {
 
-        tx_payload_burst(my_addr, rx_addr, txbuffer, pktlen); //loads the data in CC1101 buffer
+        tx_payload_burst(rx_addr, txbuffer, pktlen); //loads the data in CC1101 buffer
         transmit();                                           //sends data over air
         receive();                                            //receive mode
 
@@ -714,7 +712,7 @@ void send_acknowledge(uint8_t my_addr, uint8_t tx_addr)
     tx_buffer[4] = 'c';
     tx_buffer[5] = 'k'; //fill buffer with ACK Payload
 
-    tx_payload_burst(my_addr, tx_addr, tx_buffer, pktlen); //load payload to CC1101
+    tx_payload_burst(tx_addr, tx_buffer, pktlen); //load payload to CC1101
     transmit();                                            //send package over the air
     receive();                                             //set CC1101 in receive mode
 

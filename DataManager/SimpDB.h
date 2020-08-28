@@ -17,13 +17,6 @@
 
 #define VM_WORKING_SIZE 3072 // working space in VM
 
-// deprecated
-struct working{//working space of data for tasks
-    void* address;
-    int loc;//1 stands for SRAM, 0 stands for�@NVM
-    int id;//-1 for create
-};
-
 typedef enum DataVersion
 {
     consistent,             // consistent version in NVM
@@ -41,42 +34,43 @@ typedef enum DBSearchMode
 
 typedef struct TaskUUID // Task Universal Unique Identifier
 {
-    uint8_t nodeAddr;
-    uint8_t id;
+    uint8_t nodeAddr: 4;
+    uint8_t id: 4;
 
 } TaskUUID_t;
 
 typedef struct DataUUID
 {
-    uint8_t owner;
-    int8_t id;
+    uint8_t owner: 4;
+    int8_t id: 4;
 
 } DataUUID_t;
 
 // Data info without real content, used for packet transmission
-typedef struct dataHeader
+typedef struct DataHeader
 {
     DataUUID_t dataId;
-    DataVersion_e version;
+    DataVersion_e version: 8;
 
 } DataHeader_t;
 
 // Data without validation info, used for packet transmission
-typedef struct DataRecord
+typedef struct DataTransPacket
 {
     DataUUID_t dataId;
-    DataVersion_e version;
-    void *ptr; // points to the data location
-    uint32_t size;
+    DataVersion_e version: 4;
+    uint8_t size: 4;
+    uint8_t content[4]; // max 4bytes
 
-} DataRecord_t;
+} DataTransPacket_t;
 
+// Data structure used in local database
 typedef struct Data
 {
     DataUUID_t dataId;
-    DataVersion_e version;
+    DataVersion_e version: 4;
+    uint8_t size: 4;
     void *ptr; // points to the data location
-    uint32_t size;
     TaskUUID_t readers[MAX_READERS];
 
 } Data_t;

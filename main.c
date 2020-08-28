@@ -71,7 +71,7 @@ int main(void)
 
         stopTrack = 1;
         // system task
-        xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 0, NULL);
+        xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
         xTaskCreate(inboundValidationHandler, "inboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
         xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
         xTaskCreate(vRequestDataTimer, "DBSrvTimer", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
@@ -107,7 +107,7 @@ int main(void)
         xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
         xTaskCreate(inboundValidationHandler, "inboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
         xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
-        xTaskCreate(vRequestDataTimer, "DBSrvTimer", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+        xTaskCreate(vRequestDataTimer, "DBSrvTimer", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
         stopTrack = 0;
 
         sendWakeupSignal();
@@ -232,23 +232,15 @@ __interrupt void Port_8(void)
     {
         DISABLE_GDO2_INT();
 
-        if (spi_read_register(IOCFG2) == 0x06) //if sync word detect mode is used
-        {
-            while (GDO2_PIN_IS_HIGH())
-            {
-                print2uart("wait for sync word");
-            }
-        }
-
         get_packet(buf, &pktlen, &my_addr, &src_addr);
         static PacketHeader_t *packetHeader = (PacketHeader_t *)buf;
 
-        if (packetHeader->rxAddr == my_addr || packetHeader->txAddr == BROADCAST_ADDRESS)
+        if (packetHeader->rxAddr == my_addr || packetHeader->rxAddr == BROADCAST_ADDRESS)
         {
             if (packetHeader->packetType <= ResponseData)
             {
                 xSendQueueResult = xQueueSendToBackFromISR(DBServiceRoutinePacketQueue,
-                                                           buf, NULL);
+                                                           buf, &xHigherPriorityTaskWoken);
                 if (xSendQueueResult != pdTRUE)
                 {
                     print2uart("Send to queue failed\n");
@@ -266,7 +258,7 @@ __interrupt void Port_8(void)
                     vTaskNotifyGiveFromISR(DBSrvTaskHandle, &xWakeupHigherPriorityTaskWoken);
                 }
             }
-            
+
             else if(packetHeader->packetType >= ValidationP1Request)
             {
                 xSendQueueResult = xQueueSendToBackFromISR(validationRequestPacketsQueue,

@@ -373,8 +373,9 @@ void sendCommitPhase1Request(TaskUUID_t taskId, Data_t *dataToCommit)
 {
     CommitP1RequestPacket_t packet;
     packet.taskId = taskId;
-    memcpy(&(packet.dataRecord), dataToCommit, sizeof(packet.dataRecord));
-    memcpy(packet.dataContent, dataToCommit->ptr, dataToCommit->size);
+    // FIXME: nonono
+    memcpy(&(packet.data), dataToCommit, sizeof(packet.data));
+    memcpy(packet.data.content, dataToCommit->ptr, dataToCommit->size);
     packet.header.packetType = CommitP1Request;
 
     RFSendPacket(dataToCommit->dataId.owner, (uint8_t *)&packet, sizeof(packet));
@@ -449,7 +450,7 @@ void handleValidationPhase1Request(ValidationP1RequestPacket_t *packet)
     }
     TimeInterval_t ti = calcValidInterval(packet->taskId, packet->dataHeader.dataId,
                                           inboundRecord->vPhase1DataBegin + inboundRecord->writeSetNum - 1);
-    sendValidationPhase1Response(packet->header.txAddr, &(packet->taskId), &(packet->dataHeader), &ti);
+    sendValidationPhase1Response(packet->taskId.nodeAddr, &(packet->taskId), &(packet->dataHeader), &ti);
 }
 
 void handleValidationPhase1Response(ValidationP1ResponsePacket_t *packet)
@@ -472,14 +473,14 @@ void handleCommitPhase1Request(CommitP1RequestPacket_t *packet)
     InboundValidationRecord_t *record = getInboundRecord(&(packet->taskId));
     for (unsigned int i = 0; i < MAX_TASK_READ_OBJ; i++)
     {
-        if (dataIdEqual(&(record->writeSet[i].dataId), &(packet->dataRecord.dataId)))
+        if (dataIdEqual(&(record->writeSet[i].dataId), &(packet->data.dataId)))
         {
-            record->writeSet[i].size = packet->dataRecord.size;
-            memcpy(record->writeSet[i].ptr, packet->dataContent, packet->dataRecord.size);
+            record->writeSet[i].size = packet->data.size;
+            memcpy(record->writeSet[i].ptr, packet->data.content, packet->data.size);
             break;
         }
     }
-    sendCommitPhase1Response(packet->header.txAddr, &(packet->taskId), &(packet->dataRecord.dataId), 1);
+    sendCommitPhase1Response(packet->taskId.nodeAddr, &(packet->taskId), &(packet->data.dataId), 1);
 }
 
 void handleCommitPhase1Response(CommitP1ResponsePacket_t *packet)
@@ -520,11 +521,11 @@ void handleValidationPhase2Request(ValidationP2RequestPacket_t *packet)
     }
     if (VPhase2Passed)
     {
-        sendValidationPhase2Response(packet->header.txAddr, record->taskId, true);
+        sendValidationPhase2Response(packet->taskId.nodeAddr, record->taskId, true);
     }
     else
     {
-        sendValidationPhase2Response(packet->header.txAddr, record->taskId, false);
+        sendValidationPhase2Response(packet->taskId.nodeAddr, record->taskId, false);
         // unlock
     }
 }
@@ -550,7 +551,7 @@ void handleCommitPhase2Request(CommitP2RequestPacket_t *packet)
         if (record->writeSet[i].dataId.owner == nodeAddr)
         {
             // TODO: Commit
-            sendCommitPhase2Response(packet->header.txAddr, packet->taskId,
+            sendCommitPhase2Response(packet->taskId.nodeAddr, packet->taskId,
                                      record->writeSet[i].dataId);
             break;
         }

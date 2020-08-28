@@ -56,12 +56,14 @@ void DBServiceRoutine()
                 print2uart("Can not find data with (%d, %d)...\n", packet->dataId.owner, packet->dataId.id);
                 break;
             }
-            ResponseDataPacket_t resPacket = {.header.packetType = ResponseData};
-            resPacket.data = *data;
-            resPacket.taskId = packet->taskId;
-            memcpy(&(resPacket.dataContent), data->ptr, data->size);
+            ResponseDataPacket_t resPacket = {.header.packetType = ResponseData, .taskId=packet->taskId};
+            DataTransPacket_t *resData = &(resPacket.data);
+            resData->dataId = data->dataId;
+            resData->version = data->version;
+            resData->size = data->size;
+            memcpy(&(resPacket.data.content), data->ptr, data->size);
 
-            RFSendPacket(packet->header.txAddr, (uint8_t *)&resPacket, sizeof(resPacket));
+            RFSendPacket(packet->taskId.nodeAddr, (uint8_t *)&resPacket, sizeof(resPacket));
 
             break;
         }
@@ -82,7 +84,7 @@ void DBServiceRoutine()
                 break;
             }
 
-            memcpy(log->xToDataObj->ptr, packet->dataContent, packet->data.size);
+            memcpy(log->xToDataObj->ptr, packet->data.content, packet->data.size);
 
             if (xTaskNotifyGive(*(log->xFromTask)) != pdPASS)
             {

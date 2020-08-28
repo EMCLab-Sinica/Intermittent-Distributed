@@ -29,5 +29,5 @@ void sendWakeupSignal()
 
 void RFSendPacket(uint8_t rxAddr, uint8_t *txBuffer, uint8_t pktlen)
 {
-    send_packet(nodeAddr, rxAddr, txBuffer, pktlen, 0);
+    send_packet(rxAddr, txBuffer, pktlen, 0);
 }

@@ -162,13 +162,13 @@ uint8_t wait_for_packet(uint16_t milliseconds);
 
 uint8_t get_packet(uint8_t rxbuffer[], uint8_t *pktlen, uint8_t *dest_addr, uint8_t *src_addr);
 
-uint8_t tx_payload_burst(uint8_t my_addr, uint8_t rx_addr, uint8_t *txbuffer, uint8_t length);
+uint8_t tx_payload_burst(uint8_t rx_addr, uint8_t *txbuffer, uint8_t length);
 uint8_t rx_payload_burst(uint8_t rxbuffer[], uint8_t *pktlen);
 
 void rx_fifo_erase(uint8_t *rxbuffer);
 void tx_fifo_erase(uint8_t *txbuffer);
 
-uint8_t send_packet(uint8_t my_addr, uint8_t rx_addr, uint8_t *txbuffer, uint8_t pktlen, uint8_t tx_retries);
+uint8_t send_packet(uint8_t rx_addr, uint8_t *txbuffer, uint8_t pktlen, uint8_t tx_retries);
 void send_acknowledge(uint8_t my_addr, uint8_t tx_addr);
 
 uint8_t check_acknowledge(uint8_t *rxbuffer, uint8_t pktlen, uint8_t src_addr, uint8_t my_addr);

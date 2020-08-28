@@ -45,7 +45,6 @@ typedef struct PacketHeader
 {
     uint8_t pktlen;
     uint8_t rxAddr;
-    uint8_t txAddr;
     PacketType_e packetType;
 
 } PacketHeader_t;
@@ -62,8 +61,7 @@ typedef struct ResponseDataPacket
 {
     PacketHeader_t header;
     TaskUUID_t taskId;
-    Data_t data;
-    uint8_t dataContent[16]; // max 16bytes
+    DataTransPacket_t data;
 
 } ResponseDataPacket_t;
 
@@ -102,8 +100,7 @@ typedef struct CommitP1RequestPacket
 {
     PacketHeader_t header;
     TaskUUID_t taskId;
-    DataRecord_t dataRecord;
-    uint8_t dataContent[8];
+    DataTransPacket_t data;
 
 } CommitP1RequestPacket_t;
 

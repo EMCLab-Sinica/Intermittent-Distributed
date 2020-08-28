@@ -217,7 +217,7 @@ Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask, uint
     {
         RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
         ulNotificationValue = ulTaskNotifyTake(pdFALSE,               /* Clear the notification value before exiting. */
-                                       pdMS_TO_TICKS(2000)); /* Block indefinitely. */
+                                       pdMS_TO_TICKS(2000));
     } while(ulNotificationValue != 1);
 
 
