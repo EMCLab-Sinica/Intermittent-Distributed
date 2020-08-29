@@ -41,7 +41,7 @@ static const uint8_t CC1101_GFSK_1_2_kb[] = {
     0xF5, // MDMCFG4       Modem Configuration
     0x83, // MDMCFG3       Modem Configuration
     0x13, // MDMCFG2       Modem Configuration
-    0xA0, // MDMCFG1       Modem Configuration
+    0x00, // MDMCFG1       Modem Configuration
     0xF8, // MDMCFG0       Modem Configuration
     // 0x15, // DEVIATN       Modem Deviation Setting
     (1 << 5 & NODEADDR), // DEVIATN       Modem Deviation Setting

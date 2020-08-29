@@ -235,38 +235,35 @@ __interrupt void Port_8(void)
         get_packet(buf, &pktlen, &my_addr, &src_addr);
         static PacketHeader_t *packetHeader = (PacketHeader_t *)buf;
 
-        if (packetHeader->rxAddr == my_addr || packetHeader->rxAddr == BROADCAST_ADDRESS)
+        if (packetHeader->packetType <= ResponseData)
         {
-            if (packetHeader->packetType <= ResponseData)
+            xSendQueueResult = xQueueSendToBackFromISR(DBServiceRoutinePacketQueue,
+                                                       buf, &xHigherPriorityTaskWoken);
+            if (xSendQueueResult != pdTRUE)
             {
-                xSendQueueResult = xQueueSendToBackFromISR(DBServiceRoutinePacketQueue,
-                                                           buf, &xHigherPriorityTaskWoken);
-                if (xSendQueueResult != pdTRUE)
-                {
-                    print2uart("Send to queue failed\n");
-                }
+                print2uart("Send to queue failed\n");
             }
-            else if(packetHeader->packetType == DeviceWakeUp)
+        }
+        else if(packetHeader->packetType == DeviceWakeUp)
+        {
+            BaseType_t xWakeupHigherPriorityTaskWoken = pdFALSE;
+            if (DBSrvTaskHandle == NULL)
             {
-                BaseType_t xWakeupHigherPriorityTaskWoken = pdFALSE;
-                if (DBSrvTaskHandle == NULL)
-                {
-                    print2uart("WARNING!\n");
-                }
-                else
-                {
-                    vTaskNotifyGiveFromISR(DBSrvTaskHandle, &xWakeupHigherPriorityTaskWoken);
-                }
+                print2uart("WARNING!\n");
             }
+            else
+            {
+                vTaskNotifyGiveFromISR(DBSrvTaskHandle, &xWakeupHigherPriorityTaskWoken);
+            }
+        }
 
-            else if(packetHeader->packetType >= ValidationP1Request)
+        else if(packetHeader->packetType >= ValidationP1Request)
+        {
+            xSendQueueResult = xQueueSendToBackFromISR(validationRequestPacketsQueue,
+                                                       buf, NULL);
+            if (xSendQueueResult != pdTRUE)
             {
-                xSendQueueResult = xQueueSendToBackFromISR(validationRequestPacketsQueue,
-                                                           buf, NULL);
-                if (xSendQueueResult != pdTRUE)
-                {
-                    print2uart("Send to validation queue failed\n");
-                }
+                print2uart("Send to validation queue failed\n");
             }
         }
 
