@@ -50,8 +50,8 @@ static const uint8_t CC1101_GFSK_1_2_kb[] = {
     0x18,                // MCSM0         Main Radio Control State Machine Configuration
     0x16,                // FOCCFG        Frequency Offset Compensation Configuration
     0x6C,                // BSCFG         Bit Synchronization Configuration
-    0x03,                // AGCCTRL2      AGC Control
-    0x4B,                // AGCCTRL1      AGC Control
+    0xFB,                // AGCCTRL2      AGC Control
+    0x49,                // AGCCTRL1      AGC Control
     0x91,                // AGCCTRL0      AGC Control
     0x02,                // WOREVT1       High Byte Event0 Timeout
     0x26,                // WOREVT0       Low Byte Event0 Timeout
@@ -100,7 +100,7 @@ static const uint8_t CC1101_GFSK_38_4_kb[] = {
     0x18, // MCSM0         Main Radio Control State Machine Configuration
     0x16, // FOCCFG        Frequency Offset Compensation Configuration
     0x6C, // BSCFG         Bit Synchronization Configuration
-    0x43, // AGCCTRL2      AGC Control
+    0x3B, // AGCCTRL2      AGC Control
     0x40, // AGCCTRL1      AGC Control
     0x91, // AGCCTRL0      AGC Control
     0x02, // WOREVT1       High Byte Event0 Timeout
@@ -514,13 +514,9 @@ uint8_t transmit(void)
     sidle();               //sets to idle first.
     spi_write_strobe(STX); //sends the data over air
     // wait for channel clear assertion
-    while (GDO0_PIN_IS_HIGH())
+    if (GDO0_PIN_IS_HIGH())
     {
-        receive();
         print2uart("CCA: Channel is busy!\n");
-        vTaskDelay(500);
-        sidle();               //sets to idle first.
-        spi_write_strobe(STX); //sends the data over air
     };
 
     marcstate = 0xFF; //set unknown/dummy state value
