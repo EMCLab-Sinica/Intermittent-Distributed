@@ -88,6 +88,10 @@ int main(void)
         {
             xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
         }
+        else if (nodeAddr == 4)
+        {
+            xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
+        }
 
         sendWakeupSignal();
         vTaskStartScheduler();
