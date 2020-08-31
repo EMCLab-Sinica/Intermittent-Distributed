@@ -29,15 +29,12 @@ typedef enum PacketType
     // Validation Phase 1
     ValidationP1Request,
     ValidationP1Response,
-    // Commit Phase 1
-    CommitP1Request,
-    CommitP1Response,
     // Validation Phase 2, locking object
     ValidationP2Request,
     ValidationP2Response,
-    // Commit Phase 2
-    CommitP2Request,
-    CommitP2Response
+    // Commit Phase
+    CommitRequest,
+    CommitResponse
 
 } PacketType_e;
 
@@ -78,40 +75,24 @@ typedef struct DeviceWakeUpPacket
 
 } DeviceWakeUpPacket_t;
 
-// Validation Phase 1
+// Validation Phase 1: send data and request VI
 typedef struct ValidationP1RequestPacket
 {
     PacketHeader_t header;
     TaskUUID_t taskId;
-    DataHeader_t dataHeader; // Data_t without real content
+    DataTransPacket_t data;
+
 } ValidationP1RequestPacket_t;
 
 typedef struct ValidationP1ResponsePacket
 {
     PacketHeader_t header;
     TaskUUID_t taskId;
-    DataHeader_t dataHeader;
-    TimeInterval_t taskInterval;
-
-} ValidationP1ResponsePacket_t;
-
-// FIXME: data number (1) and size (8bytes) limitation in a packet
-typedef struct CommitP1RequestPacket
-{
-    PacketHeader_t header;
-    TaskUUID_t taskId;
-    DataTransPacket_t data;
-
-} CommitP1RequestPacket_t;
-
-typedef struct CommitP1ResponsePacket
-{
-    PacketHeader_t header;
-    TaskUUID_t taskId;
     DataUUID_t dataId;
+    TimeInterval_t taskInterval;
     bool maybeCommit;
 
-} CommitP1ResponsePacket_t;
+} ValidationP1ResponsePacket_t;
 
 typedef struct ValidationP2RequestPacket
 {
@@ -130,21 +111,22 @@ typedef struct ValidationP2ResponsePacket
 
 } ValidationP2ResponsePacket_t;
 
-typedef struct CommitP2RequestPacket
+typedef struct CommitRequestPacket
 {
     PacketHeader_t header;
     TaskUUID_t taskId;
+    DataUUID_t dataId;
     bool decision;
 
-} CommitP2RequestPacket_t;
+} CommitRequestPacket_t;
 
-typedef struct CommitP2ResponsePacket
+typedef struct CommitResponsePacket
 {
     PacketHeader_t header;
     TaskUUID_t taskId;
     DataUUID_t dataId;
 
-} CommitP2ResponsePacket_t;
+} CommitResponsePacket_t;
 
 void RFSendPacket(uint8_t rxAddr, uint8_t *txBuffer, uint8_t pktlen);
 void sendWakeupSignal();

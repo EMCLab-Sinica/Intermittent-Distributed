@@ -22,23 +22,19 @@ extern uint8_t nodeAddr;
 extern int firstTime;
 extern TaskAccessObjectLog_t taskAccessObjectLog[MAX_GLOBAL_TASKS];
 
-void sendValidationPhase1Request(TaskUUID_t taskId, Data_t *dataToCommit);
-void sendValidationPhase1Response(uint8_t nodeAddr, TaskUUID_t *taskId, Data_t *data, TimeInterval_t *timeInterval);
-void sendCommitPhase1Request(TaskUUID_t taskId, Data_t *dataToCommit);
-void sendCommitPhase1Response(uint8_t nodeAddr, TaskUUID_t *taskId, DataUUID_t *dataId, uint8_t maybeCommit);
-void sendValidationPhase2Request(uint8_t nodeAddr, TaskUUID_t taskId, bool decision);
-void sendValidationPhase2Response(uint8_t dstNodeAddr, TaskUUID_t taskId, bool passed);
-void sendCommitPhase2Request(uint8_t nodeAddr, TaskUUID_t taskId, bool decision);
-void sendCommitPhase2Response(uint8_t nodeAddr, TaskUUID_t, DataUUID_t dataId);
+void sendValidationPhase1Request(TaskUUID_t *taskId, Data_t *dataToCommit);
+void sendValidationPhase1Response(TaskUUID_t *taskId, DataUUID_t *dataId, TimeInterval_t *timeInterval, bool maybeCommit);
+void sendValidationPhase2Request(uint8_t dataOwner, TaskUUID_t *taskId, bool decision);
+void sendValidationPhase2Response(TaskUUID_t *taskId, bool passed);
+void sendCommitPhaseRequest(uint8_t dataOwner, TaskUUID_t *taskId, bool decision);
+void sendCommitPhaseResponse(TaskUUID_t *taskId, DataUUID_t *dataId);
 
 void handleValidationPhase1Request(ValidationP1RequestPacket_t *packet);
 void handleValidationPhase1Response(ValidationP1ResponsePacket_t *packet);
-void handleCommitPhase1Request(CommitP1RequestPacket_t *packet);
-void handleCommitPhase1Response(CommitP1ResponsePacket_t *packet);
 void handleValidationPhase2Request(ValidationP2RequestPacket_t *packet);
 void handleValidationPhase2Response(ValidationP2ResponsePacket_t *packet);
-void handleCommitPhase2Request(CommitP2RequestPacket_t *packet);
-void handleCommitPhase2Response(CommitP2ResponsePacket_t *packet);
+void handleCommitPhaseRequest(CommitRequestPacket_t *packet);
+void handleCommitPhaseResponse(CommitResponsePacket_t *packet);
 
 InboundValidationRecord_t *getOrCreateInboundRecord(TaskUUID_t *taskId);
 InboundValidationRecord_t *getInboundRecord(TaskUUID_t *taskId);
@@ -54,14 +50,13 @@ void initValidationEssentials()
         for(int i = 0; i < MAX_TASK_READ_OBJ; i++)
         {
             // maximum of data size
-            outRecord->writeSet[i].ptr = pvPortMalloc(sizeof(unsigned long long));
+            outRecord->writeSet[i].ptr = pvPortMalloc(sizeof(int32_t));
         }
         outRecord->validRecord = pdFALSE;
         outRecord->writeSetNum = 0;
         memset(outRecord->validationPhase1VIShrinked, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
-        memset(outRecord->commitPhase1Replied, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
         memset(outRecord->validationPhase2Passed, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
-        memset(outRecord->commitPhase2Done, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
+        memset(outRecord->commitPhaseDone, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
     }
 
     InboundValidationRecord_t *inRecord = NULL;
@@ -182,20 +177,6 @@ void inboundValidationHandler()
                     break;
                 }
 
-                case CommitP1Request:
-                {
-                    CommitP1RequestPacket_t *packet = (CommitP1RequestPacket_t *)packetBuf;
-                    handleCommitPhase1Request(packet);
-                    break;
-                }
-
-                case CommitP1Response:
-                {
-                    CommitP1ResponsePacket_t *packet = (CommitP1ResponsePacket_t *)packetBuf;
-                    handleCommitPhase1Response(packet);
-                    break;
-                }
-
                 case ValidationP2Request:
                 {
                     ValidationP2RequestPacket_t *packet = (ValidationP2RequestPacket_t *)packetBuf;
@@ -210,17 +191,17 @@ void inboundValidationHandler()
                     break;
                 }
 
-                case CommitP2Request:
+                case CommitRequest:
                 {
-                    CommitP2RequestPacket_t *packet = (CommitP2RequestPacket_t *)packetBuf;
-                    handleCommitPhase2Request(packet);
+                    CommitRequestPacket_t *packet = (CommitRequestPacket_t *)packetBuf;
+                    handleCommitPhaseRequest(packet);
                     break;
                 }
 
-                case CommitP2Response:
+                case CommitResponse:
                 {
-                    CommitP2ResponsePacket_t *packet = (CommitP2ResponsePacket_t *)packetBuf;
-                    handleCommitPhase2Response(packet);
+                    CommitResponsePacket_t *packet = (CommitResponsePacket_t *)packetBuf;
+                    handleCommitPhaseResponse(packet);
                     break;
                 }
             }
@@ -259,34 +240,17 @@ void outboundValidationHandler()
                         {
                             toNextStage = false;
                             sendValidationPhase1Request(
-                                outboundRecord->taskId, outboundRecord->writeSet + i);
-                        }
-                    }
-                    if(toNextStage)
-                    {
-                        outboundRecord->stage = commitPhase1;
-                    }
-
-                    break;
-                }
-
-                case commitPhase1:
-                {
-                    bool toNextStage = true;
-                    for (unsigned int i = 0; i < outboundRecord->writeSetNum; i++)
-                    {
-                        if(outboundRecord->commitPhase1Replied[i] == 0)
-                        {
-                            toNextStage = false;
-                            sendCommitPhase1Request(outboundRecord->taskId, &(outboundRecord->writeSet[i]));
+                                &(outboundRecord->taskId), outboundRecord->writeSet + i);
                         }
                     }
                     if(toNextStage)
                     {
                         outboundRecord->stage = validationPhase2;
                     }
+
                     break;
                 }
+
                 case validationPhase2:
                 {
                     bool toNextStage = true;
@@ -296,25 +260,25 @@ void outboundValidationHandler()
                         {
                             toNextStage = false;
                             sendValidationPhase2Request(outboundRecord->writeSet[i].dataId.owner,
-                                                        outboundRecord->taskId, true);
+                                                        &(outboundRecord->taskId), true);
                         }
                     }
                     if (toNextStage == true)
                     {
-                        outboundRecord->stage = commitPhase2;
+                        outboundRecord->stage = commitPhase;
                     }
                     break;
                 }
-                case commitPhase2:
+                case commitPhase:
                 {
                     bool toNextStage = true;
                     for (unsigned int i = 0; i < outboundRecord->writeSetNum; i++)
                     {
-                        if(outboundRecord->commitPhase2Done[i] == 0)
+                        if(outboundRecord->commitPhaseDone[i] == 0)
                         {
                             toNextStage = false;
-                            sendCommitPhase2Request(outboundRecord->writeSet[i].dataId.owner,
-                                                    outboundRecord->taskId, true);
+                            sendCommitPhaseRequest(outboundRecord->writeSet[i].dataId.owner,
+                                                    &(outboundRecord->taskId), true);
                         }
                     }
 
@@ -330,9 +294,8 @@ void outboundValidationHandler()
                     xTaskNotifyGive(*outboundRecord->taskHandle);
                     outboundRecord->writeSetNum = 0;
                     memset(outboundRecord->validationPhase1VIShrinked, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
-                    memset(outboundRecord->commitPhase1Replied, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
                     memset(outboundRecord->validationPhase2Passed, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
-                    memset(outboundRecord->commitPhase2Done, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
+                    memset(outboundRecord->commitPhaseDone, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
                     outboundRecord->validRecord = false;
                 }
 
@@ -346,89 +309,69 @@ void outboundValidationHandler()
 }
 
 // functions for outbound validation
-void sendValidationPhase1Request(TaskUUID_t taskId, Data_t *dataToCommit)
+void sendValidationPhase1Request(TaskUUID_t* taskId, Data_t *dataToCommit)
 {
     ValidationP1RequestPacket_t packet;
-    packet.taskId = taskId;
-    packet.dataHeader.dataId = dataToCommit->dataId;
-    packet.dataHeader.version = dataToCommit->version;
     packet.header.packetType = ValidationP1Request;
+    packet.taskId = *taskId;
+    packet.data.dataId = dataToCommit->dataId;
+    packet.data.version = dataToCommit->version;
+    packet.data.size = dataToCommit->size;
+    memcpy(packet.data.content, dataToCommit->ptr, dataToCommit->size);
 
     RFSendPacket(dataToCommit->dataId.owner, (uint8_t *)&packet, sizeof(packet));
 }
 
-void sendValidationPhase1Response(uint8_t nodeAddr, TaskUUID_t *taskId, Data_t *data, TimeInterval_t *timeInterval)
+void sendValidationPhase1Response(TaskUUID_t *taskId, DataUUID_t *dataId, TimeInterval_t *timeInterval,
+        bool maybeCommit)
 {
     ValidationP1ResponsePacket_t packet;
-    packet.taskId = *taskId;
-    packet.dataHeader.dataId = data->dataId;
-    packet.dataHeader.version = data->version;
-    packet.taskInterval = *timeInterval;
     packet.header.packetType = ValidationP1Response;
-
-    RFSendPacket(nodeAddr, (uint8_t *)&packet, sizeof(packet));
-}
-
-void sendCommitPhase1Request(TaskUUID_t taskId, Data_t *dataToCommit)
-{
-    CommitP1RequestPacket_t packet;
-    packet.taskId = taskId;
-    // FIXME: nonono
-    memcpy(&(packet.data), dataToCommit, sizeof(packet.data));
-    memcpy(packet.data.content, dataToCommit->ptr, dataToCommit->size);
-    packet.header.packetType = CommitP1Request;
-
-    RFSendPacket(dataToCommit->dataId.owner, (uint8_t *)&packet, sizeof(packet));
-}
-
-void sendCommitPhase1Response(uint8_t nodeAddr, TaskUUID_t *taskId, DataUUID_t *dataId, uint8_t maybeCommit)
-{
-    CommitP1ResponsePacket_t packet;
     packet.taskId = *taskId;
     packet.dataId = *dataId;
-    packet.header.packetType = CommitP1Response;
+    packet.taskInterval = *timeInterval;
     packet.maybeCommit = maybeCommit;
 
-    RFSendPacket(nodeAddr, (uint8_t *)&packet, sizeof(packet));
+    RFSendPacket(taskId->nodeAddr, (uint8_t *)&packet, sizeof(packet));
 }
 
-void sendValidationPhase2Request(uint8_t nodeAddr, TaskUUID_t taskId, bool decision)
+void sendValidationPhase2Request(uint8_t dataOwner, TaskUUID_t* taskId, bool decision)
 {
     ValidationP2RequestPacket_t packet;
-    packet.taskId = taskId;
-    packet.decision = decision;
     packet.header.packetType = ValidationP2Request;
+    packet.taskId = *taskId;
+    packet.decision = decision;
 
-    RFSendPacket(nodeAddr, (uint8_t *)&packet, sizeof(packet));
+    RFSendPacket(dataOwner, (uint8_t *)&packet, sizeof(packet));
 }
 
-void sendValidationPhase2Response(uint8_t dstNodeAddr, TaskUUID_t taskId, bool passed)
+void sendValidationPhase2Response(TaskUUID_t *taskId, bool passed)
 {
     ValidationP2ResponsePacket_t packet;
-    packet.taskId = taskId;
+    packet.header.packetType = ValidationP2Response;
+    packet.taskId = *taskId;
     packet.ownerAddr = nodeAddr;
     packet.finalValidationPassed = passed;
-    packet.header.packetType = ValidationP2Response;
 
-    RFSendPacket(dstNodeAddr, (uint8_t *)&packet, sizeof(packet));
+    RFSendPacket(taskId->nodeAddr, (uint8_t *)&packet, sizeof(packet));
 }
 
-void sendCommitPhase2Request(uint8_t nodeAddr, TaskUUID_t taskId, bool decision)
+void sendCommitPhaseRequest(uint8_t dataOwner, TaskUUID_t *taskId, bool decision)
 {
-    CommitP2RequestPacket_t packet;
-    packet.taskId = taskId;
+    CommitRequestPacket_t packet;
+    packet.header.packetType = CommitRequest;
+    packet.taskId = *taskId;
     packet.decision = decision;
-    packet.header.packetType = CommitP2Request;
 
-    RFSendPacket(nodeAddr, (uint8_t *)&packet, sizeof(packet));
+    RFSendPacket(dataOwner, (uint8_t *)&packet, sizeof(packet));
 }
 
-void sendCommitPhase2Response(uint8_t nodeAddr, TaskUUID_t taskId, DataUUID_t dataId)
+void sendCommitPhaseResponse(TaskUUID_t *taskId, DataUUID_t *dataId)
 {
-    CommitP2ResponsePacket_t packet;
-    packet.taskId = taskId;
-    packet.dataId = dataId;
-    packet.header.packetType = CommitP2Response;
+    CommitResponsePacket_t packet;
+    packet.taskId = *taskId;
+    packet.dataId = *dataId;
+    packet.header.packetType = CommitResponse;
 
     RFSendPacket(nodeAddr, (uint8_t *)&packet, sizeof(packet));
 }
@@ -440,17 +383,17 @@ void handleValidationPhase1Request(ValidationP1RequestPacket_t *packet)
     if (!inboundRecord->validRecord) // not found, create new record
     {
         inboundRecord->taskId = packet->taskId;
-        inboundRecord->stage = validationPhase1;
-        Data_t writeSet;
-        writeSet.dataId = packet->dataHeader.dataId;
-        writeSet.version = packet->dataHeader.version;
-        inboundRecord->writeSet[inboundRecord->writeSetNum] = writeSet;
+        Data_t *writeData = inboundRecord->writeSet + inboundRecord->writeSetNum;
+        writeData->dataId = packet->data.dataId;
+        writeData->version = packet->data.version;
+        writeData->size = packet->data.size;
+        memcpy(writeData->ptr, packet->data.content, packet->data.size);
         inboundRecord->writeSetNum++;
         inboundRecord->validRecord = pdTRUE;
     }
-    TimeInterval_t ti = calcValidInterval(packet->taskId, packet->dataHeader.dataId,
+    TimeInterval_t ti = calcValidInterval(packet->taskId, packet->data.dataId,
                                           inboundRecord->vPhase1DataBegin + inboundRecord->writeSetNum - 1);
-    sendValidationPhase1Response(packet->taskId.nodeAddr, &(packet->taskId), &(packet->dataHeader), &ti);
+    sendValidationPhase1Response(&(packet->taskId), &(packet->data.dataId), &ti, true);
 }
 
 void handleValidationPhase1Response(ValidationP1ResponsePacket_t *packet)
@@ -460,42 +403,9 @@ void handleValidationPhase1Response(ValidationP1ResponsePacket_t *packet)
     record->taskValidInterval.vEnd = min(record->taskValidInterval.vEnd, packet->taskInterval.vEnd);
     for (unsigned int i = 0; i < MAX_TASK_READ_OBJ; i++)
     {
-        if (dataIdEqual(&(record->writeSet[i].dataId), &(packet->dataHeader.dataId)))
-        {
-            record->validationPhase1VIShrinked[i] = pdTRUE;
-            break;
-        }
-    }
-}
-
-void handleCommitPhase1Request(CommitP1RequestPacket_t *packet)
-{
-    InboundValidationRecord_t *record = getInboundRecord(&(packet->taskId));
-    for (unsigned int i = 0; i < MAX_TASK_READ_OBJ; i++)
-    {
-        if (dataIdEqual(&(record->writeSet[i].dataId), &(packet->data.dataId)))
-        {
-            record->writeSet[i].size = packet->data.size;
-            memcpy(record->writeSet[i].ptr, packet->data.content, packet->data.size);
-            break;
-        }
-    }
-    sendCommitPhase1Response(packet->taskId.nodeAddr, &(packet->taskId), &(packet->data.dataId), 1);
-}
-
-void handleCommitPhase1Response(CommitP1ResponsePacket_t *packet)
-{
-    OutboundValidationRecord_t *record = getOutboundRecord(packet->taskId);
-    if (packet->maybeCommit == false)
-    {
-        // TODO: redo validation
-        return;
-    }
-    for (unsigned int i = 0; i < MAX_TASK_READ_OBJ; i++)
-    {
         if (dataIdEqual(&(record->writeSet[i].dataId), &(packet->dataId)))
         {
-            record->commitPhase1Replied[i] = true;
+            record->validationPhase1VIShrinked[i] = pdTRUE;
             break;
         }
     }
@@ -521,11 +431,11 @@ void handleValidationPhase2Request(ValidationP2RequestPacket_t *packet)
     }
     if (VPhase2Passed)
     {
-        sendValidationPhase2Response(packet->taskId.nodeAddr, record->taskId, true);
+        sendValidationPhase2Response(&(record->taskId), true);
     }
     else
     {
-        sendValidationPhase2Response(packet->taskId.nodeAddr, record->taskId, false);
+        sendValidationPhase2Response(&(record->taskId), false);
         // unlock
     }
 }
@@ -543,7 +453,7 @@ void handleValidationPhase2Response(ValidationP2ResponsePacket_t *packet)
     }
 }
 
-void handleCommitPhase2Request(CommitP2RequestPacket_t *packet)
+void handleCommitPhaseRequest(CommitRequestPacket_t *packet)
 {
     InboundValidationRecord_t *record = getInboundRecord(&(packet->taskId));
     for (unsigned int i = 0; i < MAX_TASK_READ_OBJ; i++)
@@ -551,22 +461,22 @@ void handleCommitPhase2Request(CommitP2RequestPacket_t *packet)
         if (record->writeSet[i].dataId.owner == nodeAddr)
         {
             // TODO: Commit
-            sendCommitPhase2Response(packet->taskId.nodeAddr, packet->taskId,
-                                     record->writeSet[i].dataId);
+            sendCommitPhaseResponse(&(packet->taskId), &(record->writeSet[i].dataId));
             break;
         }
     }
 
 }
 
-void handleCommitPhase2Response(CommitP2ResponsePacket_t *packet)
+void handleCommitPhaseResponse(CommitResponsePacket_t *packet)
 {
     OutboundValidationRecord_t *record = getOutboundRecord(packet->taskId);
     for (uint8_t i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
+        print2uart("phase dataId: %d %d\n",record->writeSet[i].dataId, packet->dataId.id);
         if (dataIdEqual(&(record->writeSet[i].dataId), &(packet->dataId)))
         {
-            record->commitPhase2Done[i] = true;
+            record->commitPhaseDone[i] = true;
             break;
         }
     }
