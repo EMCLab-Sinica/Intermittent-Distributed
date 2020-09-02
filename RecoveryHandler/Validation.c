@@ -18,6 +18,7 @@ OutboundValidationRecord_t outboundValidationRecords[MAX_GLOBAL_TASKS];
 #pragma NOINIT(inboundValidationRecords)
 InboundValidationRecord_t inboundValidationRecords[MAX_GLOBAL_TASKS];
 
+extern void *pxCurrentTCB
 extern uint8_t nodeAddr;
 extern int firstTime;
 extern TaskAccessObjectLog_t taskAccessObjectLog[MAX_GLOBAL_TASKS];
@@ -369,11 +370,11 @@ void sendCommitPhaseRequest(uint8_t dataOwner, TaskUUID_t *taskId, bool decision
 void sendCommitPhaseResponse(TaskUUID_t *taskId, DataUUID_t *dataId)
 {
     CommitResponsePacket_t packet;
+    packet.header.packetType = CommitResponse;
     packet.taskId = *taskId;
     packet.dataId = *dataId;
-    packet.header.packetType = CommitResponse;
 
-    RFSendPacket(nodeAddr, (uint8_t *)&packet, sizeof(packet));
+    RFSendPacket(taskId->nodeAddr, (uint8_t *)&packet, sizeof(packet));
 }
 
 // functions for inbound validation
@@ -399,9 +400,7 @@ void handleValidationPhase1Request(ValidationP1RequestPacket_t *packet)
 void handleValidationPhase1Response(ValidationP1ResponsePacket_t *packet)
 {
     OutboundValidationRecord_t *record = getOutboundRecord(packet->taskId);
-    record->taskValidInterval.vBegin = max(record->taskValidInterval.vBegin, packet->taskInterval.vBegin);
-    record->taskValidInterval.vEnd = min(record->taskValidInterval.vEnd, packet->taskInterval.vEnd);
-    for (unsigned int i = 0; i < MAX_TASK_READ_OBJ; i++)
+    record->taskValidInterval.vBegin = max(record->taskValidInterval.vBegin, packet->taskInterval.vBegin); record->taskValidInterval.vEnd = min(record->taskValidInterval.vEnd, packet->taskInterval.vEnd); for (unsigned int i = 0; i < MAX_TASK_READ_OBJ; i++)
     {
         if (dataIdEqual(&(record->writeSet[i].dataId), &(packet->dataId)))
         {
