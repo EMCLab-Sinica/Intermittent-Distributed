@@ -1,0 +1,9 @@
+-Idriverlib/MSP430FR5xx_6xx
+-Idriverlib/MSP430FR5xx_6xx/inc
+-IFreeRTOS_Source/include
+-IFreeRTOS_Source/portable/CCS/MSP430X
+-I./
+-IDataManager
+-IRecoverHandler
+-IConnectivity
+-ITools
