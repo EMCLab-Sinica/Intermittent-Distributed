@@ -12,6 +12,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "stdbool.h"
+#include "Validation.h"
 
 
 /* DataManager Logging */
@@ -43,6 +44,7 @@ typedef struct TaskRecord
     void *address;      // Function address of tasks
     void *TCB;          // TCB address of tasks
     uint16_t stackSize;
+    OutboundValidationRecord_t *validationRecord;
 
 } TaskRecord_t;
 

@@ -18,7 +18,7 @@ OutboundValidationRecord_t outboundValidationRecords[MAX_GLOBAL_TASKS];
 #pragma NOINIT(inboundValidationRecords)
 InboundValidationRecord_t inboundValidationRecords[MAX_GLOBAL_TASKS];
 
-extern void *pxCurrentTCB
+extern void *pxCurrentTCB;
 extern uint8_t nodeAddr;
 extern int firstTime;
 extern TaskAccessObjectLog_t taskAccessObjectLog[MAX_GLOBAL_TASKS];
