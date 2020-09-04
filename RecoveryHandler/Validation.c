@@ -1,10 +1,15 @@
+#include "FreeRTOS.h"
+#include "task.h"
 #include "Validation.h"
+#include "Recovery.h"
 #include "config.h"
 #include <stdarg.h> /* va_list, va_start, va_arg, va_end */
 #include "RFHandler.h"
 #include <stdbool.h>
 #include "myuart.h"
 #include <string.h>
+#include "tcb.h"
+
 
 #define DEBUG 1
 #define INFO 1
@@ -18,7 +23,7 @@ OutboundValidationRecord_t outboundValidationRecords[MAX_GLOBAL_TASKS];
 #pragma NOINIT(inboundValidationRecords)
 InboundValidationRecord_t inboundValidationRecords[MAX_GLOBAL_TASKS];
 
-extern void *pxCurrentTCB;
+extern volatile TCB_t * volatile pxCurrentTCB;
 extern uint8_t nodeAddr;
 extern int firstTime;
 extern TaskAccessObjectLog_t taskAccessObjectLog[MAX_GLOBAL_TASKS];
@@ -103,6 +108,11 @@ void taskCommit(uint8_t tid, TaskHandle_t *fromTask, uint8_t commitNum, ...)
             break;
         }
     }
+
+    // save the log to taskRecord
+    TaskRecord_t * taskRecord = pxCurrentTCB->taskRecord;
+    taskRecord->validationRecord = currentLog;
+
     // save write set to log
     if (commitNum > MAX_TASK_READ_OBJ)
     {

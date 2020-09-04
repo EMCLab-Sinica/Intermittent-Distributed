@@ -286,6 +286,7 @@ typedef struct tskTaskControlBlock 			/* The old naming convention is used to pr
 		void * CodeOffset;
 		int SizeOfFunction;
 		int CodeInNVM;
+        void * taskRecord;
 	#endif
 	/*------------------------------  Extend to support dynamic function: End ------------------------------*/
 
@@ -855,7 +856,8 @@ static void prvAddNewTaskToReadyList( TCB_t *pxNewTCB ) PRIVILEGED_FUNCTION;
 		}
 
 		#if ( configINTERMITTENT_DISTRIBUTED == 1)
-			regTaskStart(pxNewTCB, pxTaskCode, usStackDepth, stopTrack);
+			void* taskRecordPtr = (void*)regTaskStart(pxNewTCB, pxTaskCode, usStackDepth, stopTrack);
+            pxNewTCB->taskRecord = taskRecordPtr;
 		#endif
 
 		return xReturn;

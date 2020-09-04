@@ -1126,7 +1126,8 @@ typedef struct xSTATIC_TCB
 		void				*pxMyDummy2[2]; // AddressOfVMStack, AddressOffset
 		int32_t				iMyDummy3[2];
 		void				*pxMyDummy4[3];
-		int32_t				iMyDummy5[2];
+		int32_t				iMyDummy5[2];   // CodeInNVM..
+        void                *pxMyDymmy5;    // taskRecord
 	#endif
 	/* End of Intermittent Distributed */
 

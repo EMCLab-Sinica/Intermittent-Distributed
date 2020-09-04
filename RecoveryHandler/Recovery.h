@@ -50,7 +50,7 @@ typedef struct TaskRecord
 
 void taskRerun();
 void taskRerun();
-void regTaskStart(void *pxNewTCB, void *taskAddress, uint32_t stackSize, unsigned int stopTrack);
+TaskRecord_t* regTaskStart(void *pxNewTCB, void *taskAddress, uint32_t stackSize, unsigned int stopTrack);
 void regTaskEnd();
 void failureRecovery();
 void freePreviousTasks();
