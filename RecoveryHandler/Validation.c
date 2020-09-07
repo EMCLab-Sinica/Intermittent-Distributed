@@ -128,13 +128,16 @@ void taskCommit(uint8_t tid, TaskHandle_t *fromTask, uint8_t commitNum, ...)
         for (uint8_t i = 0; i < commitNum; i++)
         {
             data = va_arg(vl, Data_t *);
+            if (DEBUG)
+            {
+                print2uart("commit dataId: %d, total: %d\n", data->dataId.id, commitNum);
+            }
             currentWriteSet = currentLog->writeSet + i;
-            void * tempPtr = currentWriteSet->ptr;
-            *currentWriteSet = *data;
-            currentWriteSet->ptr = tempPtr;
-            memcpy(currentWriteSet->ptr, data->ptr, data->size);
+            void *ptrToNVM = currentWriteSet->ptr;
+            *currentWriteSet = *data;   // copy the data object to NVM
+            currentWriteSet->ptr = ptrToNVM;
+            memcpy(currentWriteSet->ptr, data->ptr, data->size);    // copy the data content
             currentWriteSet->version = modified;
-
             currentLog->writeSetNum++;
         }
         va_end(vl);
@@ -482,7 +485,7 @@ void handleCommitPhaseResponse(CommitResponsePacket_t *packet)
     OutboundValidationRecord_t *record = getOutboundRecord(packet->taskId);
     for (uint8_t i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
-        print2uart("phase dataId: %d %d\n",record->writeSet[i].dataId, packet->dataId.id);
+        print2uart("CPR scan dataId: %d %d\n",record->writeSet[i].dataId.id, packet->dataId.id);
         if (dataIdEqual(&(record->writeSet[i].dataId), &(packet->dataId)))
         {
             record->commitPhaseDone[i] = true;

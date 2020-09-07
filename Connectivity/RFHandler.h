@@ -90,7 +90,7 @@ typedef struct ValidationP1ResponsePacket
     TaskUUID_t taskId;
     DataUUID_t dataId;
     TimeInterval_t taskInterval;
-    bool maybeCommit;
+    uint8_t maybeCommit;
 
 } ValidationP1ResponsePacket_t;
 
@@ -98,7 +98,7 @@ typedef struct ValidationP2RequestPacket
 {
     PacketHeader_t header;
     TaskUUID_t taskId;
-    bool decision;
+    uint8_t decision;
 
 } ValidationP2RequestPacket_t;
 
@@ -107,7 +107,7 @@ typedef struct ValidationP2ResponsePacket
     PacketHeader_t header;
     TaskUUID_t taskId;
     uint8_t ownerAddr;
-    bool finalValidationPassed;
+    uint8_t finalValidationPassed;
 
 } ValidationP2ResponsePacket_t;
 
@@ -116,7 +116,7 @@ typedef struct CommitRequestPacket
     PacketHeader_t header;
     TaskUUID_t taskId;
     DataUUID_t dataId;
-    bool decision;
+    uint8_t decision;
 
 } CommitRequestPacket_t;
 

@@ -47,6 +47,7 @@ void remoteAccessTask()
         remoteDataObject = readRemoteDB(taskId, &myTaskHandle, 1, 1, (void *)&test, sizeof(test));
         timeElapsed = timeCounter - reqTime;
         print2uart("%l\n", timeElapsed);
+        print2uart("got dataId %d: %d\n", remoteDataObject.dataId.id, test);
 
         test++;
         // print2uart("GotData: %d\n", test);
