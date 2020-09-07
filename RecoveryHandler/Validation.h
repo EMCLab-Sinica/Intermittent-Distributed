@@ -4,51 +4,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include <stdint.h>
-#include <stdbool.h>
 #include "SimpDB.h"
-
-typedef struct TimeInterval
-{
-    uint64_t vBegin;
-    uint64_t vEnd;
-
-} TimeInterval_t;
-
-typedef enum ValidationStage
-{
-    validationPhase1,
-    validationPhase2,
-    commitPhase,
-    finish
-
-} ValidationStage_e;
-
-typedef struct OutboundValidationRecord
-{
-    bool validRecord;
-    ValidationStage_e stage;
-    TaskUUID_t taskId;
-    uint8_t writeSetNum;
-    TaskHandle_t *taskHandle;
-    Data_t writeSet[MAX_TASK_READ_OBJ];
-    TimeInterval_t taskValidInterval;
-
-    bool validationPhase1VIShrinked[MAX_TASK_READ_OBJ]; // VI = valid interval
-    bool validationPhase2Passed[MAX_TASK_READ_OBJ];
-    bool commitPhaseDone[MAX_TASK_READ_OBJ];
-
-} OutboundValidationRecord_t;
-
- typedef struct InboundValidationRecord
- {
-    bool validRecord;
-    TaskUUID_t taskId;
-    uint8_t writeSetNum;
-    // FIXME: not sharable modified version
-    Data_t writeSet[MAX_TASK_READ_OBJ];
-    uint64_t vPhase1DataBegin[MAX_TASK_READ_OBJ];
-
- } InboundValidationRecord_t;
+#include "TaskControl.h"
 
  void taskCommit(uint8_t tid, TaskHandle_t *fromTask, uint8_t commitNum, ...);
  void initValidationEssentials();

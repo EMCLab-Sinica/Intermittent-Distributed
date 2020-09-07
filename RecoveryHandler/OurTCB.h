@@ -1,5 +1,5 @@
-#ifndef TASK_CONTROL_H
-#define TASK_CONTROL_H
+#ifndef OUR_TCB_H
+#define OUR_TCB_H
 
 #include "FreeRTOS.h"
 #include "task.h"

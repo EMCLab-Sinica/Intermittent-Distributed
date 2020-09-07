@@ -11,41 +11,7 @@
 #include "SimpDB.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include "stdbool.h"
-#include "Validation.h"
-
-/* DataManager Logging */
-typedef struct DataRequestLog
-{
-    bool valid;
-    DataUUID_t dataId;
-    TaskUUID_t taskId;
-    Data_t *xToDataObj;
-    TaskHandle_t *xFromTask;
-
-} DataRequestLog_t;
-
-typedef enum TaskStatus
-{
-    invalid,
-    running,
-    validating,
-    finished
-} TaskStatus_e;
-
-typedef struct TaskRecord
-{
-    TaskStatus_e taskStatus;
-    uint8_t priority;
-    uint16_t TCBNum;
-    uint8_t schedulerTask; // if it is schduler's task, we don't need to recreate it because the shceduler does
-    char taskName[configMAX_TASK_NAME_LEN + 1];
-    void *address;      // Function address of tasks
-    void *TCB;          // TCB address of tasks
-    uint16_t stackSize;
-    OutboundValidationRecord_t *validationRecord;
-
-} TaskRecord_t;
+#include "TaskControl.h"
 
 void taskRerun();
 void taskRerun();
