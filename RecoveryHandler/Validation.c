@@ -1,4 +1,5 @@
 #include "FreeRTOS.h"
+#include "RecoveryHandler/TaskControl.h"
 #include "task.h"
 #include "Validation.h"
 #include "Recovery.h"
@@ -112,6 +113,7 @@ void taskCommit(uint8_t tid, TaskHandle_t *fromTask, uint8_t commitNum, ...)
     // save the log to taskRecord
     TaskRecord_t * taskRecord = pxCurrentTCB->taskRecord;
     taskRecord->validationRecord = currentLog;
+    currentLog->taskRecord = (void*)taskRecord;
 
     // save write set to log
     if (commitNum > MAX_TASK_READ_OBJ)
@@ -311,7 +313,14 @@ void outboundValidationHandler()
                     memset(outboundRecord->validationPhase1VIShrinked, 0, sizeof(uint8_t) * MAX_TASK_READ_OBJ);
                     memset(outboundRecord->validationPhase2Passed, 0, sizeof(uint8_t) * MAX_TASK_READ_OBJ);
                     memset(outboundRecord->commitPhaseDone, 0, sizeof(uint8_t) * MAX_TASK_READ_OBJ);
-                    //FIXME: recreate the task if needed
+                    // recreate the task if needed
+                    TaskRecord_t* task = (TaskRecord_t*)(outboundRecord->taskRecord);
+                    if (task->taskStatus == validating)
+                    {
+                        task->taskStatus = invalid;
+                        xTaskCreate(task->address, task->taskName, task->stackSize, NULL, task->priority, NULL);
+                        dprint2uart("Validation Create: %d\r\n", task->TCBNum);
+                    }
                 }
 
                 default:
