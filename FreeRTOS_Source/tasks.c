@@ -44,6 +44,7 @@ task.h is included from an application file. */
 	#include "Tools/myuart.h"
 	/* Extend for recovery */
 	#include <RecoveryHandler/Recovery.h>
+	#include <RecoveryHandler/OurTCB.h>
 #endif
 
 /* Lint e9021, e961 and e750 are suppressed as a MISRA exception justified
@@ -250,6 +251,7 @@ to its original value when it is released. */
 	#define taskEVENT_LIST_ITEM_VALUE_IN_USE	0x80000000UL
 #endif
 
+#if ( configINTERMITTENT_DISTRIBUTED == 0 )
 /*
  * Task control block.  A task control block (TCB) is allocated for each task,
  * and stores task state information, including a pointer to the task's context
@@ -358,6 +360,8 @@ typedef struct tskTaskControlBlock 			/* The old naming convention is used to pr
 /* The old tskTCB name is maintained above then typedefed to the new TCB_t name
 below to enable the use of older kernel aware debuggers. */
 typedef tskTCB TCB_t;
+#endif
+
 
 /*lint -save -e956 A manual analysis and inspection has been used to determine
 which static variables must be declared volatile. */
