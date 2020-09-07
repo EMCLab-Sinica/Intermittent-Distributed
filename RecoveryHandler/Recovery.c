@@ -185,6 +185,8 @@ void failureRecovery()
                 {
                     if (task->validationRecord->validRecord == true)
                     {
+                        // the task content is gone, but its modified version is under validation.
+                        task->taskStatus = validating;
                         // recreate after previous task finished validation
                         continue;
                     }

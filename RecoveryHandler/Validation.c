@@ -306,11 +306,11 @@ void outboundValidationHandler()
                 case finish:
                 {
                     xTaskNotifyGive(*outboundRecord->taskHandle);
+                    outboundRecord->validRecord = false;
                     outboundRecord->writeSetNum = 0;
                     memset(outboundRecord->validationPhase1VIShrinked, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
                     memset(outboundRecord->validationPhase2Passed, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
                     memset(outboundRecord->commitPhaseDone, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
-                    outboundRecord->validRecord = false;
                 }
 
                 default:
