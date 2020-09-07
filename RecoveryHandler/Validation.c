@@ -7,8 +7,9 @@
 #include "RFHandler.h"
 #include <stdbool.h>
 #include "myuart.h"
+#include <stdint.h>
 #include <string.h>
-#include "tcb.h"
+#include "TaskControl.h"
 
 
 #define DEBUG 1
@@ -308,9 +309,10 @@ void outboundValidationHandler()
                     xTaskNotifyGive(*outboundRecord->taskHandle);
                     outboundRecord->validRecord = false;
                     outboundRecord->writeSetNum = 0;
-                    memset(outboundRecord->validationPhase1VIShrinked, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
-                    memset(outboundRecord->validationPhase2Passed, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
-                    memset(outboundRecord->commitPhaseDone, 0, sizeof(bool) * MAX_TASK_READ_OBJ);
+                    memset(outboundRecord->validationPhase1VIShrinked, 0, sizeof(uint8_t) * MAX_TASK_READ_OBJ);
+                    memset(outboundRecord->validationPhase2Passed, 0, sizeof(uint8_t) * MAX_TASK_READ_OBJ);
+                    memset(outboundRecord->commitPhaseDone, 0, sizeof(uint8_t) * MAX_TASK_READ_OBJ);
+                    //FIXME: recreate the task if needed
                 }
 
                 default:

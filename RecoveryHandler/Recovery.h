@@ -14,7 +14,6 @@
 #include "stdbool.h"
 #include "Validation.h"
 
-
 /* DataManager Logging */
 typedef struct DataRequestLog
 {
