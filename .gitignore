@@ -56,3 +56,6 @@ dkms.conf
 
 # build dir
 Large_Data/
+
+# ctags
+tags
