@@ -6,6 +6,9 @@
 CMD_SRCS += \
 ../lnk_msp430fr5994.cmd 
 
+OUT_SRCS += \
+../cscope.out 
+
 C_SRCS += \
 ../main.c 
 
@@ -20,6 +23,9 @@ OBJS__QUOTED += \
 
 C_DEPS__QUOTED += \
 "main.d" 
+
+OUT_SRCS__QUOTED += \
+"../cscope.out" 
 
 C_SRCS__QUOTED += \
 "../main.c" 
