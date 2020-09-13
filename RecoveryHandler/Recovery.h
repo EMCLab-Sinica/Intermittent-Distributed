@@ -22,6 +22,8 @@ void freePreviousTasks();
 
 void initRecoveryEssential();
 
+void RecoveryServiceRoutine();
+
 /* DataManager Logging */
 DataRequestLog_t *createDataRequestLog(TaskUUID_t taskId, DataUUID_t dataId, const Data_t *dataObj, const TaskHandle_t *xFromTask);
 DataRequestLog_t *getDataRequestLog(TaskUUID_t taskId, DataUUID_t dataId);

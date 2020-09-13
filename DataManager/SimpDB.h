@@ -118,9 +118,6 @@ void * getTCBVM(int taskID);
 void registerTCB(int id);
 void unresgisterTCB(int id);
 
-void vRequestDataTimerCallback(TimerHandle_t xTimer);
-void vRequestDataTimer();
-
 /* internal functions */
 static uint64_t min(uint64_t a, uint64_t b)
 {

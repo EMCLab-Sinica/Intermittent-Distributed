@@ -67,11 +67,12 @@ typedef struct SyncCounterPacket
     PacketHeader_t header;
     uint64_t timeCounter;
 
-} SyncCounterPkt_t;
+} SyncCounterPacket_t;
 
 typedef struct DeviceWakeUpPacket
 {
     PacketHeader_t header;
+    uint8_t addr;
 
 } DeviceWakeUpPacket_t;
 
@@ -129,6 +130,7 @@ typedef struct CommitResponsePacket
 } CommitResponsePacket_t;
 
 void RFSendPacket(uint8_t rxAddr, uint8_t *txBuffer, uint8_t pktlen);
-void sendWakeupSignal();
+void syncTime(uint8_t* timeSynced);
+void sendSyncTimeResponse(uint8_t rxAddr);
 
 #endif // RFHANDLER_H

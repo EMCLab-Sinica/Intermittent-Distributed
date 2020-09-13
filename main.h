@@ -10,8 +10,7 @@ volatile uint32_t ulRunTimeCounterOverflows = 0;
 #pragma NOINIT(ucHeap)
 uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
 
-#pragma NOINIT(timeCounter)
-unsigned long long timeCounter;
+uint64_t timeCounter = 0;
 unsigned int FreqLevel = 8;
 int uartsetup = 0;
 

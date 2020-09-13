@@ -37,6 +37,7 @@ DataRequestLog_t dataRequestLogs[MAX_GLOBAL_TASKS];
 
 extern tskTCB *volatile pxCurrentTCB;
 extern unsigned int volatile stopTrack;
+extern TaskHandle_t RecoverySrvTaskHandle;
 
 /*
  * taskRerun(): rerun the current task invoking this function
@@ -252,4 +253,15 @@ void deleteDataRequestLog(TaskUUID_t taskId, DataUUID_t dataId)
     }
 
     return;
+}
+
+void RecoveryServiceRoutine()
+{
+    RecoverySrvTaskHandle = xTaskGetCurrentTaskHandle();
+    uint32_t fromAddr;
+    while (1)
+    {
+        xTaskNotifyWait(0x0, UINT32_MAX, &fromAddr, portMAX_DELAY);
+        sendSyncTimeResponse((uint8_t)fromAddr);
+    }
 }

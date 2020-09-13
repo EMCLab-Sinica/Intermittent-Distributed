@@ -13,15 +13,13 @@
 
 #include "CC1101_MSP430.h"
 
-/* My tools*/
-#include <RecoveryHandler/Recovery.h>
-#include <Tools/myuart.h>
-#include "RFHandler.h"
-#include <Tasks/TestTasks.h>
 #include "config.h"
-#include "Validation.h"
-#include "DBServiceRoutine.h"
-#include "RFHandler.h"
+#include "Tools/myuart.h"
+#include "RecoveryHandler/Recovery.h"
+#include "Connectivity/RFHandler.h"
+#include "Tasks/TestTasks.h"
+#include "RecoveryHandler/Validation.h"
+#include "DataManager/DBServiceRoutine.h"
 
 /* Standard demo includes, used so the tick hook can exercise some FreeRTOS
 functionality in an interrupt. */
@@ -38,11 +36,13 @@ static void setupTimerTasks(void);
 
 unsigned short SemphTCB;
 uint8_t nodeAddr = NODEADDR;
+volatile uint8_t timeSynced = 0;
+
 extern QueueHandle_t DBServiceRoutinePacketQueue;
 extern QueueHandle_t validationRequestPacketsQueue;
 extern unsigned int volatile stopTrack;
 
-TaskHandle_t DBSrvTaskHandle = NULL;
+TaskHandle_t RecoverySrvTaskHandle = NULL;
 
 /*-----------------------------------------------------------*/
 
@@ -57,8 +57,6 @@ int main(void)
     {
         print2uart("Node id: %d FirstTime\n", nodeAddr);
         timeCounter = 0;
-        /* Do not call pvPortMalloc before pvInitHeapVar(), it will fail due to the heap is not initialized.
-         */
         pvInitHeapVar();
         initRecoveryEssential();
         NVMDBConstructor();
@@ -71,29 +69,29 @@ int main(void)
 
         stopTrack = 1;
         // system task
-        xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
-        xTaskCreate(inboundValidationHandler, "inboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
-        xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
-        xTaskCreate(vRequestDataTimer, "DBSrvTimer", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+        //xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
+        //xTaskCreate(inboundValidationHandler, "inboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+        //xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+        xTaskCreate(RecoveryServiceRoutine, "RecSrv", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
         stopTrack = 0;
         if (nodeAddr == 1)  // testing
         {
-            xTaskCreate(localAccessTask, "LocalAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
+            //xTaskCreate(localAccessTask, "LocalAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
         }
         else if (nodeAddr == 2)
         {
-            xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
+            //xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
         }
         else if (nodeAddr == 3)
         {
-            xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
+            //xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
         }
         else if (nodeAddr == 4)
         {
-            xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
+            //xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
         }
 
-        sendWakeupSignal();
+        syncTime(&timeSynced);
         vTaskStartScheduler();
 
     }
@@ -105,16 +103,15 @@ int main(void)
         initValidationQueues();
         enableRFInterrupt();
         failureRecovery();
-        BaseType_t xReturned;
 
         stopTrack = 1;
-        xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
-        xTaskCreate(inboundValidationHandler, "inboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
-        xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
-        xTaskCreate(vRequestDataTimer, "DBSrvTimer", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+        // xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
+        // xTaskCreate(inboundValidationHandler, "inboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+        // xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+        xTaskCreate(RecoveryServiceRoutine, "RecSrv", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
         stopTrack = 0;
 
-        sendWakeupSignal();
+        syncTime(&timeSynced);
         /* Start the scheduler. */
         vTaskStartScheduler();
     }
@@ -250,15 +247,29 @@ __interrupt void Port_8(void)
         }
         else if(packetHeader->packetType == DeviceWakeUp)
         {
-            BaseType_t xWakeupHigherPriorityTaskWoken = pdFALSE;
-            if (DBSrvTaskHandle == NULL)
+
+            BaseType_t xWakeupHigherPriorityTask = pdTrue;
+            if (RecoverySrvTaskHandle == NULL)
             {
                 print2uart("WARNING!\n");
             }
             else
             {
-                vTaskNotifyGiveFromISR(DBSrvTaskHandle, &xWakeupHigherPriorityTaskWoken);
+                xTaskNotifyFromISR(RecoverySrvTaskHandle,
+                                0,
+                                eSetValueWithOverwrite,
+                                &xWakeupHigherPriorityTask);
             }
+        }
+
+        else if(packetHeader->packetType == SyncCounter)
+        {
+            SyncCounterPacket_t* packet = (SyncCounterPacket_t*)buf;
+            // 106 is the compensation to propagation time
+            // the RTT time of an RF packet is 212 ticks
+            // which is observed in our experiment.
+            timeCounter = packet->timeCounter + 106;
+            timeSynced = 1;
         }
 
         else if(packetHeader->packetType >= ValidationP1Request)

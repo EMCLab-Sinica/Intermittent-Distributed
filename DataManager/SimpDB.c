@@ -36,7 +36,6 @@ static Database_t VMDatabase;
 
 extern DataRequestLog_t dataRequestLogs[MAX_GLOBAL_TASKS];
 extern uint8_t nodeAddr;
-extern TaskHandle_t DBSrvTaskHandle;
 /*
  * NVMDBConstructor(): initialize all data structure in the database
  * parameters: none
@@ -385,25 +384,3 @@ DataUUID_t commitLocalDB(Data_t *data, size_t size)
     return data->dataId;
 }
 
-// void vRequestDataTimerCallback(TimerHandle_t xTimer)
-void vRequestDataTimer()
-{
-    DBSrvTaskHandle = xTaskGetCurrentTaskHandle();
-    while (1)
-    {
-        // wait for device wake up
-        ulTaskNotifyTake( pdTRUE,          /* Clear the notification value before
-                                           exiting. */
-                          portMAX_DELAY ); /* Block indefinitely. */
-        for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
-        {
-            if (dataRequestLogs[i].valid == true)
-            {
-                RequestDataPacket_t packet = {.header.packetType = RequestData,
-                                              .taskId = dataRequestLogs[i].taskId,
-                                              .dataId = dataRequestLogs[i].dataId};
-                RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
-            }
-        }
-    }
-}

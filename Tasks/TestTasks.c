@@ -6,7 +6,7 @@
 #include "Validation.h"
 
 extern uint8_t nodeAddr;
-extern unsigned long long timeCounter;
+extern uint64_t timeCounter;
 
 void localAccessTask()
 {
