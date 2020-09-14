@@ -95,14 +95,12 @@ TaskRecord_t* regTaskStart(void *pxNewTCB, void *taskAddress, uint32_t stackSize
  * */
 void regTaskEnd()
 {
-    int i;
-    for (i = 0; i < MAX_GLOBAL_TASKS; i++)
+
+    TaskRecord_t *record = (TaskRecord_t*) pxCurrentTCB->taskRecord;
+    record->taskStatus = invalid;
+    if(DEBUG)
     {
-        if (taskRecord[i].taskStatus == finished && taskRecord[i].TCBNum == pxCurrentTCB->uxTCBNumber)
-        {
-            taskRecord[i].taskStatus= invalid;
-            return;
-        }
+        print2uart("TaskEnd: %s\n", record->taskName);
     }
 }
 
@@ -173,7 +171,7 @@ void failureRecovery()
             //see if the address is valid
             if (prvcheckAdd(task->TCB) == 1)
             {
-                dprint2uart("Recovery: Delete: %d\r\n", task->TCBNum);
+                dprint2uart("Recovery: Delete: %s\r\n", task->taskName);
                 //Since all tasks information, e.g., list of ready queue, is saved in VM, we only needs to consider the stack and free the stack and TCB
                 tskTCB *tcb = task->TCB;
                 vPortFree(tcb->pxStack);

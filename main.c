@@ -33,6 +33,7 @@ functionality in an interrupt. */
  */
 static void prvSetupHardware(void);
 static void setupTimerTasks(void);
+void bootstrapTask();
 
 unsigned short SemphTCB;
 uint8_t nodeAddr = NODEADDR;
@@ -67,13 +68,64 @@ int main(void)
         initValidationQueues();
         enableRFInterrupt();
 
-        stopTrack = 1;
         // system task
-        //xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
-        //xTaskCreate(inboundValidationHandler, "inboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
-        //xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
-        xTaskCreate(RecoveryServiceRoutine, "RecSrv", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+        stopTrack = 1;
+        xTaskCreate(bootstrapTask, "bootstrap", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
         stopTrack = 0;
+
+        vTaskStartScheduler();
+
+    }
+    else
+    {
+        print2uart("Node id: %d Recovery\n", nodeAddr);
+        VMDBConstructor();
+        initDBSrvQueues();
+        initValidationQueues();
+        enableRFInterrupt();
+        failureRecovery();
+
+        stopTrack = 1;
+        xTaskCreate(bootstrapTask, "bootstrap", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+        stopTrack = 0;
+
+        /* Start the scheduler. */
+        vTaskStartScheduler();
+    }
+
+    /* If all is well, the scheduler will now be running, and the following
+    line will never be reached.  If the following line does execute, then
+    there was insufficient FreeRTOS heap memory available for the Idle and/or
+    timer tasks to be created.  See the memory management section on the
+    FreeRTOS web site for more details on the FreeRTOS heap
+    http://www.freertos.org/a00111.html. */
+    for (;;)
+        ;
+}
+
+void bootstrapTask()
+{
+    if (nodeAddr != 1 || (nodeAddr == 1 && firstTime == 1))
+    {
+        DeviceWakeUpPacket_t packet = {.header.packetType = DeviceWakeUp, .addr = nodeAddr,};
+        do
+        {
+            RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
+            vTaskDelay(500);
+        } while(timeSynced == 0);
+        stopTrack = 1;
+        xTaskCreate(RecoveryServiceRoutine, "RecSrv", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+        stopTrack = 0;
+    }
+    else if (nodeAddr == 1 && firstTime != 1)
+    {
+        stopTrack = 1;
+        xTaskCreate(RecoveryServiceRoutine, "RecSrv", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+        stopTrack = 0;
+    }
+
+    if (firstTime != 1)
+    {
         if (nodeAddr == 1)  // testing
         {
             //xTaskCreate(localAccessTask, "LocalAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
@@ -90,40 +142,18 @@ int main(void)
         {
             //xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
         }
-
-        syncTime(&timeSynced);
-        vTaskStartScheduler();
-
     }
-    else
-    {
-        print2uart("Node id: %d Recovery\n", nodeAddr);
-        VMDBConstructor();
-        initDBSrvQueues();
-        initValidationQueues();
-        enableRFInterrupt();
-        failureRecovery();
+    stopTrack = 1;
+    // xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
+    // xTaskCreate(inboundValidationHandler, "inboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+    // xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+    xTaskCreate(syncTimeHelperTask, "timeHelper", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+    stopTrack = 0;
 
-        stopTrack = 1;
-        // xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
-        // xTaskCreate(inboundValidationHandler, "inboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
-        // xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
-        xTaskCreate(RecoveryServiceRoutine, "RecSrv", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
-        stopTrack = 0;
+    firstTime = 1;//need to consider recovery after this point
 
-        syncTime(&timeSynced);
-        /* Start the scheduler. */
-        vTaskStartScheduler();
-    }
-
-    /* If all is well, the scheduler will now be running, and the following
-    line will never be reached.  If the following line does execute, then
-    there was insufficient FreeRTOS heap memory available for the Idle and/or
-    timer tasks to be created.  See the memory management section on the
-    FreeRTOS web site for more details on the FreeRTOS heap
-    http://www.freertos.org/a00111.html. */
-    for (;;)
-        ;
+    regTaskEnd();
+    vTaskDelete(NULL);
 }
 
 static void prvSetupHardware(void)
@@ -153,17 +183,16 @@ static void prvSetupHardware(void)
     GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_PJ, GPIO_PIN4 + GPIO_PIN5, GPIO_PRIMARY_MODULE_FUNCTION);
 
     // Configure button S1 (P5.6) interrupt and S2 P(5.5)
-    GPIO_selectInterruptEdge(GPIO_PORT_P5, GPIO_PIN6, GPIO_HIGH_TO_LOW_TRANSITION);
     GPIO_setAsInputPinWithPullUpResistor(GPIO_PORT_P5, GPIO_PIN6);
+    GPIO_selectInterruptEdge(GPIO_PORT_P5, GPIO_PIN6, GPIO_HIGH_TO_LOW_TRANSITION);
     GPIO_clearInterrupt(GPIO_PORT_P5, GPIO_PIN6);
     GPIO_enableInterrupt(GPIO_PORT_P5, GPIO_PIN6);
-    GPIO_selectInterruptEdge(GPIO_PORT_P5, GPIO_PIN5, GPIO_HIGH_TO_LOW_TRANSITION);
     GPIO_setAsInputPinWithPullUpResistor(GPIO_PORT_P5, GPIO_PIN5);
+    GPIO_selectInterruptEdge(GPIO_PORT_P5, GPIO_PIN5, GPIO_HIGH_TO_LOW_TRANSITION);
     GPIO_clearInterrupt(GPIO_PORT_P5, GPIO_PIN5);
     GPIO_enableInterrupt(GPIO_PORT_P5, GPIO_PIN5);
-
     GPIO_clearInterrupt(GPIO_PORT_P5, GPIO_PIN6);
-    GPIO_clearInterrupt(GPIO_PORT_P5, GPIO_PIN5);
+    GPIO_enableInterrupt(GPIO_PORT_P5, GPIO_PIN6);
 
     /* Set DCO frequency to 16 MHz. */
     setFrequency(FreqLevel);
@@ -211,11 +240,16 @@ __interrupt void Port_5(void)
     GPIO_disableInterrupt(GPIO_PORT_P5, GPIO_PIN5);
 
     /* Button pushed, do something if you need to */
+    if ((P5IFG & 1<<5) == 0)    // P5.5
+    {
+        timeSynced = 1;
+        timeCounter = 0;
+    }
 
-    GPIO_enableInterrupt(GPIO_PORT_P5, GPIO_PIN6);
-    GPIO_enableInterrupt(GPIO_PORT_P5, GPIO_PIN5);
     GPIO_clearInterrupt(GPIO_PORT_P5, GPIO_PIN6);
     GPIO_clearInterrupt(GPIO_PORT_P5, GPIO_PIN5);
+    GPIO_enableInterrupt(GPIO_PORT_P5, GPIO_PIN6);
+    GPIO_enableInterrupt(GPIO_PORT_P5, GPIO_PIN5);
 }
 
 /*
@@ -248,7 +282,7 @@ __interrupt void Port_8(void)
         else if(packetHeader->packetType == DeviceWakeUp)
         {
 
-            BaseType_t xWakeupHigherPriorityTask = pdTrue;
+            BaseType_t xWakeupHigherPriorityTask = pdTRUE;
             if (RecoverySrvTaskHandle == NULL)
             {
                 print2uart("WARNING!\n");

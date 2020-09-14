@@ -2037,7 +2037,6 @@ BaseType_t xReturn;
 
 	#if (configINTERMITTENT_DISTRIBUTED == 1)
 		stopTrack = 1;//Do not recreate scheduler's tasks
-		firstTime = 1;//need to consider recovery after this point
 	#endif
 
 	/* Add the idle task at the lowest priority. */
