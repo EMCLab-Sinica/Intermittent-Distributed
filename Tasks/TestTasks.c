@@ -56,3 +56,12 @@ void remoteAccessTask()
         taskCommit(taskId.id, &myTaskHandle, 1, &remoteDataObject);
     }
 }
+
+void syncTimeHelperTask()
+{
+    while(1)
+    {
+        print2uart("%l\n", timeCounter);
+        vTaskDelay(1000);
+    }
+}
