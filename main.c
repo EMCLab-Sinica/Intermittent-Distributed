@@ -128,26 +128,26 @@ void bootstrapTask()
     {
         if (nodeAddr == 1)  // testing
         {
-            //xTaskCreate(localAccessTask, "LocalAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
+            xTaskCreate(localAccessTask, "LocalAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
         }
         else if (nodeAddr == 2)
         {
-            //xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
+            xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
         }
         else if (nodeAddr == 3)
         {
-            //xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
+            xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
         }
         else if (nodeAddr == 4)
         {
-            //xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
+            xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
         }
     }
     stopTrack = 1;
-    // xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
-    // xTaskCreate(inboundValidationHandler, "inboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
-    // xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
-    xTaskCreate(syncTimeHelperTask, "timeHelper", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+    xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
+    xTaskCreate(inboundValidationHandler, "inboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+    xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+    // xTaskCreate(syncTimeHelperTask, "timeHelper", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
     stopTrack = 0;
 
     firstTime = 1;//need to consider recovery after this point
