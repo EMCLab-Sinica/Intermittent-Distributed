@@ -9,8 +9,10 @@
 '-----------------------------------------------------------------------------*/
 #include <string.h>
 #include "CC1101_MSP430.h"
+#include "pins.h"
 #include "myuart.h"
 #include <stdint.h>
+#include <stdlib.h>
 #include "driverlib.h"
 
 #include "FreeRTOS.h"
@@ -24,7 +26,7 @@ extern uint8_t nodeAddr;
 static const uint8_t CC1101_GFSK_1_2_kb[] = {
     0x07, // IOCFG2        GDO2 Output Pin Configuration
     0x2E, // IOCFG1        GDO1 Output Pin Configuration
-    0x09, // IOCFG0        GDO0 Output Pin Configuration
+    0x0E, // IOCFG0        GDO0 Output Pin Configuration
     0x07, // FIFOTHR       RX FIFO and TX FIFO Thresholds
     0x57, // SYNC1         Sync Word, High Byte
     0x43, // SYNC0         Sync Word, Low Byte
@@ -50,8 +52,8 @@ static const uint8_t CC1101_GFSK_1_2_kb[] = {
     0x18,                // MCSM0         Main Radio Control State Machine Configuration
     0x16,                // FOCCFG        Frequency Offset Compensation Configuration
     0x6C,                // BSCFG         Bit Synchronization Configuration
-    0xFB,                // AGCCTRL2      AGC Control
-    0x49,                // AGCCTRL1      AGC Control
+    0x03,                // AGCCTRL2      AGC Control
+    0x78,                // AGCCTRL1      AGC Control
     0x91,                // AGCCTRL0      AGC Control
     0x02,                // WOREVT1       High Byte Event0 Timeout
     0x26,                // WOREVT0       Low Byte Event0 Timeout
@@ -372,6 +374,8 @@ void wakeup(void)
 //----------------------[CC1101 init functions]---------------------------------
 uint8_t initRF(volatile uint8_t *my_addr)
 {
+    // init random seed for delay
+    srand(nodeAddr);
     uint8_t CC1101_freq_select, CC1101_mode_select, CC1101_channel_select;
     uint8_t partnum, version;
 
@@ -511,13 +515,28 @@ uint8_t transmit(void)
 {
     uint8_t marcstate;
 
-    sidle();               //sets to idle first.
+    sidle();
     spi_write_strobe(STX); //sends the data over air
-    // wait for channel clear assertion
-    if (GDO0_PIN_IS_HIGH())
+    __delay_cycles(900 * CYCLE_PER_US);
+    if (GDO0_PIN_IS_HIGH()) // channel busy
     {
-        print2uart("CCA: Channel is busy!\n");
-    };
+        vTaskDelay(rand() % 6 * 40);
+    }
+    /*
+    while(1)
+    {
+        spi_write_strobe(STX); //sends the data over air
+        __delay_cycles(900 * CYCLE_PER_US);
+        if (GDO0_PIN_IS_HIGH()) // channel busy
+        {
+            vTaskDelay(50);
+        }
+        else
+        {
+            break;
+        }
+    }
+    */
 
     marcstate = 0xFF; //set unknown/dummy state value
 
@@ -535,7 +554,7 @@ uint8_t receive(void)
 {
     uint8_t marcstate;
 
-    sidle();               //sets to idle first.
+    // sidle();               //sets to idle first.
     spi_write_strobe(SRX); //writes receive strobe (receive mode)
 
     marcstate = 0xFF; //set unknown/dummy state value

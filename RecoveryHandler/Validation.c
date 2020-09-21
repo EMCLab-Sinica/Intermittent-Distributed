@@ -421,7 +421,6 @@ void handleValidationPhase1Request(ValidationP1RequestPacket_t *packet)
 
 void handleValidationPhase1Response(ValidationP1ResponsePacket_t *packet)
 {
-    print2uart("VP1R taskId: %d, %d\n", packet->taskId.nodeAddr, packet->taskId.id);
     OutboundValidationRecord_t *record = getOutboundRecord(packet->taskId);
     record->taskValidInterval.vBegin = max(record->taskValidInterval.vBegin, packet->taskInterval.vBegin); record->taskValidInterval.vEnd = min(record->taskValidInterval.vEnd, packet->taskInterval.vEnd); for (unsigned int i = 0; i < MAX_TASK_READ_OBJ; i++)
     {
