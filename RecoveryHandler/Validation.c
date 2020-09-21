@@ -135,10 +135,6 @@ void taskCommit(uint8_t tid, TaskHandle_t *fromTask, uint8_t commitNum, ...)
         for (uint8_t i = 0; i < commitNum; i++)
         {
             data = va_arg(vl, Data_t *);
-            if (DEBUG)
-            {
-                print2uart("commit dataId: %d, total: %d\n", data->dataId.id, commitNum);
-            }
             currentWriteSet = currentLog->writeSet + i;
             void *ptrToNVM = currentWriteSet->ptr;
             *currentWriteSet = *data;   // copy the data object to NVM
@@ -146,6 +142,10 @@ void taskCommit(uint8_t tid, TaskHandle_t *fromTask, uint8_t commitNum, ...)
             memcpy(currentWriteSet->ptr, data->ptr, data->size);    // copy the data content
             currentWriteSet->version = modified;
             currentLog->writeSetNum++;
+            if(DEBUG)
+            {
+                print2uart("Commit data (%d, %d) added\n", data->dataId.owner, data->dataId.id);
+            }
         }
         va_end(vl);
     }
@@ -396,24 +396,26 @@ void sendCommitPhaseResponse(TaskUUID_t *taskId, DataUUID_t *dataId)
     packet.header.packetType = CommitResponse;
     packet.taskId = *taskId;
     packet.dataId = *dataId;
-
     RFSendPacket(taskId->nodeAddr, (uint8_t *)&packet, sizeof(packet));
 }
 
 void handleValidationPhase1Request(ValidationP1RequestPacket_t *packet)
 {
+    // find a new place
     InboundValidationRecord_t *inboundRecord = getOrCreateInboundRecord(&(packet->taskId));
-    if (!inboundRecord->validRecord) // not found, create new record
-    {
-        inboundRecord->taskId = packet->taskId;
-        Data_t *writeData = inboundRecord->writeSet + inboundRecord->writeSetNum;
-        writeData->dataId = packet->data.dataId;
-        writeData->version = packet->data.version;
-        writeData->size = packet->data.size;
-        memcpy(writeData->ptr, packet->data.content, packet->data.size);
-        inboundRecord->writeSetNum++;
-        inboundRecord->validRecord = pdTRUE;
-    }
+
+    inboundRecord->taskId = packet->taskId;
+    Data_t *writeData = inboundRecord->writeSet + inboundRecord->writeSetNum;
+    writeData->dataId = packet->data.dataId;
+    print2uart_new("in rec dataIdPtr: %x %x\n", inboundRecord, inboundRecord->writeSet);
+    print2uart_new("dataId: %d, %d\n", writeData->dataId.owner, writeData->dataId.id);
+    writeData->version = packet->data.version;
+    writeData->size = packet->data.size;
+    memcpy(writeData->ptr, packet->data.content, packet->data.size);
+    // currently we only allow one data object access on per remote device
+    // inboundRecord->writeSetNum++;
+    inboundRecord->validRecord = pdTRUE;
+
     TimeInterval_t ti = calcValidInterval(packet->taskId, packet->data.dataId,
                                           inboundRecord->vPhase1DataBegin + inboundRecord->writeSetNum - 1);
     sendValidationPhase1Response(&(packet->taskId), &(packet->data.dataId), &ti, pdTRUE);
@@ -422,7 +424,9 @@ void handleValidationPhase1Request(ValidationP1RequestPacket_t *packet)
 void handleValidationPhase1Response(ValidationP1ResponsePacket_t *packet)
 {
     OutboundValidationRecord_t *record = getOutboundRecord(packet->taskId);
-    record->taskValidInterval.vBegin = max(record->taskValidInterval.vBegin, packet->taskInterval.vBegin); record->taskValidInterval.vEnd = min(record->taskValidInterval.vEnd, packet->taskInterval.vEnd); for (unsigned int i = 0; i < MAX_TASK_READ_OBJ; i++)
+    record->taskValidInterval.vBegin = max(record->taskValidInterval.vBegin, packet->taskInterval.vBegin);
+    record->taskValidInterval.vEnd = min(record->taskValidInterval.vEnd, packet->taskInterval.vEnd);
+    for (unsigned int i = 0; i < MAX_TASK_READ_OBJ; i++)
     {
         if (dataIdEqual(&(record->writeSet[i].dataId), &(packet->dataId)))
         {
@@ -483,6 +487,7 @@ void handleCommitPhaseRequest(CommitRequestPacket_t *packet)
         if (record->writeSet[i].dataId.owner == nodeAddr)
         {
             // TODO: Commit
+            print2uart_new("in rec dataIdPtr: %x %x\n", record, record->writeSet);
             sendCommitPhaseResponse(&(packet->taskId), &(record->writeSet[i].dataId));
             //break;
         }
@@ -538,6 +543,7 @@ InboundValidationRecord_t *getOrCreateInboundRecord(TaskUUID_t *taskId)
         {
             if (taskIdEqual(&(inboundValidationRecords[i].taskId), taskId))
             {
+                print2uart("GetoOrCreateInbound: index %d\n", i);
                 return inboundValidationRecords + i;
             }
         }
@@ -546,6 +552,7 @@ InboundValidationRecord_t *getOrCreateInboundRecord(TaskUUID_t *taskId)
             if(firstNull == NULL)
             {
                 firstNull = inboundValidationRecords + i;
+                print2uart("GetoOrCreateInbound: firstNULL: %d\n", i);
             }
         }
 
@@ -577,14 +584,16 @@ InboundValidationRecord_t *getInboundRecord(TaskUUID_t *taskId)
     for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
         record = inboundValidationRecords + i;
-        if(record->validRecord == 1)
+        if(record->validRecord == pdTRUE)
         {
             if(taskIdEqual(&(record->taskId), taskId))
             {
+                print2uart("Getinbound: index %d\n", i);
                 return record;
             }
         }
     }
+    print2uart("Getinbound: NULL!\n");
     return NULL;
 
 }

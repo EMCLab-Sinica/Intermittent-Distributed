@@ -1,16 +1,19 @@
 /*
- * my// // Serial.c
+ * myserial.c
  *
- *  Created on: 2017�~5��25��
+ *  Created on: 2017/5/25
  *      Author: Meenchen
  */
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include <Tools/myuart.h>
 #include "driverlib.h"
 #include <Tools/dvfs.h>
 
+int uartsetup = 0;
 
+#ifdef __MSP430__
 // The following structure will configure the EUSCI_A port to run at 9600 baud from an 1~16MHz ACLK
 // The baud rate values were calculated at: http://software-dl.ti.com/msp430/msp430_public_sw/mcu/msp430/MSP430BaudRateConverter/index.html
 EUSCI_A_UART_initParam UartParams[8] = {
@@ -96,12 +99,44 @@ EUSCI_A_UART_initParam UartParams[8] = {
    EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION
 }};
 
+#elif defined(__MSP432__)
 
-void print2uart(char* format,...)
+// https://dev.ti.com/tirex/explore/node?node=ACmvnDrzuRlhbVcxPmBGTQ__z-lQYNj__LATEST
+
+/* UART Configuration Parameter. These are the configuration parameters to
+ * make the eUSCI A UART module to operate with a 9600 baud rate. These
+ * values were calculated using the online calculator that TI provides
+ * at: http://software-dl.ti.com/msp430/msp430_public_sw/mcu/msp430/MSP430BaudRateConverter/index.html
+ * Modified to fit older driverlib
+ */
+const eUSCI_UART_Config UartParams[1] = {
+        EUSCI_A_UART_CLOCKSOURCE_SMCLK,          // SMCLK Clock Source
+        78,                                     // BRDIV = 78
+        2,                                       // UCxBRF = 2
+        0,                                       // UCxBRS = 0
+        EUSCI_A_UART_NO_PARITY,                  // No Parity
+        EUSCI_A_UART_LSB_FIRST,                  // LSB First
+        EUSCI_A_UART_ONE_STOP_BIT,               // One stop bit
+        EUSCI_A_UART_MODE,                       // UART mode
+        EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION,  // Oversampling
+};
+
+#endif
+
+void uart_putc(char c) {
+#ifdef __MSP430__
+    EUSCI_A_UART_transmitData(EUSCI_A0_BASE, (uint8_t)c);
+#elif defined(__MSP432__)
+    MAP_UART_transmitData(EUSCI_A0_BASE, (uint8_t)c);
+#endif
+}
+
+void print2uart(const char* format,...)
 {
-    char *traverse;
+    const char *traverse;
     int i;
-    uint64_t  l;
+    long l;
+    unsigned long ul;
     char *s;
 
     //Module 1: Initializing Myprintf's arguments
@@ -112,7 +147,7 @@ void print2uart(char* format,...)
     {
         while( *traverse != '%' && *traverse != '\0' )
         {
-            EUSCI_A_UART_transmitData(EUSCI_A0_BASE, (uint8_t)*traverse);
+            uart_putc(*traverse);
             traverse++;
         }
 
@@ -126,30 +161,28 @@ void print2uart(char* format,...)
         {
             case 'c' :
                 i = va_arg(arg,int);        //Fetch char argument
-                EUSCI_A_UART_transmitData(EUSCI_A0_BASE, (uint8_t)i);
+                uart_putc(i);
                 break;
-                //FIXME: Fix %ul
-            case 'l' :
-                l = va_arg(arg,uint64_t );        //Fetch Decimal/Integer argument
+            case 'L' :
+                l = va_arg(arg,long);        //Fetch Decimal/Integer argument
                 if(l<0)
                 {
                     l = -l;
-                    EUSCI_A_UART_transmitData(EUSCI_A0_BASE, (uint8_t)'-');
+                    uart_putc('-');
                 }
                 print2uart(convertl(l,10));
+                break;
+            case 'l' :
+                ul = va_arg(arg,unsigned long);        //Fetch Decimal/Integer argument
+                print2uart(convertl(ul,10));
                 break;
             case 'd' :
                 i = va_arg(arg,int);        //Fetch Decimal/Integer argument
                 if(i<0)
                 {
                     i = -i;
-                    EUSCI_A_UART_transmitData(EUSCI_A0_BASE, (uint8_t)'-');
+                    uart_putc('-');
                 }
-                print2uart(convert(i,10));
-                break;
-            
-            case 'u' :
-                i = va_arg(arg,unsigned int);        //Fetch Decimal/Integer argument
                 print2uart(convert(i,10));
                 break;
             case 's':
@@ -166,7 +199,19 @@ void print2uart(char* format,...)
     va_end(arg);
 }
 
-void dummyprint(char* format,...)
+void print2uart_new(const char* format,...)
+{
+    va_list arg;
+    va_start(arg, format);
+
+    char buf[64];
+    vsnprintf(buf, 64, format, arg);
+    print2uartlength(buf, strlen(buf));
+
+    va_end(arg);
+}
+
+void dummyprint(const char* format,...)
 {
     return;
 }
@@ -178,7 +223,7 @@ void print2uartlength(char* str,int length)
 
     for(i = 0; i < length; i++)
     {
-        EUSCI_A_UART_transmitData(EUSCI_A0_BASE, (uint8_t)*(str+i));
+        uart_putc(*(str+i));
     }
 }
 
@@ -200,7 +245,7 @@ char *convert(unsigned int num, int base)
     return(ptr);
 }
 
-char *convertl(uint64_t  num, int base)
+char *convertl(unsigned long num, int base)
 {
     static char Representation[]= "0123456789ABCDEF";
     static char buffer[50];
@@ -222,6 +267,7 @@ char *convertl(uint64_t  num, int base)
 void uartinit()
 {
     if(uartsetup == 0){
+#ifdef __MSP430__
         // Configure UART
         EUSCI_A_UART_initParam param = UartParams[FreqLevel-1];
 
@@ -242,8 +288,39 @@ void uartinit()
 
         // Select UART TXD on P2.0
         GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P2, GPIO_PIN0, GPIO_SECONDARY_MODULE_FUNCTION);
+#elif defined(__MSP432__)
+        /* Selecting P1.2 and P1.3 in UART mode */
+        MAP_GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P1,
+                GPIO_PIN2 | GPIO_PIN3, GPIO_PRIMARY_MODULE_FUNCTION);
+
+        eUSCI_UART_Config param = UartParams[FreqLevel-1];
+        /* Configuring UART Module */
+        MAP_UART_initModule(EUSCI_A0_BASE, &param);
+
+        /* Enable UART module */
+        MAP_UART_enableModule(EUSCI_A0_BASE);
+
+        /* Enabling interrupts */
+        MAP_UART_enableInterrupt(EUSCI_A0_BASE, EUSCI_A_UART_RECEIVE_INTERRUPT);
+        MAP_Interrupt_enableInterrupt(INT_EUSCIA0);
+        MAP_Interrupt_enableSleepOnIsrExit();
+        MAP_Interrupt_enableMaster();
+#endif
         uartsetup = 1;
     }
 }
 
+#ifdef __MSP432__
+// triggered when keyboard input is received in minicom
+void EUSCIA0_IRQHandler(void) {
+    // Ref: MSP432 example uart_pc_echo_12mhz_brclk
+    uint32_t status = MAP_UART_getEnabledInterruptStatus(EUSCI_A0_BASE);
 
+    MAP_UART_clearInterruptFlag(EUSCI_A0_BASE, status);
+
+    if(status & EUSCI_A_UART_RECEIVE_INTERRUPT_FLAG)
+    {
+        MAP_UART_transmitData(EUSCI_A0_BASE, MAP_UART_receiveData(EUSCI_A0_BASE));
+    }
+}
+#endif

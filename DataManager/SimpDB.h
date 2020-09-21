@@ -42,7 +42,7 @@ typedef struct TaskUUID // Task Universal Unique Identifier
 typedef struct DataUUID
 {
     uint8_t owner: 4;
-    int8_t id: 4;
+    uint8_t id: 4;
 
 } DataUUID_t;
 

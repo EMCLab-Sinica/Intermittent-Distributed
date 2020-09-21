@@ -46,7 +46,7 @@ void NVMDBConstructor(){
     init();
     NVMDatabase.dataIdAutoIncrement = 1; // dataId start from 1
     NVMDatabase.dataRecordCount = 0;
-    DataUUID_t initId = {.owner = 0, .id = -1};
+    DataUUID_t initId = {.owner = 0, .id = 0};
     for(uint8_t i = 0; i < MAX_DB_OBJ; i++)
     {
         NVMDatabase.dataRecord[i].dataId = initId;
@@ -78,7 +78,7 @@ void VMDBConstructor(){
 
     VMDatabase.dataIdAutoIncrement = 1; // dataId start from 1
     VMDatabase.dataRecordCount = 0;
-    DataUUID_t initId = {.owner = 0, .id = -1};
+    DataUUID_t initId = {.owner = 0, .id = 0};
     for(uint8_t i = 0; i < MAX_DB_OBJ; i++){
         VMDatabase.dataRecord[i].dataId = initId;
         VMDatabase.dataRecord[i].ptr = NULL;
@@ -162,7 +162,7 @@ Data_t readLocalDB(uint8_t id, void* destDataPtr, uint8_t size)
             print2uart("readLocalDB: Can not find data with id=%d\n", dataId.id);
         destDataPtr = NULL;
         // reset the DataUUID
-        DataUUID_t resetId = {.owner = 0, .id = -1};
+        DataUUID_t resetId = {.owner = 0, .id = 0};
         dataWorking.dataId = resetId;
         return  dataWorking;
     }
@@ -240,7 +240,7 @@ Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask, uint
 Data_t createWorkingSpace(void *dataPtr, uint32_t size)
 {
     Data_t data;
-    DataUUID_t dataId = {.owner = nodeAddr, .id = -1};
+    DataUUID_t dataId = {.owner = nodeAddr, .id = 0};
 
     data.dataId = dataId;
     data.version = working;
@@ -275,7 +275,7 @@ Data_t *createVMDBobject(uint8_t size)
     // find a free slot
     for(uint8_t i = 0; i < MAX_DB_OBJ; i++)
     {
-        if(VMDatabase.dataRecord[i].dataId.id < 0)
+        if(VMDatabase.dataRecord[i].dataId.id == 0)
         {
             freeSlot = i;
             break;
@@ -316,7 +316,7 @@ DataUUID_t commitLocalDB(Data_t *data, size_t size)
         data->dataId = newDataId;
         for (uint8_t i = 0; i < MAX_DB_OBJ; i++)
         {
-            if (NVMDatabase.dataRecord[i].dataId.id < 0)
+            if (NVMDatabase.dataRecord[i].dataId.id == 0)
             {
                 objectIndex = i;
                 break;

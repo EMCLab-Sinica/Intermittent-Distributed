@@ -20,13 +20,17 @@
 #include "Tasks/TestTasks.h"
 #include "RecoveryHandler/Validation.h"
 #include "DataManager/DBServiceRoutine.h"
+#include "Tools/dvfs.h"
 
 /* Standard demo includes, used so the tick hook can exercise some FreeRTOS
 functionality in an interrupt. */
 #include "driverlib.h"
 #include "main.h"
 
+#pragma NOINIT(ucHeap)
+uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
 
+extern InboundValidationRecord_t inboundValidationRecords[MAX_GLOBAL_TASKS];
 /*-----------------------------------------------------------*/
 /*
  * Configure the hardware as necessary.
@@ -119,6 +123,7 @@ void bootstrapTask()
     }
     else if (nodeAddr == 1 && firstTime != 1)
     {
+        print2uart("DataId: %d\n", inboundValidationRecords[0].writeSet[0].dataId.id);
         stopTrack = 1;
         xTaskCreate(RecoveryServiceRoutine, "RecSrv", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
         stopTrack = 0;
@@ -145,12 +150,20 @@ void bootstrapTask()
     }
     stopTrack = 1;
     xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
-    xTaskCreate(inboundValidationHandler, "inboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+    xTaskCreate(inboundValidationHandler, "inboundV", 400, NULL, 0, NULL);
     xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
     // xTaskCreate(syncTimeHelperTask, "timeHelper", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
     stopTrack = 0;
 
     firstTime = 1;//need to consider recovery after this point
+    for(int i=0; i<10; i++)
+    {
+        if(inboundValidationRecords[i].validRecord == pdTRUE)
+        {
+            print2uart("after task create, datId: %d, %d\n", inboundValidationRecords[i].writeSet[0].dataId.owner,
+                    inboundValidationRecords[i].writeSet[0].dataId.id);
+        }
+    }
 
     regTaskEnd();
     vTaskDelete(NULL);
@@ -195,7 +208,7 @@ static void prvSetupHardware(void)
     GPIO_enableInterrupt(GPIO_PORT_P5, GPIO_PIN6);
 
     /* Set DCO frequency to 16 MHz. */
-    setFrequency(FreqLevel);
+    setFrequency(8);
 
     /* Set external clock frequency to 32.768 KHz. */
     CS_setExternalClockSource(32768, 0);
@@ -285,7 +298,7 @@ __interrupt void Port_8(void)
             BaseType_t xWakeupHigherPriorityTask = pdTRUE;
             if (RecoverySrvTaskHandle == NULL)
             {
-                print2uart("WARNING!\n");
+                print2uart("RecoverySrvTaskHandle not found!\n");
             }
             else
             {

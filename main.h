@@ -7,12 +7,8 @@
 /* Used for maintaining a 32-bit run time stats counter from a 16-bit timer. */
 volatile uint32_t ulRunTimeCounterOverflows = 0;
 
-#pragma NOINIT(ucHeap)
-uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
 
 uint64_t timeCounter = 0;
-unsigned int FreqLevel = 8;
-int uartsetup = 0;
 
 /* Use for recovery */
 #pragma DATA_SECTION(firstTime, ".map") //indicate whether task stacks exist
