@@ -156,15 +156,6 @@ void bootstrapTask()
     stopTrack = 0;
 
     firstTime = 1;//need to consider recovery after this point
-    for(int i=0; i<10; i++)
-    {
-        if(inboundValidationRecords[i].validRecord == pdTRUE)
-        {
-            print2uart("after task create, datId: %d, %d\n", inboundValidationRecords[i].writeSet[0].dataId.owner,
-                    inboundValidationRecords[i].writeSet[0].dataId.id);
-        }
-    }
-
     regTaskEnd();
     vTaskDelete(NULL);
 }

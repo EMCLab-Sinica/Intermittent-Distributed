@@ -12,7 +12,7 @@
 #include "OurTCB.h"
 
 
-#define DEBUG 1
+#define DEBUG 0
 #define INFO 1
 
 #pragma NOINIT(validationRequestPacketsQueue)
@@ -239,7 +239,7 @@ void outboundValidationHandler()
             {
                 continue;
             }
-            if (DEBUG)
+            if (INFO)
             {
                 print2uart("Record Id:%d, Validation: task: %d, stage: %d\n",
                            i, outboundRecord->taskId.id, outboundRecord->stage);
@@ -407,8 +407,6 @@ void handleValidationPhase1Request(ValidationP1RequestPacket_t *packet)
     inboundRecord->taskId = packet->taskId;
     Data_t *writeData = inboundRecord->writeSet + inboundRecord->writeSetNum;
     writeData->dataId = packet->data.dataId;
-    print2uart_new("in rec dataIdPtr: %x %x\n", inboundRecord, inboundRecord->writeSet);
-    print2uart_new("dataId: %d, %d\n", writeData->dataId.owner, writeData->dataId.id);
     writeData->version = packet->data.version;
     writeData->size = packet->data.size;
     memcpy(writeData->ptr, packet->data.content, packet->data.size);
@@ -467,7 +465,6 @@ void handleValidationPhase2Request(ValidationP2RequestPacket_t *packet)
 
 void handleValidationPhase2Response(ValidationP2ResponsePacket_t *packet)
 {
-    print2uart("VP2R taskId: %d, %d\n", packet->taskId.nodeAddr, packet->taskId.id);
     OutboundValidationRecord_t *record = getOutboundRecord(packet->taskId);
     for (unsigned int i = 0; i < MAX_TASK_READ_OBJ; i++)
     {
@@ -487,7 +484,6 @@ void handleCommitPhaseRequest(CommitRequestPacket_t *packet)
         if (record->writeSet[i].dataId.owner == nodeAddr)
         {
             // TODO: Commit
-            print2uart_new("in rec dataIdPtr: %x %x\n", record, record->writeSet);
             sendCommitPhaseResponse(&(packet->taskId), &(record->writeSet[i].dataId));
             //break;
         }
@@ -543,7 +539,6 @@ InboundValidationRecord_t *getOrCreateInboundRecord(TaskUUID_t *taskId)
         {
             if (taskIdEqual(&(inboundValidationRecords[i].taskId), taskId))
             {
-                print2uart("GetoOrCreateInbound: index %d\n", i);
                 return inboundValidationRecords + i;
             }
         }
@@ -552,7 +547,6 @@ InboundValidationRecord_t *getOrCreateInboundRecord(TaskUUID_t *taskId)
             if(firstNull == NULL)
             {
                 firstNull = inboundValidationRecords + i;
-                print2uart("GetoOrCreateInbound: firstNULL: %d\n", i);
             }
         }
 
@@ -588,12 +582,10 @@ InboundValidationRecord_t *getInboundRecord(TaskUUID_t *taskId)
         {
             if(taskIdEqual(&(record->taskId), taskId))
             {
-                print2uart("Getinbound: index %d\n", i);
                 return record;
             }
         }
     }
-    print2uart("Getinbound: NULL!\n");
     return NULL;
 
 }
