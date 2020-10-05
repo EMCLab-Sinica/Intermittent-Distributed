@@ -27,8 +27,14 @@ functionality in an interrupt. */
 #include "driverlib.h"
 #include "main.h"
 
+#define DEBUG 1
+#define INFO 0
+
 #pragma NOINIT(ucHeap)
 uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
+
+#pragma NOINIT(statistics)
+uint32_t statistics[2];
 
 extern InboundValidationRecord_t inboundValidationRecords[MAX_GLOBAL_TASKS];
 /*-----------------------------------------------------------*/
@@ -41,6 +47,8 @@ void bootstrapTask();
 
 unsigned short SemphTCB;
 uint8_t nodeAddr = NODEADDR;
+volatile uint8_t otherTimeSyncTries = 0;
+volatile uint8_t myTimeSyncTries = 0;
 volatile uint8_t timeSynced = 0;
 
 extern QueueHandle_t DBServiceRoutinePacketQueue;
@@ -57,10 +65,16 @@ int main(void)
     prvSetupHardware();
 
     initRF(&nodeAddr);
+    print2uart("%d %d\n", statistics[0], statistics[1]);
 
     if (firstTime != 1)
     {
-        print2uart("Node id: %d FirstTime\n", nodeAddr);
+        statistics[0] = 0;
+        statistics[1] = 0;
+        if(DEBUG)
+        {
+            print2uart("Node id: %d FirstTime\n", nodeAddr);
+        }
         timeCounter = 0;
         pvInitHeapVar();
         initRecoveryEssential();
@@ -82,7 +96,10 @@ int main(void)
     }
     else
     {
-        print2uart("Node id: %d Recovery\n", nodeAddr);
+        if(DEBUG)
+        {
+            print2uart("Node id: %d Recovery\n", nodeAddr);
+        }
         VMDBConstructor();
         initDBSrvQueues();
         initValidationQueues();
@@ -115,6 +132,18 @@ void bootstrapTask()
         do
         {
             RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
+            if (nodeAddr == 1)
+            {
+                myTimeSyncTries++;
+                if ( myTimeSyncTries >= 3 && otherTimeSyncTries >= 3)
+                {
+                    // all the devices has been offline and the time is lost, reset
+                    myTimeSyncTries = 0;
+                    otherTimeSyncTries = 0;
+                    timeSynced = 1;
+                    timeCounter = 0;
+                }
+            }
             vTaskDelay(500);
         } while(timeSynced == 0);
         stopTrack = 1;
@@ -123,7 +152,6 @@ void bootstrapTask()
     }
     else if (nodeAddr == 1 && firstTime != 1)
     {
-        print2uart("DataId: %d\n", inboundValidationRecords[0].writeSet[0].dataId.id);
         stopTrack = 1;
         xTaskCreate(RecoveryServiceRoutine, "RecSrv", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
         stopTrack = 0;
@@ -176,6 +204,9 @@ static void prvSetupHardware(void)
     GPIO_setAsOutputPin(GPIO_PORT_P3, GPIO_PIN0 | GPIO_PIN1 | GPIO_PIN2 | GPIO_PIN3 | GPIO_PIN4 | GPIO_PIN5 | GPIO_PIN6 | GPIO_PIN7);
     GPIO_setAsOutputPin(GPIO_PORT_P4, GPIO_PIN0 | GPIO_PIN1 | GPIO_PIN2 | GPIO_PIN3 | GPIO_PIN4 | GPIO_PIN5 | GPIO_PIN6 | GPIO_PIN7);
     GPIO_setAsOutputPin(GPIO_PORT_PJ, GPIO_PIN0 | GPIO_PIN1 | GPIO_PIN2 | GPIO_PIN3 | GPIO_PIN4 | GPIO_PIN5 | GPIO_PIN6 | GPIO_PIN7 | GPIO_PIN8 | GPIO_PIN9 | GPIO_PIN10 | GPIO_PIN11 | GPIO_PIN12 | GPIO_PIN13 | GPIO_PIN14 | GPIO_PIN15);
+
+    GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN0);      // Red LED on
+    GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN1);      // Red LED on
 
     /* Configure P2.0 - UCA0TXD and P2.1 - UCA0RXD. */
     GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN0);
@@ -250,6 +281,14 @@ __interrupt void Port_5(void)
         timeCounter = 0;
     }
 
+    if ((P5IFG & 1<<6) == 0)    // P5.6
+    {
+        // reset
+        statistics[0] = 0;
+        statistics[1] = 0;
+        statistics[2] = 0;
+    }
+
     GPIO_clearInterrupt(GPIO_PORT_P5, GPIO_PIN6);
     GPIO_clearInterrupt(GPIO_PORT_P5, GPIO_PIN5);
     GPIO_enableInterrupt(GPIO_PORT_P5, GPIO_PIN6);
@@ -289,6 +328,10 @@ __interrupt void Port_8(void)
             BaseType_t xWakeupHigherPriorityTask = pdTRUE;
             if (RecoverySrvTaskHandle == NULL)
             {
+                if (nodeAddr == 1)
+                {
+                    otherTimeSyncTries++;
+                }
                 print2uart("RecoverySrvTaskHandle not found!\n");
             }
             else

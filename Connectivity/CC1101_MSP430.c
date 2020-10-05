@@ -53,7 +53,7 @@ static const uint8_t CC1101_GFSK_1_2_kb[] = {
     0x16,                // FOCCFG        Frequency Offset Compensation Configuration
     0x6C,                // BSCFG         Bit Synchronization Configuration
     0x03,                // AGCCTRL2      AGC Control
-    0x78,                // AGCCTRL1      AGC Control
+    0x50,                // AGCCTRL1      AGC Control
     0x91,                // AGCCTRL0      AGC Control
     0x02,                // WOREVT1       High Byte Event0 Timeout
     0x26,                // WOREVT0       Low Byte Event0 Timeout
@@ -520,7 +520,12 @@ uint8_t transmit(void)
     __delay_cycles(900 * CYCLE_PER_US);
     if (GDO0_PIN_IS_HIGH()) // channel busy
     {
+        GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN0);      // Red LED on
         vTaskDelay(rand() % 6 * 40);
+    }
+    else
+    {
+        GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN0);      // Red LED off
     }
     /*
     while(1)

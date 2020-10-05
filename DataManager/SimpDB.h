@@ -72,6 +72,7 @@ typedef struct Data
     uint8_t size: 4;
     void *ptr; // points to the data location
     TaskUUID_t readers[MAX_READERS];
+    TaskUUID_t validationLock;
 
 } Data_t;
 

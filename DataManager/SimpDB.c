@@ -16,8 +16,8 @@
 #include "config.h"
 #include <string.h>
 
-#define DEBUG 1 // control debug message
-#define INFO 1 // control debug message
+#define DEBUG 0 // control debug message
+#define INFO 0 // control debug message
 
 #pragma NOINIT(NVMDatabase)
 static Database_t NVMDatabase;
@@ -52,6 +52,7 @@ void NVMDBConstructor(){
         NVMDatabase.dataRecord[i].dataId = initId;
         NVMDatabase.dataRecord[i].ptr = NULL;
         NVMDatabase.dataRecord[i].size = 0;
+        NVMDatabase.dataRecord[i].validationLock = (TaskUUID_t){.nodeAddr=0, .id=0};
         memset(NVMDatabase.dataRecord[i].readers, 0, sizeof(TaskUUID_t) * MAX_READERS);
     }
 
@@ -79,10 +80,12 @@ void VMDBConstructor(){
     VMDatabase.dataIdAutoIncrement = 1; // dataId start from 1
     VMDatabase.dataRecordCount = 0;
     DataUUID_t initId = {.owner = 0, .id = 0};
+    TaskUUID_t nullTask = {.nodeAddr = 0, .id = 0};
     for(uint8_t i = 0; i < MAX_DB_OBJ; i++){
         VMDatabase.dataRecord[i].dataId = initId;
         VMDatabase.dataRecord[i].ptr = NULL;
         VMDatabase.dataRecord[i].size = 0;
+        VMDatabase.dataRecord[i].validationLock = nullTask;
     }
 }
 

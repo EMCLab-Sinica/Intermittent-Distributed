@@ -230,7 +230,7 @@ void outboundValidationHandler()
     OutboundValidationRecord_t *outboundRecord = NULL;
     while (1)
     {
-        vTaskDelay(1000);
+        vTaskDelay(500);
         // Outbound Validation
         for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
         {
@@ -443,11 +443,32 @@ void handleValidationPhase2Request(ValidationP2RequestPacket_t *packet)
     {
         if (record->writeSet[i].dataId.owner == nodeAddr)
         {
-            // FIXME: lock the object
+            Data_t *writeData = record->writeSet + i;
+            Data_t *dataRecord = getDataRecord(writeData->dataId, nvmdb);
+            if (dataRecord->validationLock.nodeAddr == 0)    // nullTask, not locked
+            {
+                if (DEBUG)
+                {
+                    print2uart("Not locked, get lock\n");
+                }
+                dataRecord->validationLock = record->taskId;    // lock
+            }
+            else if (!taskIdEqual(&(dataRecord->validationLock), &(record->taskId)))
+            {
+                // other task is doing validation, let it wait
+                if (DEBUG)
+                {
+                    print2uart("other is doing validation, %d %d\n", dataRecord->validationLock.nodeAddr, dataRecord->validationLock.id);
+                }
+                return;
+            }
+
             // check if modified after validation phase1
-            if (record->vPhase1DataBegin[i] < getDataBegin(record->writeSet[i].dataId))
+            if (record->vPhase1DataBegin[i] < getDataBegin(writeData->dataId))
             {
                 VPhase2Passed = pdFALSE;
+                // unlock
+                dataRecord->validationLock = (TaskUUID_t){.nodeAddr=0, .id=0};
                 break;
             }
         }
@@ -459,7 +480,6 @@ void handleValidationPhase2Request(ValidationP2RequestPacket_t *packet)
     else
     {
         sendValidationPhase2Response(&(record->taskId), pdFALSE);
-        // unlock
     }
 }
 
@@ -483,8 +503,11 @@ void handleCommitPhaseRequest(CommitRequestPacket_t *packet)
     {
         if (record->writeSet[i].dataId.owner == nodeAddr)
         {
+            Data_t *writeData = record->writeSet + i;
+            Data_t* dataRecord = getDataRecord(writeData->dataId, nvmdb);
             // TODO: Commit
-            sendCommitPhaseResponse(&(packet->taskId), &(record->writeSet[i].dataId));
+            dataRecord->validationLock = (TaskUUID_t){.nodeAddr=0, .id=0};
+            sendCommitPhaseResponse(&(packet->taskId), &(writeData->dataId));
             //break;
         }
     }

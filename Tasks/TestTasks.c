@@ -5,8 +5,11 @@
 #include "TestTasks.h"
 #include "Validation.h"
 
+#define DEBUG 0
+
 extern uint8_t nodeAddr;
 extern uint64_t timeCounter;
+extern uint32_t statistics[2];
 
 void localAccessTask()
 {
@@ -46,14 +49,19 @@ void remoteAccessTask()
         reqTime = timeCounter;
         remoteDataObject = readRemoteDB(taskId, &myTaskHandle, 1, 1, (void *)&test, sizeof(test));
         timeElapsed = timeCounter - reqTime;
-        print2uart("%l\n", timeElapsed);
-        print2uart("got dataId %d: %d\n", remoteDataObject.dataId.id, test);
+        statistics[1] += (uint32_t)timeElapsed;
+        if (DEBUG)
+        {
+            print2uart("%l\n", timeElapsed);
+            print2uart("got dataId %d: %d\n", remoteDataObject.dataId.id, test);
+        }
 
         test++;
         // print2uart("GotData: %d\n", test);
         vTaskDelay(100);
 
         taskCommit(taskId.id, &myTaskHandle, 1, &remoteDataObject);
+        statistics[0]++;
     }
 }
 
