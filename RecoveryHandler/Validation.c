@@ -230,7 +230,7 @@ void outboundValidationHandler()
     OutboundValidationRecord_t *outboundRecord = NULL;
     while (1)
     {
-        vTaskDelay(500);
+        vTaskDelay(300);
         // Outbound Validation
         for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
         {

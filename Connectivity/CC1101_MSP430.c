@@ -48,12 +48,12 @@ static const uint8_t CC1101_GFSK_1_2_kb[] = {
     // 0x15, // DEVIATN       Modem Deviation Setting
     (1 << 5 & NODEADDR), // DEVIATN       Modem Deviation Setting
     0x07,                // MCSM2         Main Radio Control State Machine Configuration
-    0x3C,                // MCSM1         Main Radio Control State Machine Configuration
+    0x3F,                // MCSM1         Main Radio Control State Machine Configuration
     0x18,                // MCSM0         Main Radio Control State Machine Configuration
     0x16,                // FOCCFG        Frequency Offset Compensation Configuration
     0x6C,                // BSCFG         Bit Synchronization Configuration
     0x03,                // AGCCTRL2      AGC Control
-    0x50,                // AGCCTRL1      AGC Control
+    0x40,                // AGCCTRL1      AGC Control
     0x91,                // AGCCTRL0      AGC Control
     0x02,                // WOREVT1       High Byte Event0 Timeout
     0x26,                // WOREVT0       Low Byte Event0 Timeout
@@ -513,43 +513,28 @@ uint8_t sidle(void)
 //---------------------------[transmit mode]------------------------------------
 uint8_t transmit(void)
 {
-    uint8_t marcstate;
-
-    sidle();
-    spi_write_strobe(STX); //sends the data over air
-    __delay_cycles(900 * CYCLE_PER_US);
     if (GDO0_PIN_IS_HIGH()) // channel busy
     {
         GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN0);      // Red LED on
+        // spi_write_strobe(SFTX);    //flush TX Buffer
         vTaskDelay(rand() % 6 * 40);
-    }
-    else
+        print2uart("CCA\n");
+    } else
     {
         GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN0);      // Red LED off
     }
-    /*
-    while(1)
-    {
-        spi_write_strobe(STX); //sends the data over air
-        __delay_cycles(900 * CYCLE_PER_US);
-        if (GDO0_PIN_IS_HIGH()) // channel busy
-        {
-            vTaskDelay(50);
-        }
-        else
-        {
-            break;
-        }
-    }
-    */
 
+    sidle();
+    spi_write_strobe(STX); //sends the data over air
+    uint8_t marcstate;
     marcstate = 0xFF; //set unknown/dummy state value
 
-    while (marcstate != 0x01) //0x01 = ILDE after sending data
+    //while (marcstate != 0x01) //0x01 = ILDE after sending data
+    while (marcstate != 0x0D) //0x0D = RX
     {
         marcstate = (spi_read_register(MARCSTATE) & 0x1F); //read out state of CC1101 to be sure in IDLE and TX is finished
     }
-    __delay_cycles(100 * CYCLE_PER_US);
+    __delay_cycles(800 * CYCLE_PER_US);
     return TRUE;
 }
 //-------------------------------[end]------------------------------------------
@@ -559,7 +544,7 @@ uint8_t receive(void)
 {
     uint8_t marcstate;
 
-    // sidle();               //sets to idle first.
+    sidle();               //sets to idle first.
     spi_write_strobe(SRX); //writes receive strobe (receive mode)
 
     marcstate = 0xFF; //set unknown/dummy state value
@@ -692,6 +677,7 @@ uint8_t rx_payload_burst(uint8_t rxbuffer[], uint8_t *pktlen)
 uint8_t send_packet(uint8_t rx_addr, uint8_t *txbuffer,
                     uint8_t pktlen, uint8_t tx_retries)
 {
+    taskENTER_CRITICAL();
     // uint8_t pktlen_ack; //default package len for ACK
     // uint8_t rxbuffer[FIFOBUFFER];
     uint8_t tx_retries_count = 0;
@@ -704,21 +690,23 @@ uint8_t send_packet(uint8_t rx_addr, uint8_t *txbuffer,
         return FALSE;
     }
 
-    do //send package out with retries
-    {
+    //do //send package out with retries
+    //{
 
-        tx_payload_burst(rx_addr, txbuffer, pktlen); //loads the data in CC1101 buffer
-        transmit();                                           //sends data over air
-        receive();                                            //receive mode
+    tx_payload_burst(rx_addr, txbuffer, pktlen); //loads the data in CC1101 buffer
+    transmit();                                           //sends data over air
+    receive();                                            //receive mode
 
-        return TRUE;
+    taskEXIT_CRITICAL();
+
+    return TRUE;
 
         // ackWaitCounter = 0;                                     //resets the ACK_Timeout
         // tx_retries_count++;                                     //increase tx retry counter
 
-    } while (tx_retries_count <= tx_retries); //while count of retries is reaches
+    //} while (tx_retries_count <= tx_retries); //while count of retries is reaches
 
-    return FALSE; //send failed. too many retries
+    //return FALSE; //send failed. too many retries
 }
 //-------------------------------[end]------------------------------------------
 

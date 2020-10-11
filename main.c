@@ -177,7 +177,7 @@ void bootstrapTask()
         }
     }
     stopTrack = 1;
-    xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 1, NULL);
+    xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 0, NULL);
     xTaskCreate(inboundValidationHandler, "inboundV", 400, NULL, 0, NULL);
     xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
     // xTaskCreate(syncTimeHelperTask, "timeHelper", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
