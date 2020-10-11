@@ -12,8 +12,7 @@ typedef struct TimeInterval
 
 typedef enum ValidationStage
 {
-    validationPhase1,
-    validationPhase2,
+    validationPhase,
     commitPhase,
     finish
 
@@ -30,9 +29,8 @@ typedef struct OutboundValidationRecord
     TimeInterval_t taskValidInterval;
     void* taskRecord;
 
-    uint8_t validationPhase1VIShrinked[MAX_TASK_READ_OBJ]; // VI = valid interval
-    uint8_t validationPhase2Passed[MAX_TASK_READ_OBJ];
-    uint8_t commitPhaseDone[MAX_TASK_READ_OBJ];
+    uint8_t validationPassed[MAX_TASK_READ_OBJ];
+    uint8_t commitDone[MAX_TASK_READ_OBJ];
 
 } OutboundValidationRecord_t;
 

@@ -26,12 +26,9 @@ typedef enum PacketType
     SyncCounter,
     DeviceWakeUp,
 
-    // Validation Phase 1
-    ValidationP1Request,
-    ValidationP1Response,
-    // Validation Phase 2, locking object
-    ValidationP2Request,
-    ValidationP2Response,
+    // Validation request
+    ValidationRequest,
+    ValidationResponse,
     // Commit Phase
     CommitRequest,
     CommitResponse
