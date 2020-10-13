@@ -353,7 +353,7 @@ __interrupt void Port_8(void)
             timeSynced = 1;
         }
 
-        else if(packetHeader->packetType >= ValidationP1Request)
+        else if(packetHeader->packetType >= ValidationRequest)
         {
             xSendQueueResult = xQueueSendToBackFromISR(validationRequestPacketsQueue,
                                                        buf, NULL);

@@ -8,20 +8,20 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#define NODEADDR 1
+#define NODEADDR 2
 #define CYCLE_PER_US 16
 
-//#define ONNVM //read/write on NVM
-//#define ONVM // read/write on VM: need to copy all data once require to read after power resumes
+    //#define ONNVM //read/write on NVM
+    //#define ONVM // read/write on VM: need to copy all data once require to read after power resumes
 #define OUR //read from NVM/VM, write to VM
-//#define ONEVERSION //all read on NVM/commit to NVM
+    //#define ONEVERSION //all read on NVM/commit to NVM
 
 #define MAX_GLOBAL_TASKS 10    // max task "globally"
 #define NUMDATA 40
 #define MAX_READERS 5
 #define MAX_TASK_READ_OBJ 5
 
-//Used for TI applications
+    //Used for TI applications
 #define ITERFIR 1
 #define ITERMATH16 500
 #define ITERMATH32 300

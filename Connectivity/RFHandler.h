@@ -7,6 +7,7 @@
 #include "SimpDB.h"
 #include "CC1101_MSP430.h"
 #include "Validation.h"
+#include "TaskControl.h"
 
 /* CC1101 Packet Format
 pkt_len [1byte] | rx_addr [1byte] | tx_addr [1byte] | payload data [1..60bytes]
@@ -73,41 +74,24 @@ typedef struct DeviceWakeUpPacket
 
 } DeviceWakeUpPacket_t;
 
-// Validation Phase 1: send data and request VI
-typedef struct ValidationP1RequestPacket
+// Validation : send data and request VI
+typedef struct ValidationRequestPacket
 {
     PacketHeader_t header;
     TaskUUID_t taskId;
     DataTransPacket_t data;
 
-} ValidationP1RequestPacket_t;
+} ValidationRequestPacket_t;
 
-typedef struct ValidationP1ResponsePacket
+typedef struct ValidationResponsePacket
 {
     PacketHeader_t header;
     TaskUUID_t taskId;
     DataUUID_t dataId;
     TimeInterval_t taskInterval;
-    uint8_t maybeCommit;
+    uint8_t canCommit;
 
-} ValidationP1ResponsePacket_t;
-
-typedef struct ValidationP2RequestPacket
-{
-    PacketHeader_t header;
-    TaskUUID_t taskId;
-    uint8_t decision;
-
-} ValidationP2RequestPacket_t;
-
-typedef struct ValidationP2ResponsePacket
-{
-    PacketHeader_t header;
-    TaskUUID_t taskId;
-    uint8_t ownerAddr;
-    uint8_t finalValidationPassed;
-
-} ValidationP2ResponsePacket_t;
+} ValidationResponsePacket_t;
 
 typedef struct CommitRequestPacket
 {
