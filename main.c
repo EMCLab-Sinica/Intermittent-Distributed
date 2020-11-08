@@ -21,6 +21,7 @@
 #include "RecoveryHandler/Validation.h"
 #include "DataManager/DBServiceRoutine.h"
 #include "Tools/dvfs.h"
+#include "Peripheral/dht11.h"
 
 /* Standard demo includes, used so the tick hook can exercise some FreeRTOS
 functionality in an interrupt. */
@@ -65,7 +66,7 @@ int main(void)
     prvSetupHardware();
 
     initRF(&nodeAddr);
-    print2uart("%d %d\n", statistics[0], statistics[1]);
+    // print2uart("%d %d\n", statistics[0], statistics[1]);
 
     if (firstTime != 1)
     {
@@ -161,7 +162,7 @@ void bootstrapTask()
     {
         if (nodeAddr == 1)  // testing
         {
-            xTaskCreate(localAccessTask, "LocalAccess", configMINIMAL_STACK_SIZE, NULL, 0, NULL );
+            xTaskCreate(sensingTask, "sensing", 400, NULL, 0, NULL );
         }
         else if (nodeAddr == 2)
         {
@@ -182,6 +183,11 @@ void bootstrapTask()
     xTaskCreate(outboundValidationHandler, "outboundV", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
     // xTaskCreate(syncTimeHelperTask, "timeHelper", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
     stopTrack = 0;
+
+    if(DEBUG)
+    {
+        print2uart("Bootstrap Done\n");
+    }
 
     firstTime = 1;//need to consider recovery after this point
     regTaskEnd();
@@ -238,7 +244,7 @@ static void prvSetupHardware(void)
     /* Set ACLK = LFXT. */
     CS_initClockSignal(CS_ACLK, CS_LFXTCLK_SELECT, CS_CLOCK_DIVIDER_1);
 
-    /* Set SMCLK = DCO with frequency divider of 1. */
+    /* Set SMCLK = DCO with frequency divider of 1, SMCLK = 16MHz */
     CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);
 
     /* Set MCLK = DCO with frequency divider of 1. */
@@ -252,6 +258,8 @@ static void prvSetupHardware(void)
 
     /* Initialize Uart */
     uartinit();
+    /* Init Timer for DHT-11 */
+    setup_MSP430_DHT11();
 }
 /*-----------------------------------------------------------*/
 

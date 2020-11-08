@@ -18,7 +18,7 @@ unsigned int FreqLevel = 1;
  *        6: 6.67MHz
  *        7: 8MHz
  *        8: 16MHz
- * 
+ *
  * 1 level of CPU frequency for MSP432
  * Level: 1: 12MHz
  */
