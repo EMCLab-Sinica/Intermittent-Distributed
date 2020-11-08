@@ -59,6 +59,7 @@
 									<listOptionValue builtIn="false" value="${PROJECT_LOC}/TestArangement"/>
 									<listOptionValue builtIn="false" value="${PROJECT_LOC}/Tools"/>
 									<listOptionValue builtIn="false" value="${PROJECT_LOC}/Connectivity"/>
+									<listOptionValue builtIn="false" value="${PROJECT_LOC}/Peripheral"/>
 								</option>
 								<option id="com.ti.ccstudio.buildDefinitions.MSP430_20.2.compilerID.DEBUGGING_MODEL.1459930012" name="Debugging model" superClass="com.ti.ccstudio.buildDefinitions.MSP430_20.2.compilerID.DEBUGGING_MODEL" value="com.ti.ccstudio.buildDefinitions.MSP430_20.2.compilerID.DEBUGGING_MODEL.SYMDEBUG__DWARF" valueType="enumerated"/>
 								<option id="com.ti.ccstudio.buildDefinitions.MSP430_20.2.compilerID.DISPLAY_ERROR_NUMBER.1215654932" name="Emit diagnostic identifier numbers (--display_error_number, -pden)" superClass="com.ti.ccstudio.buildDefinitions.MSP430_20.2.compilerID.DISPLAY_ERROR_NUMBER" value="true" valueType="boolean"/>

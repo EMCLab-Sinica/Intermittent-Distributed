@@ -118,6 +118,7 @@ DataManager \
 FreeRTOS_Source \
 FreeRTOS_Source/portable/CCS/MSP430X \
 FreeRTOS_Source/portable/MemMang \
+Peripheral \
 RecoveryHandler \
 Tasks \
 Tools \
