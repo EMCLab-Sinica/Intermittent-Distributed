@@ -19,12 +19,8 @@ extern unsigned char SENSE_TIMER;
 void sensingTask() {
     unsigned char RH_byte1, RH_byte2, T_byte1, T_byte2, checksum;
     unsigned char Packet[5];
-
-   // int32_t testValue = 7;
-   // Data_t myData = createWorkingSpace(&testValue, sizeof(testValue));
-   // commitLocalDB(&myData, sizeof(testValue));
-   float temp = 0;
-   float rh = 0;
+   Data_t temperature = createWorkingSpace(&T_byte1, sizeof(T_byte1));
+   Data_t humidity = createWorkingSpace(&RH_byte1, sizeof(RH_byte1));
 
     while (1) {
         read_Packet(Packet);
@@ -42,6 +38,9 @@ void sensingTask() {
             }
             print2uart_new("DHT11: %d, %d\n", T_byte1, RH_byte1);
         }
+
+       commitLocalDB(&temperature , sizeof(T_byte1));
+       commitLocalDB(&humidity, sizeof(RH_byte1));
 
         vTaskDelay(2000);
     }
