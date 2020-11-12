@@ -1,3 +1,0 @@
-[submodule "ext_fram"]
-	path = ext_fram
-	url = git@github.com:EMCLab-Sinica/MSP43X-CY15B10X.git
