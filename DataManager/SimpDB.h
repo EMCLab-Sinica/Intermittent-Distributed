@@ -16,6 +16,7 @@
 #include <stdbool.h>
 
 #define VM_WORKING_SIZE 3072 // working space in VM
+#define MAX_DB_OBJ_SIZE 16 // 16bytes for each data object
 
 typedef enum DataVersion
 {
@@ -58,9 +59,9 @@ typedef struct DataHeader
 typedef struct DataTransPacket
 {
     DataUUID_t dataId;
-    DataVersion_e version: 4;
-    uint8_t size: 4;
-    uint8_t content[4]; // max 4bytes
+    DataVersion_e version;
+    uint8_t size;
+    uint8_t content[16]; // max 16bytes for AES to work
 
 } DataTransPacket_t;
 
@@ -68,8 +69,8 @@ typedef struct DataTransPacket
 typedef struct Data
 {
     DataUUID_t dataId;
-    DataVersion_e version: 4;
-    uint8_t size: 4;
+    DataVersion_e version;
+    uint8_t size;
     void *ptr; // points to the data location
     TaskUUID_t readers[MAX_READERS];
     TaskUUID_t validationLock;

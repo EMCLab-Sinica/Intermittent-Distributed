@@ -121,6 +121,7 @@ FreeRTOS_Source/portable/MemMang \
 Peripheral \
 RecoveryHandler \
 Tasks \
+ThirdParty/tiny-AES-c \
 Tools \
 driverlib/MSP430FR5xx_6xx \
 

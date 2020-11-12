@@ -7,7 +7,7 @@
 #include "SimpDB.h"
 #include "CC1101_MSP430.h"
 #include "Validation.h"
-#include "TaskControl.h"
+#include <RecoveryHandler/TaskControl.h>
 
 /* CC1101 Packet Format
 pkt_len [1byte] | rx_addr [1byte] | tx_addr [1byte] | payload data [1..60bytes]
