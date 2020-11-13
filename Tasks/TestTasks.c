@@ -43,8 +43,8 @@ void sensingTask() {
             print2uart_new("DHT11: %d, %d\n", T_byte1, RH_byte1);
         }
 
-        commitLocalDB(&temperature, sizeof(T_byte1));
-        commitLocalDB(&humidity, sizeof(RH_byte1));
+        temperature.dataId = commitLocalDB(&temperature, sizeof(T_byte1));
+        humidity.dataId = commitLocalDB(&humidity, sizeof(RH_byte1));
 
         vTaskDelay(2000);
     }
@@ -58,18 +58,20 @@ void fanTask() {
         while (1) ;
     }
 
-    Data_t remoteDataObject;
+    Data_t tempObject;
+    Data_t humidityObject;
     while (1) {
         uint32_t temp = 0;
         uint32_t humidity = 0;
-        remoteDataObject = readRemoteDB(taskId, &myTaskHandle, 1, 1,
+        tempObject = readRemoteDB(taskId, &myTaskHandle, 1, 1,
                                         (void *)&temp, sizeof(temp));
-        remoteDataObject = readRemoteDB(taskId, &myTaskHandle, 1, 2,
+        humidityObject = readRemoteDB(taskId, &myTaskHandle, 1, 2,
                                         (void *)&humidity, sizeof(humidity));
         //statistics[1] += (uint32_t)timeElapsed;
         if (DEBUG) {
         }
-        print2uart("T: %d, RH: %d\n", temp, humidity);
+        print2uart_new("T: %d ", temp);
+        print2uart_new("RH: %d\n", humidity);
 
         //taskCommit(taskId.id, &myTaskHandle, 1, &remoteDataObject);
         //statistics[0]++;

@@ -198,7 +198,6 @@ Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask, uint
         dataBuffer->version = duplicated;
         dataBuffer->size = size;
     }
-
     /* logging */
     DataRequestLog_t *log = createDataRequestLog(taskId, dataId, dataBuffer, xFromTask);
     if(log == NULL)
@@ -230,6 +229,7 @@ Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask, uint
 
     log->valid = false;
 
+    // create working version for the task
     Data_t dataRead = *dataBuffer;
     memcpy(destDataPtr, dataBuffer->ptr, dataBuffer->size);
     dataRead.ptr = destDataPtr;
