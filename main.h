@@ -1,9 +1,3 @@
-/*
- *  main.h
- *
- *  Author: Meenchen
- */
-
 /* Used for maintaining a 32-bit run time stats counter from a 16-bit timer. */
 volatile uint32_t ulRunTimeCounterOverflows = 0;
 

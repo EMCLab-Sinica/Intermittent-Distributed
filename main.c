@@ -13,15 +13,15 @@
 
 #include "CC1101_MSP430.h"
 
-#include "config.h"
-#include "Tools/myuart.h"
-#include "RecoveryHandler/Recovery.h"
-#include "Connectivity/RFHandler.h"
-#include "Tasks/TestTasks.h"
-#include "RecoveryHandler/Validation.h"
-#include "DataManager/DBServiceRoutine.h"
-#include "Tools/dvfs.h"
-#include "Peripheral/dht11.h"
+#include <config.h>
+#include <Tools/myuart.h>
+#include <RecoveryHandler/Recovery.h>
+#include <Connectivity/RFHandler.h>
+#include <Tasks/TestTasks.h>
+#include <RecoveryHandler/Validation.h>
+#include <DataManager/DBServiceRoutine.h>
+#include <Tools/dvfs.h>
+#include <Peripheral/dht11.h>
 
 /* Standard demo includes, used so the tick hook can exercise some FreeRTOS
 functionality in an interrupt. */
@@ -162,19 +162,19 @@ void bootstrapTask()
     {
         if (nodeAddr == 1)  // testing
         {
-            xTaskCreate(sensingTask, "sensing", 400, NULL, 0, NULL );
+            xTaskCreate(sensingTask, TASKNAME_SENSING, 400, NULL, 0, NULL );
         }
         else if (nodeAddr == 2)
         {
-            xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
+            xTaskCreate(fanTask, TASKNAME_FAN, 400, NULL, 0, NULL);
         }
         else if (nodeAddr == 3)
         {
-            xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
+            //xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
         }
         else if (nodeAddr == 4)
         {
-            xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
+            //xTaskCreate(remoteAccessTask, "RemoteAccess", 400, NULL, 0, NULL );
         }
     }
     stopTrack = 1;
@@ -259,7 +259,10 @@ static void prvSetupHardware(void)
     /* Initialize Uart */
     uartinit();
     /* Init Timer for DHT-11 */
-    setup_MSP430_DHT11();
+    if (NODEADDR == DHT11_NODE)
+    {
+        setup_MSP430_DHT11();
+    }
 }
 /*-----------------------------------------------------------*/
 
@@ -340,7 +343,10 @@ __interrupt void Port_8(void)
                 {
                     otherTimeSyncTries++;
                 }
-                print2uart("RecoverySrvTaskHandle not found!\n");
+                if (DEBUG)
+                {
+                    print2uart("T not inited\n");
+                }
             }
             else
             {
