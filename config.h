@@ -21,22 +21,7 @@
 #define MAX_READERS 5
 #define MAX_TASK_READ_OBJ 5
 
-    //Used for TI applications
-#define ITERFIR 1
-#define ITERMATH16 500
-#define ITERMATH32 300
-#define ITER2DMATRIX 20
-#define ITERMATRIXMUL 10
-
-#define IDCAP 0
-#define IDTEMP 1
-#define IDCAPCALIBRATE 2
-#define IDTEMPCALIBRATE 3
-#define IDUART 4
-#define IDFIR 5
-#define IDMATH16 6
-#define IDMATH32 7
-#define ID2DMATRIX 8
-#define IDMATRIXMUL 9
+// Application settings
+#define  DHT11_NODE 1
 
 #endif /* CONFIG_H_ */

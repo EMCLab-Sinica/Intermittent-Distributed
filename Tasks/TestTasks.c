@@ -9,7 +9,7 @@
 #include "myuart.h"
 #include "task.h"
 
-#define DEBUG 0
+#define DEBUG 1
 
 extern uint8_t nodeAddr;
 extern uint64_t timeCounter;
@@ -25,12 +25,14 @@ void sensingTask() {
     Data_t humidity = createWorkingSpace(&RH_byte1, sizeof(RH_byte1));
 
     while (1) {
+        taskENTER_CRITICAL();
         read_Packet(Packet);
         RH_byte1 = Packet[0];
         RH_byte2 = Packet[1];
         T_byte1 = Packet[2];
         T_byte2 = Packet[3];
         checksum = Packet[4];
+        taskEXIT_CRITICAL();
 
         if (DEBUG) {
             if (check_Checksum(Packet)) {
@@ -48,40 +50,34 @@ void sensingTask() {
     }
 }
 
-void sprayerTask() {}
-
-void remoteAccessTask() {
+void fanTask() {
     TaskUUID_t taskId = {.nodeAddr = nodeAddr, .id = 1};
-    const TaskHandle_t myTaskHandle = xTaskGetHandle("RemoteAccess");
+    const TaskHandle_t myTaskHandle = xTaskGetHandle(TASKNAME_FAN);
     if (myTaskHandle == NULL) {
         print2uart("Error, can not retrive task handle\n");
-        while (1)
-            ;
+        while (1) ;
     }
 
     Data_t remoteDataObject;
-    unsigned long long reqTime = 0;
-    unsigned long long timeElapsed = 0;
     while (1) {
-        uint32_t test = 0;
-        reqTime = timeCounter;
+        uint32_t temp = 0;
+        uint32_t humidity = 0;
         remoteDataObject = readRemoteDB(taskId, &myTaskHandle, 1, 1,
-                                        (void *)&test, sizeof(test));
-        timeElapsed = timeCounter - reqTime;
-        statistics[1] += (uint32_t)timeElapsed;
+                                        (void *)&temp, sizeof(temp));
+        remoteDataObject = readRemoteDB(taskId, &myTaskHandle, 1, 2,
+                                        (void *)&humidity, sizeof(humidity));
+        //statistics[1] += (uint32_t)timeElapsed;
         if (DEBUG) {
-            print2uart("%l\n", timeElapsed);
-            print2uart("got dataId %d: %d\n", remoteDataObject.dataId.id, test);
         }
+        print2uart("T: %d, RH: %d\n", temp, humidity);
 
-        test++;
-        // print2uart("GotData: %d\n", test);
-        vTaskDelay(100);
-
-        taskCommit(taskId.id, &myTaskHandle, 1, &remoteDataObject);
-        statistics[0]++;
+        //taskCommit(taskId.id, &myTaskHandle, 1, &remoteDataObject);
+        //statistics[0]++;
+        vTaskDelay(2000);
     }
 }
+
+void sprayerTask() {}
 
 void localAccessTask() {
     Data_t localDataObject;
