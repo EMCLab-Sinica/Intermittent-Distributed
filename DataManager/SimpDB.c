@@ -14,7 +14,7 @@
 #include "RFHandler.h"
 #include "myuart.h"
 #include "config.h"
-#include <string.h>
+#include <string.h> // for memset
 
 #define DEBUG 0 // control debug message
 #define INFO 0 // control debug message
@@ -49,7 +49,7 @@ void NVMDBConstructor(){
     DataUUID_t initId = {.owner = 0, .id = 0};
     for(uint8_t i = 0; i < MAX_DB_OBJ; i++)
     {
-        NVMDatabase.dataRecord[i].dataId = initId;
+        memset(&(NVMDatabase.dataRecord[i].dataId), 0, sizeof(NVMDatabase.dataRecord[i].dataId));
         NVMDatabase.dataRecord[i].ptr = NULL;
         NVMDatabase.dataRecord[i].size = 0;
         NVMDatabase.dataRecord[i].validationLock = (TaskUUID_t){.nodeAddr=0, .id=0};
@@ -63,12 +63,14 @@ void NVMDBConstructor(){
     }
 
     // insert for test
+    /*
     if (nodeAddr == 1)
     {
         int32_t testValue = 7;
         Data_t myData = createWorkingSpace(&testValue, sizeof(testValue));
         commitLocalDB(&myData, sizeof(testValue));
     }
+    */
 }
 
 void VMDBConstructor(){
@@ -324,11 +326,11 @@ DataUUID_t commitLocalDB(Data_t *data, size_t size)
                 objectIndex = i;
                 break;
             }
-            if (objectIndex < 0)
-            {
-                print2uart("Error: NVMDatabase full, please enlarge MAX_DB_OBJ\n");
-                while(1);
-            }
+        }
+        if (objectIndex < 0)
+        {
+            print2uart("Error: NVMDatabase full, please enlarge MAX_DB_OBJ\n");
+            while(1);
         }
     }
     else // find db record
