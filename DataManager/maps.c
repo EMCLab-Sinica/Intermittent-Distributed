@@ -7,6 +7,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include <stdio.h>
+#include <string.h>
 
 #pragma DATA_SECTION(mapSwitcher, ".map") //each bit indicates address map for a object
 static uint32_t mapSwitcher[NUMCOMMIT];//16bit * 15 = 240 maximum objects

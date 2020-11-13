@@ -3,6 +3,7 @@
 #include "Recovery.h"
 #include "DBServiceRoutine.h"
 #include "myuart.h"
+#include <string.h> // for memset
 
 #define ECB 1
 #include <ThirdParty/tiny-AES-c/aes.h>
@@ -41,8 +42,8 @@ void DBServiceRoutine()
 {
     static uint8_t packetBuf[MAX_PACKET_LEN];
     static PacketHeader_t *packetHeader;
-    static struct AES_ctx aes_ctx;
-    static uint8_t dataPadded[MAX_DB_OBJ_SIZE];
+    struct AES_ctx aes_ctx;
+    uint8_t dataPadded[MAX_DB_OBJ_SIZE];
 
     AES_init_ctx(&aes_ctx, key);
 
