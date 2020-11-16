@@ -64,7 +64,10 @@ void DBServiceRoutine()
             Data_t *data = getDataRecord(packet->dataId, all);
             if (data == NULL)
             {
-                print2uart("Can not find data with (%d, %d)...\n", packet->dataId.owner, packet->dataId.id);
+                if (DEBUG)
+                {
+                    print2uart("Can not find data with (%d, %d)...\n", packet->dataId.owner, packet->dataId.id);
+                }
                 break;
             }
             // Encryption, pad the data to 16 bytes
