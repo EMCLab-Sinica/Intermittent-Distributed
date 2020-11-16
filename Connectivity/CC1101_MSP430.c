@@ -518,7 +518,8 @@ uint8_t transmit(void)
         GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN0);      // Red LED on
         // spi_write_strobe(SFTX);    //flush TX Buffer
         vTaskDelay(rand() % 6 * 40);
-        print2uart("CCA\n");
+        if (debug_level)
+            print2uart("CCA\n");
     } else
     {
         GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN0);      // Red LED off
