@@ -130,7 +130,7 @@ void bootstrapTask() {
             RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
             if (nodeAddr == 1) {
                 myTimeSyncTries++;
-                if (myTimeSyncTries >= 3 && otherTimeSyncTries >= 3) {
+                if (myTimeSyncTries >= 2 && otherTimeSyncTries >= 2) {
                     // all the devices has been offline and the time is lost,
                     // reset
                     myTimeSyncTries = 0;
@@ -153,7 +153,7 @@ void bootstrapTask() {
     }
 
     if (firstTime != 1) {
-        if (nodeAddr == 1)  // testing
+        if (nodeAddr == 1)
         {
             xTaskCreate(sensingTask, TASKNAME_SENSING, 400, NULL, 0, NULL);
         } else if (nodeAddr == 2) {
