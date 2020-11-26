@@ -28,6 +28,9 @@ void sensingTask() {
     humidity.dataId.id = 2;
 
     while (1) {
+        T_byte1 = 27;
+        RH_byte2 = 70;
+        /*
         taskENTER_CRITICAL();
         read_Packet(Packet);
         RH_byte1 = Packet[0];
@@ -45,6 +48,7 @@ void sensingTask() {
             }
             print2uart_new("DHT11: %d, %d\n", T_byte1, RH_byte1);
         }
+        */
 
         temperature.dataId = commitLocalDB(&temperature, sizeof(T_byte1));
         humidity.dataId = commitLocalDB(&humidity, sizeof(RH_byte1));
@@ -65,23 +69,25 @@ void fanTask() {
 
     Data_t tempData;
     Data_t humidityData;
+    Data_t fanSpeedData;
+    uint32_t temp = 0;
+    uint32_t humidity = 0;
+    uint32_t fanSpeed = 0;
     while (1) {
-        uint32_t temp = 0;
-        uint32_t humidity = 0;
-        tempData = readRemoteDB(taskId, &myTaskHandle, 1, 1, (void *)&temp,
-                                sizeof(temp));
-        humidityData = readRemoteDB(taskId, &myTaskHandle, 1, 2,
-                                    (void *)&humidity, sizeof(humidity));
+
+        tempData = readRemoteDB(taskId, &myTaskHandle, 1, 1, (void *)&temp, sizeof(temp));
+        humidityData = readRemoteDB(taskId, &myTaskHandle, 1, 2, (void *)&humidity, sizeof(humidity));
+        fanSpeedData = readRemoteDB(taskId, &myTaskHandle, 4, 1, (void *)&fanSpeed, sizeof(fanSpeed));
         // statistics[1] += (uint32_t)timeElapsed;
         if (INFO) {
             print2uart_new("T: %d ", temp);
             print2uart_new("RH: %d\n", humidity);
         }
 
-        // taskCommit(taskId.id, &myTaskHandle, 1, &remoteDataObject);
-        // statistics[0]++;
-        print2uart("%d\n", ++statistics[1]);
-        vTaskDelay(2000);
+        fanSpeed = 10;
+        taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 1, &fanSpeedData);
+        print2uart_new("%d\n", ++statistics[1]);
+        vTaskDelay(1000);
     }
 }
 
@@ -101,8 +107,7 @@ void sprayerTask() {
     while (1) {
         humidityData = readRemoteDB(taskId, &myTaskHandle, 1, 2,
                                     (void *)&humidity, sizeof(humidity));
-        sprayAmountData =
-            readRemoteDB(taskId, &myTaskHandle, 4, 2, (void *)&sprayAmount,
+        sprayAmountData = readRemoteDB(taskId, &myTaskHandle, 4, 2, (void *)&sprayAmount,
                          sizeof(sprayAmount));
         // statistics[1] += (uint32_t)timeElapsed;
         if (INFO) {
@@ -112,8 +117,8 @@ void sprayerTask() {
 
         taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 1, &sprayAmountData);
         // statistics[0]++;
-        print2uart("%d\n", ++statistics[2]);
-        vTaskDelay(2000);
+        print2uart_new("%d\n", ++statistics[2]);
+         vTaskDelay(1000);
     }
 }
 
@@ -131,8 +136,8 @@ void monitorTask() {
     while (1) {
         readLocalDB(1, (void *)&fanSpeed, sizeof(fanSpeed));
         readLocalDB(2, (void *)&sprayAmount, sizeof(sprayAmount));
-        print2uart("%d\n", ++statistics[3]);
-        vTaskDelay(2000);
+        print2uart_new("%d\n", ++statistics[3]);
+        vTaskDelay(1000);
     }
 }
 
