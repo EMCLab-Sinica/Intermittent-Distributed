@@ -19,7 +19,7 @@
 #include "myuart.h"
 
 #define DEBUG 0  // control debug message
-#define INFO 0   // control debug message
+#define INFO 1   // control debug message
 
 #pragma NOINIT(NVMDatabase)
 static Database_t NVMDatabase;
@@ -206,17 +206,15 @@ Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask,
     RequestDataPacket_t packet = {
         .header.packetType = RequestData, .taskId = taskId, .dataId = dataId};
     if (INFO) {
-        print2uart(
-            "readRemoteDB: task (%d, %d), read remote dataId:(%d, %d), wait "
-            "for notification\n",
-            taskId.nodeAddr, taskId.id, remoteAddr, id);
+        print2uart("task (%d, %d), read remote (%d, %d)\n", taskId.nodeAddr, taskId.id, remoteAddr, id);
     }
-    uint32_t ulNotificationValue;
+    uint32_t ulNotificationValue = 0;
     do {
-        RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
+        // RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
+        RFSendPacket(remoteAddr, (uint8_t *)&packet, sizeof(packet));
         ulNotificationValue = ulTaskNotifyTake(
             pdFALSE, /* Clear the notification value before exiting. */
-            pdMS_TO_TICKS(2000));
+            pdMS_TO_TICKS(800));
     } while (ulNotificationValue != 1);
 
     if (DEBUG) print2uart("readRemoteDB: remote dataId: %d, notified\n", id);

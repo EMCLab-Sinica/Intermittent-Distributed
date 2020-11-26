@@ -8,8 +8,8 @@
 #define ECB 1
 #include <ThirdParty/tiny-AES-c/aes.h>
 
-#define  DEBUG 1
-#define INFO 1
+#define  DEBUG 0
+#define INFO 0
 
 #pragma NOINIT(DBServiceRoutinePacketQueue);
 QueueHandle_t DBServiceRoutinePacketQueue;

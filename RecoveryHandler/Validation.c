@@ -227,7 +227,7 @@ void outboundValidationHandler()
             }
             if (INFO)
             {
-                print2uart("Record Id:%d, Validation: task: %d, stage: %d\n",
+                print2uart("Record :%d, Validation: task: %d, stage: %d\n",
                            i, outboundRecord->taskId.id, outboundRecord->stage);
             }
 
