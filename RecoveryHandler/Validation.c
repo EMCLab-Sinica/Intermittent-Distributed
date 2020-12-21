@@ -246,15 +246,25 @@ void outboundValidationHandler()
                     }
                     if (toNextStage == pdTRUE)
                     {
+                        outboundRecord->stage = commitPhase;
+                        /*
                         if (outboundRecord->taskValidInterval.vBegin <= outboundRecord->taskValidInterval.vEnd)
                         {
                             outboundRecord->stage = commitPhase;
                         } else
                         {
-                            // abort
+                            print2uart("abort\n");
+                            print2uart("%u\n",outboundRecord->taskValidInterval.vBegin );
+                            print2uart("%u\n", outboundRecord->taskValidInterval.vEnd);
+                            TaskRecord_t* task = (TaskRecord_t*)(outboundRecord->taskRecord);
+                            vTaskDelete(task->TCB); //delete the current task
+                            task->taskStatus = invalid;
+                            xTaskCreate(task->address, task->taskName, task->stackSize, NULL, task->priority, NULL);
+                            outboundRecord->validRecord = false;
                         }
+                        */
+                        break;
                     }
-                    break;
                 }
                 case commitPhase:
                 {

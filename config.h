@@ -8,7 +8,7 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#define NODEADDR 2
+#define NODEADDR 4
 #define CYCLE_PER_US 16
 
     //#define ONNVM //read/write on NVM
