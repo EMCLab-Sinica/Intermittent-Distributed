@@ -24,7 +24,3 @@ void dumpAll();
 uint64_t getBegin(uint8_t objectIndex);
 uint64_t getEnd(uint8_t objectIndex);
 
-
-
-
-

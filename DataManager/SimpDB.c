@@ -1,8 +1,5 @@
 /*
  * SimpDB.cpp
- *
- *  Created on: 2017�~7��12��
- *      Author: WeiMingChen
  */
 
 #include "SimpDB.h"
@@ -23,8 +20,6 @@
 
 #pragma NOINIT(NVMDatabase)
 static Database_t NVMDatabase;
-
-TaskAccessObjectLog_t taskAccessObjectLog[MAX_GLOBAL_TASKS];
 
 /* Half of RAM for caching (0x2C00~0x3800) */
 #pragma location = 0x2C00  // Space for working at SRAM

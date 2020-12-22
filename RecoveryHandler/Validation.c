@@ -1,5 +1,6 @@
 #include "FreeRTOS.h"
 #include "RecoveryHandler/TaskControl.h"
+#include "SimpDB.h"
 #include "task.h"
 #include "Validation.h"
 #include "Recovery.h"
@@ -442,27 +443,23 @@ void handleCommitResponse(CommitResponsePacket_t *packet)
     }
 }
 
-TimeInterval_t calcValidInterval(TaskUUID_t taskId, DataUUID_t dataId, unsigned long long *dataBeginRecord)
+TimeInterval_t calcValidInterval(TaskUUID_t taskId, DataUUID_t dataId)
 {
-    TimeInterval_t taskInterval = {.vBegin = 0, .vEnd = UINT64_MAX};
-    for (uint8_t i = 0; i < MAX_GLOBAL_TASKS; i++)
+    // need if modified
+    // reader task
+    TimeInterval_t taskInterval = {.vBegin = 0, .vEnd = timeCounter};
+    Data_t* dataRecord = getDataRecord(dataId, nvmdb);
+    // FIXME: here
+    if (dataRecord->accessLog.WARBegins[dataRecord->accessLog.pos] > 1 )// modified by some other task
     {
-        if (taskAccessObjectLog[i].validLog == pdTRUE &&
-            taskIdEqual(&(taskAccessObjectLog[i].taskId), &taskId))
-        {
-            taskInterval.vEnd = min(taskInterval.vEnd, taskAccessObjectLog[i].writeSetReadBegin - 1);
-        }
-        break;
+        taskInterval.vEnd = min(taskInterval.vEnd, getDataBegin(dataId) - 1);
     }
 
     // write set
     unsigned long long dataBegin = getDataBegin(dataId);
-    taskInterval.vBegin = max(taskInterval.vBegin, dataBegin + 1);
-
-    // og down validation log
-    if (dataBeginRecord != NULL)
+    if (1)  // last modified
     {
-        *dataBeginRecord = dataBegin;
+        taskInterval.vBegin = max(taskInterval.vBegin, getDataBegin(dataId) + 1);
     }
 
     return taskInterval;

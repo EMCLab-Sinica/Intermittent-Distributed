@@ -260,6 +260,7 @@ void RecoveryServiceRoutine()
     while (1)
     {
         xTaskNotifyWait(0x0, UINT32_MAX, &fromAddr, portMAX_DELAY);
-        sendSyncTimeResponse((uint8_t)fromAddr);
+        //sendSyncTimeResponse((uint8_t)fromAddr);
+        sendSyncTimeResponse(0);
     }
 }

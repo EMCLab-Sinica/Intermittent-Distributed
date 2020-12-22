@@ -65,6 +65,13 @@ typedef struct DataTransPacket
 
 } DataTransPacket_t;
 
+typedef struct TaskAccessObjectLog
+{
+    uint64_t WARBegins[5];
+    uint16_t pos;
+
+} TaskAccessObjectLog_t;
+
 // Data structure used in local database
 typedef struct Data
 {
@@ -72,8 +79,8 @@ typedef struct Data
     DataVersion_e version;
     uint8_t size;
     void *ptr; // points to the data location
-    TaskUUID_t readers[MAX_READERS];
     TaskUUID_t validationLock;
+    TaskAccessObjectLog_t accessLog;
 
 } Data_t;
 
@@ -84,15 +91,6 @@ typedef struct Database
     uint8_t dataIdAutoIncrement; // auto increment for NVM DB
 
 } Database_t;
-
-
-typedef struct TaskAccessObjectLog
-{
-    bool validLog;
-    TaskUUID_t taskId;
-    uint64_t writeSetReadBegin;
-
-} TaskAccessObjectLog_t;
 
 /* for validation */
 extern uint64_t  timeCounter;
