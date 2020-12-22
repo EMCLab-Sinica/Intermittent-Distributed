@@ -85,8 +85,7 @@ int main(void) {
 
         // system task
         stopTrack = 1;
-        xTaskCreate(bootstrapTask, "bootstrap", configMINIMAL_STACK_SIZE, NULL,
-                    2, NULL);
+        xTaskCreate(bootstrapTask, "bootstrap", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
         stopTrack = 0;
 
         vTaskStartScheduler();
@@ -102,8 +101,7 @@ int main(void) {
         failureRecovery();
 
         stopTrack = 1;
-        xTaskCreate(bootstrapTask, "bootstrap", configMINIMAL_STACK_SIZE, NULL,
-                    2, NULL);
+        xTaskCreate(bootstrapTask, "bootstrap", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
         stopTrack = 0;
 
         /* Start the scheduler. */
@@ -121,35 +119,18 @@ int main(void) {
 }
 
 void bootstrapTask() {
-    if (nodeAddr != 1 || (nodeAddr == 1 && firstTime == 1)) {
+    if (nodeAddr == 4) { // always on node
+        xTaskCreate(RecoveryServiceRoutine, "RecSrv", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
+    }
+    else if (nodeAddr != 4) {
         DeviceWakeUpPacket_t packet = {
             .header.packetType = DeviceWakeUp,
             .addr = nodeAddr,
         };
         do {
-            RFSendPacket(0, (uint8_t *)&packet, sizeof(packet));
-            if (nodeAddr == 1) {
-                myTimeSyncTries++;
-                if (myTimeSyncTries >= 2 && otherTimeSyncTries >= 2) {
-                    // all the devices has been offline and the time is lost,
-                    // reset
-                    myTimeSyncTries = 0;
-                    otherTimeSyncTries = 0;
-                    timeSynced = 1;
-                    timeCounter = 0;
-                }
-            }
+            RFSendPacket(4, (uint8_t *)&packet, sizeof(packet));
             vTaskDelay(500);
         } while (timeSynced == 0);
-        stopTrack = 1;
-        xTaskCreate(RecoveryServiceRoutine, "RecSrv", configMINIMAL_STACK_SIZE,
-                    NULL, 0, NULL);
-        stopTrack = 0;
-    } else if (nodeAddr == 1 && firstTime != 1) {
-        stopTrack = 1;
-        xTaskCreate(RecoveryServiceRoutine, "RecSrv", configMINIMAL_STACK_SIZE,
-                    NULL, 0, NULL);
-        stopTrack = 0;
     }
 
     if (firstTime != 1) {
@@ -169,8 +150,6 @@ void bootstrapTask() {
     xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 0, NULL);
     xTaskCreate(inboundValidationHandler, "inboundV", 400, NULL, 0, NULL);
     xTaskCreate(outboundValidationHandler, "outboundV", 400, NULL, 0, NULL);
-    // xTaskCreate(syncTimeHelperTask, "timeHelper", configMINIMAL_STACK_SIZE,
-    // NULL, 0, NULL);
     stopTrack = 0;
 
     if (DEBUG) {
@@ -311,11 +290,12 @@ __interrupt void Port_8(void) {
                 print2uart("Send to queue failed\n");
             }
         } else if (packetHeader->packetType == DeviceWakeUp) {
+            if (nodeAddr != 4)
+            {
+                return;
+            }
             BaseType_t xWakeupHigherPriorityTask = pdTRUE;
             if (RecoverySrvTaskHandle == NULL) {
-                if (nodeAddr == 1) {
-                    otherTimeSyncTries++;
-                }
                 if (DEBUG) {
                     print2uart("T not inited\n");
                 }
