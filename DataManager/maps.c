@@ -15,16 +15,16 @@ static uint32_t mapSwitcher[NUMCOMMIT];//16bit * 15 = 240 maximum objects
 #pragma NOINIT(map0)
 static void* map0[MAX_DB_OBJ];
 #pragma NOINIT(objectValidIntervalBegin0)
-static uint64_t objectValidIntervalBegin0[MAX_DB_OBJ];
+static uint32_t objectValidIntervalBegin0[MAX_DB_OBJ];
 #pragma NOINIT(objectValidIntervalEnd0)
-static uint64_t objectValidIntervalEnd0[MAX_DB_OBJ];
+static uint32_t objectValidIntervalEnd0[MAX_DB_OBJ];
 
 #pragma NOINIT(map1)
 static void* map1[MAX_DB_OBJ];
 #pragma NOINIT(objectValidIntervalBegin1)
-static uint64_t objectValidIntervalBegin1[MAX_DB_OBJ];
+static uint32_t objectValidIntervalBegin1[MAX_DB_OBJ];
 #pragma NOINIT(objectValidIntervalEnd1)
-static uint64_t objectValidIntervalEnd1[MAX_DB_OBJ];
+static uint32_t objectValidIntervalEnd1[MAX_DB_OBJ];
 
 /*
  * description: reset all the mapSwitcher and maps
@@ -35,12 +35,12 @@ static uint64_t objectValidIntervalEnd1[MAX_DB_OBJ];
     memset(mapSwitcher, 0, sizeof(uint32_t) * NUMCOMMIT);
 
     memset(map0, 0, sizeof(void*) * MAX_DB_OBJ);
-    memset(objectValidIntervalBegin0, 0, sizeof(uint64_t) * MAX_DB_OBJ);
-    memset(objectValidIntervalEnd0, 0, sizeof(uint64_t) * MAX_DB_OBJ);
+    memset(objectValidIntervalBegin0, 0, sizeof(uint32_t) * MAX_DB_OBJ);
+    memset(objectValidIntervalEnd0, 0, sizeof(uint32_t) * MAX_DB_OBJ);
 
     memset(map1, 0, sizeof(void*) * MAX_DB_OBJ);
-    memset(objectValidIntervalBegin1, 0, sizeof(uint64_t) * MAX_DB_OBJ);
-    memset(objectValidIntervalEnd1, 0, sizeof(uint64_t) * MAX_DB_OBJ);
+    memset(objectValidIntervalBegin1, 0, sizeof(uint32_t) * MAX_DB_OBJ);
+    memset(objectValidIntervalEnd1, 0, sizeof(uint32_t) * MAX_DB_OBJ);
 }
 
 
@@ -84,7 +84,7 @@ void* accessData(uint8_t objectIndex){
  * parameters: number of the object, source address
  * return: none
  * */
-void commit(uint32_t objectIndex, void *dataAddress, uint64_t vBegin, uint64_t vEnd)
+void commit(uint32_t objectIndex, void *dataAddress, uint32_t vBegin, uint32_t vEnd)
 {
     int prefix = objectIndex / 16, postfix = objectIndex % 16;
     if (CHECK_BIT(mapSwitcher[prefix], postfix) > 0)
@@ -110,7 +110,7 @@ void commit(uint32_t objectIndex, void *dataAddress, uint64_t vBegin, uint64_t v
  * parameters: number of the object
  * return: value of the begin interval
  * */
-uint64_t getBegin(uint8_t objectIndex){
+uint32_t getBegin(uint8_t objectIndex){
     int prefix = objectIndex/16, postfix = objectIndex%16;
     if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
         dummy = 1;
@@ -128,7 +128,7 @@ uint64_t getBegin(uint8_t objectIndex){
  * parameters: number of the object
  * return: value of the End interval
  * */
-uint64_t  getEnd(uint8_t objectIndex){
+uint32_t  getEnd(uint8_t objectIndex){
     int prefix = objectIndex/16,postfix = objectIndex%16;
     if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
         dummy = 1;

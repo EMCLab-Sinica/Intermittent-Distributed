@@ -19,8 +19,8 @@ void init();
 void* access(uint8_t objectIndex);
 void accessCache(uint8_t objectIndex);
 void* accessData(uint8_t objectIndex);
-void commit(uint32_t objectIndex, void *dataAddress, uint64_t vBegin, uint64_t vEnd);
+void commit(uint32_t objectIndex, void *dataAddress, uint32_t vBegin, uint32_t vEnd);
 void dumpAll();
-uint64_t getBegin(uint8_t objectIndex);
-uint64_t getEnd(uint8_t objectIndex);
+uint32_t getBegin(uint8_t objectIndex);
+uint32_t getEnd(uint8_t objectIndex);
 

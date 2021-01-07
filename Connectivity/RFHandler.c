@@ -14,7 +14,7 @@
 
 extern uint8_t nodeAddr;
 extern int firstTime;
-extern uint64_t timeCounter;
+extern uint32_t timeCounter;
 
 
 void syncTime(uint8_t* timeSynced)

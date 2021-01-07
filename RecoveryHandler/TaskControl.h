@@ -5,8 +5,8 @@
 
 typedef struct TimeInterval
 {
-    uint64_t vBegin;
-    uint64_t vEnd;
+    uint32_t vBegin;
+    uint32_t vEnd;
 
 } TimeInterval_t;
 
@@ -41,7 +41,7 @@ typedef struct OutboundValidationRecord
     uint8_t writeSetNum;
     // FIXME: not sharable modified version
     Data_t writeSet[MAX_TASK_READ_OBJ];
-    uint64_t vPhase1DataBegin[MAX_TASK_READ_OBJ];
+    uint32_t vPhase1DataBegin[MAX_TASK_READ_OBJ];
 
  } InboundValidationRecord_t;
 

@@ -3,7 +3,7 @@ volatile uint32_t ulRunTimeCounterOverflows = 0;
 
 
 uint32_t divider = 0;
-uint64_t timeCounter = 0;
+uint32_t timeCounter = 0;
 
 /* Use for recovery */
 #pragma DATA_SECTION(firstTime, ".map") //indicate whether task stacks exist

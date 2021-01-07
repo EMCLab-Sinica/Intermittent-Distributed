@@ -63,7 +63,7 @@ typedef struct ResponseDataPacket
 typedef struct SyncCounterPacket
 {
     PacketHeader_t header;
-    uint64_t timeCounter;
+    uint32_t timeCounter;
 
 } SyncCounterPacket_t;
 

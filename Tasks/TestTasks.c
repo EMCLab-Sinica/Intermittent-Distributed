@@ -13,7 +13,7 @@
 #define INFO 1
 
 extern uint8_t nodeAddr;
-extern uint64_t timeCounter;
+extern uint32_t timeCounter;
 extern uint32_t statistics[4];
 
 /* DHT11 */

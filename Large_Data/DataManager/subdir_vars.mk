@@ -3,6 +3,9 @@
 ################################################################################
 
 # Add inputs and outputs from these tool invocations to the build variables 
+OUT_SRCS += \
+../DataManager/cscope.out 
+
 C_SRCS += \
 ../DataManager/DBServiceRoutine.c \
 ../DataManager/SimpDB.c \
@@ -32,5 +35,8 @@ C_SRCS__QUOTED += \
 "../DataManager/DBServiceRoutine.c" \
 "../DataManager/SimpDB.c" \
 "../DataManager/maps.c" 
+
+OUT_SRCS__QUOTED += \
+"../DataManager/cscope.out" 
 
 

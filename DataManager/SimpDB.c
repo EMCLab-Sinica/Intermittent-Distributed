@@ -87,7 +87,7 @@ void VMDBConstructor() {
     }
 }
 
-uint64_t getDataBegin(DataUUID_t dataId) {
+uint32_t getDataBegin(DataUUID_t dataId) {
     Data_t *data;
     for (uint8_t i = 0; i < MAX_DB_OBJ; i++) {
         data = NVMDatabase.dataRecord + i;
@@ -95,7 +95,7 @@ uint64_t getDataBegin(DataUUID_t dataId) {
             return getBegin(i);
         }
     }
-    return UINT64_MAX;
+    return UINT32_MAX;
 }
 
 Data_t *getDataRecord(DataUUID_t dataId, DBSearchMode_e mode) {

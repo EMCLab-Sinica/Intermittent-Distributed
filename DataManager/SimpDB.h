@@ -67,7 +67,7 @@ typedef struct DataTransPacket
 
 typedef struct TaskAccessObjectLog
 {
-    uint64_t WARBegins[5];
+    uint32_t WARBegins[5];
     uint16_t pos;
 
 } TaskAccessObjectLog_t;
@@ -93,14 +93,14 @@ typedef struct Database
 } Database_t;
 
 /* for validation */
-extern uint64_t  timeCounter;
+extern uint32_t  timeCounter;
 
 /* DB functions */
 void NVMDBConstructor();
 void VMDBConstructor();
 void DBDestructor();
 
-uint64_t getDataBegin(DataUUID_t dataId);
+uint32_t getDataBegin(DataUUID_t dataId);
 Data_t *getDataRecord(DataUUID_t dataId, DBSearchMode_e mode);
 Data_t readLocalDB(uint8_t id, void* destDataPtr, uint8_t size);
 Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
@@ -119,7 +119,7 @@ void registerTCB(int id);
 void unresgisterTCB(int id);
 
 /* internal functions */
-static uint64_t min(uint64_t a, uint64_t b)
+static uint32_t min(uint32_t a, uint32_t b)
 {
     if (a > b)
         return b;
@@ -127,7 +127,7 @@ static uint64_t min(uint64_t a, uint64_t b)
         return a;
 }
 
-static uint64_t max(uint64_t a, uint64_t b)
+static uint32_t max(uint32_t a, uint32_t b)
 {
     if (a > b)
         return a;

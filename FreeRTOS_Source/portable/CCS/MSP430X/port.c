@@ -48,8 +48,7 @@ any details of its type. */
 
 
 #if ( configINTERMITTENT_DISTRIBUTED== 1)
-	extern uint64_t  timeCounter;
-	extern uint64_t  taskRecency[12];
+	extern uint32_t  timeCounter;
 #endif
 /* Each task maintains a count of the critical section nesting depth.  Each
 time a critical section is entered the count is incremented.  Each time a
@@ -93,7 +92,7 @@ uint32_t *pulTopOfStack, ulTemp;
 		pxTopOfStack--;
 	*/
 
-	/* Data types are need either 16 bits or 32 bits depending on the data 
+	/* Data types are need either 16 bits or 32 bits depending on the data
 	and code model used. */
 	if( sizeof( pxCode ) == sizeof( uint16_t ) )
 	{
@@ -104,7 +103,7 @@ uint32_t *pulTopOfStack, ulTemp;
 	else
 	{
 		/* Make room for a 20 bit value stored as a 32 bit value. */
-		pusTopOfStack = ( uint16_t * ) pxTopOfStack;		
+		pusTopOfStack = ( uint16_t * ) pxTopOfStack;
 		pusTopOfStack--;
 		pulTopOfStack = ( uint32_t * ) pusTopOfStack;
 		*pulTopOfStack = ( uint32_t ) pxCode;
@@ -113,7 +112,7 @@ uint32_t *pulTopOfStack, ulTemp;
 	pusTopOfStack--;
 	*pusTopOfStack = portFLAGS_INT_ENABLED;
 	pusTopOfStack -= ( sizeof( StackType_t ) / 2 );
-	
+
 	/* From here on the size of stacked items depends on the memory model. */
 	pxTopOfStack = ( StackType_t * ) pusTopOfStack;
 
@@ -134,7 +133,7 @@ uint32_t *pulTopOfStack, ulTemp;
 		*pxTopOfStack = ( StackType_t ) 0x9999;
 		pxTopOfStack--;
 		*pxTopOfStack = ( StackType_t ) 0x8888;
-		pxTopOfStack--;	
+		pxTopOfStack--;
 		*pxTopOfStack = ( StackType_t ) 0x5555;
 		pxTopOfStack--;
 		*pxTopOfStack = ( StackType_t ) 0x6666;
@@ -152,7 +151,7 @@ uint32_t *pulTopOfStack, ulTemp;
 	/* A variable is used to keep track of the critical section nesting.
 	This variable has to be stored as part of the task context and is
 	initially set to zero. */
-	*pxTopOfStack = ( StackType_t ) portNO_CRITICAL_SECTION_NESTING;	
+	*pxTopOfStack = ( StackType_t ) portNO_CRITICAL_SECTION_NESTING;
 
 	/* Return a pointer to the top of the stack we have generated so this can
 	be stored in the task control block for the task. */
@@ -191,4 +190,4 @@ extern void vPortTickISR( void );
 	#endif
 }
 
-	
+
