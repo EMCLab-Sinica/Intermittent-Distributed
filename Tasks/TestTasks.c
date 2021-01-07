@@ -53,7 +53,7 @@ void sensingTask() {
         temperature.dataId = commitLocalDB(&temperature, sizeof(T_byte1));
         humidity.dataId = commitLocalDB(&humidity, sizeof(RH_byte1));
 
-        print2uart("%d\n", ++statistics[0]);
+        // print2uart("%d\n", ++statistics[0]);
         vTaskDelay(2000);
     }
 }

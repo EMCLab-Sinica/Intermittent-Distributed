@@ -111,6 +111,7 @@ typedef struct CommitResponsePacket
 } CommitResponsePacket_t;
 
 void RFSendPacket(uint8_t rxAddr, uint8_t *txBuffer, uint8_t pktlen);
+void RFSendPacketNoRTOS(uint8_t rxAddr, uint8_t *txBuffer, uint8_t pktlen);
 void syncTime(uint8_t* timeSynced);
 void sendSyncTimeResponse(uint8_t rxAddr);
 

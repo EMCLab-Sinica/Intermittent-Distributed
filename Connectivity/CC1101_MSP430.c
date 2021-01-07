@@ -538,6 +538,23 @@ uint8_t transmit(void)
     __delay_cycles(800 * CYCLE_PER_US);
     return TRUE;
 }
+
+/* No RTOS, no vTaskDelay, No CCA*/
+uint8_t transmit_no_rtos(void)
+{
+    sidle();
+    spi_write_strobe(STX); //sends the data over air
+    uint8_t marcstate;
+    marcstate = 0xFF; //set unknown/dummy state value
+
+    //while (marcstate != 0x01) //0x01 = ILDE after sending data
+    while (marcstate != 0x0D) //0x0D = RX
+    {
+        marcstate = (spi_read_register(MARCSTATE) & 0x1F); //read out state of CC1101 to be sure in IDLE and TX is finished
+    }
+    __delay_cycles(800 * CYCLE_PER_US);
+    return TRUE;
+}
 //-------------------------------[end]------------------------------------------
 
 //---------------------------[receive mode]-------------------------------------
@@ -708,6 +725,25 @@ uint8_t send_packet(uint8_t rx_addr, uint8_t *txbuffer,
     //} while (tx_retries_count <= tx_retries); //while count of retries is reaches
 
     //return FALSE; //send failed. too many retries
+}
+
+/* no FreeRTOS, no critical sections */
+uint8_t send_packet_no_rtos(uint8_t rx_addr, uint8_t *txbuffer,
+                    uint8_t pktlen, uint8_t tx_retries)
+{
+    uint8_t tx_retries_count = 0;
+
+    if (pktlen > (FIFOBUFFER - 1)) //FIFO overflow check
+    {
+        print2uart("ERROR: FIFO overflow");
+        return FALSE;
+    }
+
+    tx_payload_burst(rx_addr, txbuffer, pktlen); //loads the data in CC1101 buffer
+    transmit_no_rtos();                                           //sends data over air
+    receive();                                            //receive mode
+
+    return TRUE;
 }
 //-------------------------------[end]------------------------------------------
 

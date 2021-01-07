@@ -152,6 +152,7 @@ void wor_reset(void);
 
 uint8_t sidle(void);
 uint8_t transmit(void);
+uint8_t transmit_no_rtos(void);
 uint8_t receive(void);
 
 void show_register_settings(void);
@@ -169,6 +170,7 @@ void rx_fifo_erase(uint8_t *rxbuffer);
 void tx_fifo_erase(uint8_t *txbuffer);
 
 uint8_t send_packet(uint8_t rx_addr, uint8_t *txbuffer, uint8_t pktlen, uint8_t tx_retries);
+uint8_t send_packet_no_rtos(uint8_t rx_addr, uint8_t *txbuffer, uint8_t pktlen, uint8_t tx_retries);
 void send_acknowledge(uint8_t my_addr, uint8_t tx_addr);
 
 uint8_t check_acknowledge(uint8_t *rxbuffer, uint8_t pktlen, uint8_t src_addr, uint8_t my_addr);

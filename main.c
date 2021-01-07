@@ -2,7 +2,6 @@
 /*
  *  main.c
  *
- *  Author: Meenchen
  */
 #define TestDB
 
@@ -43,13 +42,9 @@ extern InboundValidationRecord_t inboundValidationRecords[MAX_GLOBAL_TASKS];
  * Configure the hardware as necessary.
  */
 static void prvSetupHardware(void);
-static void setupTimerTasks(void);
-void bootstrapTask();
 
 unsigned short SemphTCB;
 uint8_t nodeAddr = NODEADDR;
-volatile uint8_t otherTimeSyncTries = 0;
-volatile uint8_t myTimeSyncTries = 0;
 volatile uint8_t timeSynced = 0;
 
 extern QueueHandle_t DBServiceRoutinePacketQueue;
@@ -61,104 +56,86 @@ TaskHandle_t RecoverySrvTaskHandle = NULL;
 /*-----------------------------------------------------------*/
 
 int main(void) {
-    /* Configure the hardware ready to run the demo. */
     prvSetupHardware();
-
-    initRF(&nodeAddr);
-    // print2uart("%d %d\n", statistics[0], statistics[1]);
-
     if (firstTime != 1) {
-        memset(&statistics, 0, sizeof(uint32_t) * 4);
-        if (DEBUG) {
-            print2uart("Node id: %d FirstTime\n", nodeAddr);
-        }
-        timeCounter = 0;
         pvInitHeapVar();
-        initRecoveryEssential();
-        NVMDBConstructor();
-        VMDBConstructor();
-        initValidationEssentials();
-        /* Initialize RF*/
-        initDBSrvQueues();
-        initValidationQueues();
-        enableRFInterrupt();
-
-        // system task
-        stopTrack = 1;
-        xTaskCreate(bootstrapTask, "bootstrap", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
-        stopTrack = 0;
-
-        vTaskStartScheduler();
-
-    } else {
-        if (DEBUG) {
-            print2uart("Node id: %d Recovery\n", nodeAddr);
-        }
-        VMDBConstructor();
-        initDBSrvQueues();
-        initValidationQueues();
-        enableRFInterrupt();
-        failureRecovery();
-
-        stopTrack = 1;
-        xTaskCreate(bootstrapTask, "bootstrap", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
-        stopTrack = 0;
-
-        /* Start the scheduler. */
-        vTaskStartScheduler();
     }
 
-    /* If all is well, the scheduler will now be running, and the following
-    line will never be reached.  If the following line does execute, then
-    there was insufficient FreeRTOS heap memory available for the Idle and/or
-    timer tasks to be created.  See the memory management section on the
-    FreeRTOS web site for more details on the FreeRTOS heap
-    http://www.freertos.org/a00111.html. */
-    for (;;)
-        ;
-}
-
-void bootstrapTask() {
+    initRF(&nodeAddr);
+    enableRFInterrupt();
     DeviceWakeUpPacket_t packet = {
         .header.packetType = DeviceWakeUp,
         .addr = nodeAddr,
     };
     do {
-        RFSendPacket(SYNCTIME_NODE, (uint8_t *)&packet, sizeof(packet));
-        vTaskDelay(700);
-    } while (timeSynced == 0);
+        RFSendPacketNoRTOS(SYNCTIME_NODE, (uint8_t *)&packet, sizeof(packet));
+        __delay_cycles(11200000); // 700 * 1000 * US_PER_SEC
 
+    } while (timeSynced == 0);
+    DISABLE_GDO2_INT(); // disable RF Interrupt for setup
     if (DEBUG)
     {
         print2uart("TC, %d\n", timeCounter);
     }
 
-    if (firstTime != 1) {
-        if (nodeAddr == 1)
-        {
-            xTaskCreate(sensingTask, TASKNAME_SENSING, 400, NULL, 0, NULL);
-        } else if (nodeAddr == 2) {
-            xTaskCreate(fanTask, TASKNAME_FAN, 400, NULL, 0, NULL);
-        } else if (nodeAddr == 3) {
-            xTaskCreate(sprayerTask, TASKNAME_SPRAYER, 400, NULL, 0, NULL);
-        } else if (nodeAddr == 4) {
-            xTaskCreate(monitorTask, TASKNAME_MONITOR, 400, NULL, 0, NULL
-            );
-        }
-    }
+    VMDBConstructor();
+    initValidationQueues();
+    initDBSrvQueues();
     stopTrack = 1;
     xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 0, NULL);
     xTaskCreate(inboundValidationHandler, "inboundV", 400, NULL, 0, NULL);
     xTaskCreate(outboundValidationHandler, "outboundV", 400, NULL, 0, NULL);
     stopTrack = 0;
 
-    if (DEBUG) {
-        print2uart("Bootstrap Done\n");
+    if (firstTime != 1) {
+        memset(&statistics, 0, sizeof(uint32_t) * 4);
+        if (DEBUG) {
+            print2uart("Node id: %d FirstTime\n", nodeAddr);
+        }
+        initRecoveryEssential();
+        NVMDBConstructor();
+        initValidationEssentials();
+
+        switch (nodeAddr) {
+            case 1:
+            {
+                xTaskCreate(sensingTask, TASKNAME_SENSING, 400, NULL, 0, NULL);
+                break;
+            }
+            case 2:
+            {
+                xTaskCreate(fanTask, TASKNAME_FAN, 400, NULL, 0, NULL);
+                break;
+            }
+            case 3:
+            {
+                xTaskCreate(sprayerTask, TASKNAME_SPRAYER, 400, NULL, 0, NULL);
+                break;
+            }
+            case 4:
+            {
+                xTaskCreate(monitorTask, TASKNAME_MONITOR, 400, NULL, 0, NULL);
+                break;
+            }
+        }
+        firstTime = 1;  // need to consider recovery after this point
+
+        enableRFInterrupt();
+        vTaskStartScheduler();
+
+    } else {
+        if (DEBUG) {
+            print2uart("Node id: %d Recovery\n", nodeAddr);
+        }
+        failureRecovery();
+        enableRFInterrupt();
+        /* Start the scheduler. */
+        vTaskStartScheduler();
     }
 
-    firstTime = 1;  // need to consider recovery after this point
-    regTaskEnd();
-    vTaskDelete(NULL);
+    /* Should not reach here */
+    for (;;)
+        ;
 }
 
 static void prvSetupHardware(void) {
@@ -251,8 +228,6 @@ __interrupt void Port_5(void) {
     /* Button pushed, do something if you need to */
     if ((P5IFG & 1 << 5) == 0)  // P5.5
     {
-        timeSynced = 1;
-        timeCounter = 0;
     }
 
     if ((P5IFG & 1 << 6) == 0)  // P5.6
@@ -288,21 +263,7 @@ __interrupt void Port_8(void) {
                 DBServiceRoutinePacketQueue, buf, &xHigherPriorityTaskWoken);
             if (xSendQueueResult != pdTRUE) {
                 print2uart("Send to queue failed\n");
-            }
-        } else if (packetHeader->packetType == DeviceWakeUp) {
-            if (nodeAddr != 4)
-            {
                 return;
-            }
-            BaseType_t xWakeupHigherPriorityTask = pdTRUE;
-            if (RecoverySrvTaskHandle == NULL) {
-                if (DEBUG) {
-                    print2uart("T not inited\n");
-                }
-            } else {
-                xTaskNotifyFromISR(RecoverySrvTaskHandle, 0,
-                                   eSetValueWithOverwrite,
-                                   &xWakeupHigherPriorityTask);
             }
         }
 

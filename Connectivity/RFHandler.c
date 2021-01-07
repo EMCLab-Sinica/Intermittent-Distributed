@@ -37,3 +37,8 @@ void RFSendPacket(uint8_t rxAddr, uint8_t *txBuffer, uint8_t pktlen)
 {
     send_packet(rxAddr, txBuffer, pktlen, 0);
 }
+
+void RFSendPacketNoRTOS(uint8_t rxAddr, uint8_t *txBuffer, uint8_t pktlen)
+{
+    send_packet_no_rtos(rxAddr, txBuffer, pktlen, 0);
+}
