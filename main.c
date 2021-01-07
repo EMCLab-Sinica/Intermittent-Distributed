@@ -119,18 +119,18 @@ int main(void) {
 }
 
 void bootstrapTask() {
-    if (nodeAddr == 4) { // always on node
-        xTaskCreate(RecoveryServiceRoutine, "RecSrv", configMINIMAL_STACK_SIZE, NULL, 0, NULL);
-    }
-    else if (nodeAddr != 4) {
-        DeviceWakeUpPacket_t packet = {
-            .header.packetType = DeviceWakeUp,
-            .addr = nodeAddr,
-        };
-        do {
-            RFSendPacket(4, (uint8_t *)&packet, sizeof(packet));
-            vTaskDelay(500);
-        } while (timeSynced == 0);
+    DeviceWakeUpPacket_t packet = {
+        .header.packetType = DeviceWakeUp,
+        .addr = nodeAddr,
+    };
+    do {
+        RFSendPacket(SYNCTIME_NODE, (uint8_t *)&packet, sizeof(packet));
+        vTaskDelay(700);
+    } while (timeSynced == 0);
+
+    if (DEBUG)
+    {
+        print2uart("TC, %d\n", timeCounter);
     }
 
     if (firstTime != 1) {

@@ -50,13 +50,13 @@ void NVMDBConstructor() {
         NVMDatabase.dataRecord[i].size = 0;
         memset(&(NVMDatabase.dataRecord[i].validationLock), 0,
                sizeof(TaskUUID_t));
-        memset(NVMDatabase.dataRecord[i].readers, 0,
-               sizeof(TaskUUID_t) * MAX_READERS);
+        //memset(NVMDatabase.dataRecord[i].readers, 0,
+        //       sizeof(TaskUUID_t) * MAX_READERS);
     }
 
     VMWorkingSpacePos = 0;
     for (uint8_t i = 0; i < MAX_GLOBAL_TASKS; i++) {
-        taskAccessObjectLog[i].validLog = pdFALSE;
+        // taskAccessObjectLog[i].validLog = pdFALSE;
     }
 
     // insert for test

@@ -2,33 +2,12 @@
 volatile uint32_t ulRunTimeCounterOverflows = 0;
 
 
+uint32_t divider = 0;
 uint64_t timeCounter = 0;
 
 /* Use for recovery */
 #pragma DATA_SECTION(firstTime, ".map") //indicate whether task stacks exist
 int firstTime;
-
-/* Use for sensing applications */
-int waitCap = 1;
-int waitTemp = 1;
-int ADCSemph;
-#pragma NOINIT(readCap)
-int readCap;
-#pragma NOINIT(readTemp)
-int readTemp;
-#pragma NOINIT(tempID)
-int tempID;
-#pragma NOINIT(capID)
-int capID;
-
-/* Use for calibrating/averaging sensor values */
-#pragma NOINIT(avgtempID)
-int avgtempID;
-#pragma NOINIT(avgcapID)
-int avgcapID;
-
-#pragma DATA_SECTION(information, ".map")
-uint64_t  information[10];
 
 /* -------------- FreeRTOS related functions --------------- */
 /* Prototypes for the standard FreeRTOS callback/hook functions implemented */
@@ -72,7 +51,12 @@ void vApplicationIdleHook( void )
 /* Hook at each application tick */
 void vApplicationTickHook( void )
 {
-    timeCounter++; //keep track of running time
+    divider++;
+    if (divider >= 200)
+    {
+        timeCounter++; //keep track of running time
+        divider = 0;
+    }
     return;
 }
 /*-----------------------------------------------------------*/

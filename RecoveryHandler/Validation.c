@@ -43,7 +43,7 @@ void handleCommitResponse(CommitResponsePacket_t *packet);
 InboundValidationRecord_t *getOrCreateInboundRecord(TaskUUID_t *taskId);
 InboundValidationRecord_t *getInboundRecord(TaskUUID_t *taskId);
 OutboundValidationRecord_t *getOutboundRecord(TaskUUID_t taskId);
-TimeInterval_t calcValidInterval(TaskUUID_t taskId, DataUUID_t dataId, unsigned long long *dataBeginRecord);
+TimeInterval_t calcValidInterval(TaskUUID_t taskId, DataUUID_t dataId);
 
 void initValidationEssentials()
 {
@@ -391,8 +391,8 @@ void handleValidationRequest(ValidationRequestPacket_t *packet)
         return;
     }
 
-    TimeInterval_t ti = calcValidInterval(packet->taskId, packet->data.dataId,
-                                          record->vPhase1DataBegin + record->writeSetNum - 1);
+    TimeInterval_t ti = calcValidInterval(packet->taskId, packet->data.dataId);
+
     sendValidationResponse(&(packet->taskId), &(packet->data.dataId), &ti, pdTRUE);
 }
 
