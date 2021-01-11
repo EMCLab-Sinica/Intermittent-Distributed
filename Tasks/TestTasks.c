@@ -74,10 +74,12 @@ void fanTask() {
     uint32_t humidity = 0;
     uint32_t fanSpeed = 0;
     while (1) {
-
-        tempData = readRemoteDB(taskId, &myTaskHandle, 1, 1, (void *)&temp, sizeof(temp));
-        humidityData = readRemoteDB(taskId, &myTaskHandle, 1, 2, (void *)&humidity, sizeof(humidity));
-        fanSpeedData = readRemoteDB(taskId, &myTaskHandle, 4, 1, (void *)&fanSpeed, sizeof(fanSpeed));
+        tempData = readRemoteDB(taskId, &myTaskHandle, 1, 1, (void *)&temp,
+                                sizeof(temp));
+        humidityData = readRemoteDB(taskId, &myTaskHandle, 1, 2,
+                                    (void *)&humidity, sizeof(humidity));
+        fanSpeedData = readRemoteDB(taskId, &myTaskHandle, 4, 1,
+                                    (void *)&fanSpeed, sizeof(fanSpeed));
         // statistics[1] += (uint32_t)timeElapsed;
         if (INFO) {
             print2uart_new("T: %d ", temp);
@@ -87,6 +89,33 @@ void fanTask() {
         fanSpeed = 10;
         taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 1, &fanSpeedData);
         print2uart_new("%d\n", ++statistics[1]);
+        vTaskDelay(1000);
+    }
+}
+
+void reportFanTask() {
+    TaskUUID_t taskId = {.nodeAddr = nodeAddr, .id = 2};
+    const TaskHandle_t myTaskHandle = xTaskGetHandle(TASKNAME_FAN_REPORT);
+    if (myTaskHandle == NULL) {
+        print2uart("Error, can not retrive task handle\n");
+        while (1)
+            ;
+    }
+
+    Data_t fanSpeedLocalData;
+    Data_t fanSpeedRemoteData;
+    uint32_t fanSpeedLocal;
+    uint32_t fanSpeedRemote;
+
+    while (1) {
+        fanSpeedLocalData =
+            readLocalDB(1, &fanSpeedLocal, sizeof(fanSpeedLocal));
+        fanSpeedRemoteData =
+            readRemoteDB(taskId, &myTaskHandle, 4, 1, (void *)&fanSpeedRemote,
+                         sizeof(fanSpeedRemote));
+        fanSpeedRemote = fanSpeedLocal;
+        taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 1,
+                   &fanSpeedRemoteData);
         vTaskDelay(1000);
     }
 }
@@ -107,7 +136,8 @@ void sprayerTask() {
     while (1) {
         humidityData = readRemoteDB(taskId, &myTaskHandle, 1, 2,
                                     (void *)&humidity, sizeof(humidity));
-        sprayAmountData = readRemoteDB(taskId, &myTaskHandle, 4, 2, (void *)&sprayAmount,
+        sprayAmountData =
+            readRemoteDB(taskId, &myTaskHandle, 4, 2, (void *)&sprayAmount,
                          sizeof(sprayAmount));
         // statistics[1] += (uint32_t)timeElapsed;
         if (INFO) {
@@ -115,10 +145,38 @@ void sprayerTask() {
         }
         sprayAmount = humidity + 10;
 
-        taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 1, &sprayAmountData);
+        taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 1,
+                   &sprayAmountData);
         // statistics[0]++;
         print2uart_new("%d\n", ++statistics[2]);
-         vTaskDelay(1000);
+        vTaskDelay(1000);
+    }
+}
+
+void reportSprayerTask() {
+    TaskUUID_t taskId = {.nodeAddr = nodeAddr, .id = 2};
+    const TaskHandle_t myTaskHandle = xTaskGetHandle(TASKNAME_SPRAYER_REPORT);
+    if (myTaskHandle == NULL) {
+        print2uart("Error, can not retrive task handle\n");
+        while (1)
+            ;
+    }
+
+    Data_t sprayAmountLocalData;
+    Data_t sprayAmountRemoteData;
+    uint32_t sprayAmountLocal;
+    uint32_t sprayAmountRemote;
+
+    while (1) {
+        sprayAmountLocalData =
+            readLocalDB(1, &sprayAmountLocal, sizeof(sprayAmountLocal));
+        sprayAmountRemoteData =
+            readRemoteDB(taskId, &myTaskHandle, 4, 2,
+                         (void *)&sprayAmountRemote, sizeof(sprayAmountRemote));
+        sprayAmountRemote = sprayAmountLocal;
+        taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 1,
+                   &sprayAmountRemoteData);
+        vTaskDelay(1000);
     }
 }
 
