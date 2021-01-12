@@ -28,10 +28,10 @@ InboundValidationRecord_t inboundValidationRecords[MAX_GLOBAL_TASKS];
 extern volatile TCB_t * volatile pxCurrentTCB;
 extern uint8_t nodeAddr;
 extern int firstTime;
-extern TaskAccessObjectLog_t taskAccessObjectLog[MAX_GLOBAL_TASKS];
+extern TaskAccessLog_t accessLog[MAX_LOCAL_TASKS];
 
-void sendValidationRequest(TaskUUID_t *taskId, Data_t *dataToCommit);
-void sendValidationResponse(TaskUUID_t *taskId, DataUUID_t *dataId, TimeInterval_t *timeInterval, uint8_t canCommit);
+void sendValidationRequest(TaskUUID_t *taskId, ValidateObject_t *dataToCommit);
+void sendValidationResponse(TaskUUID_t *taskId, DataUUID_t *dataId, TimeInterval_t *timeInterval);
 void sendCommitRequest(uint8_t dataOwner, TaskUUID_t *taskId, uint8_t decision);
 void sendCommitResponse(TaskUUID_t *taskId, DataUUID_t *dataId);
 
@@ -54,7 +54,8 @@ void initValidationEssentials()
         for(int i = 0; i < MAX_TASK_READ_OBJ; i++)
         {
             // maximum of data size
-            outRecord->writeSet[i].ptr = pvPortMalloc(sizeof(int32_t));
+            outRecord->RWSet[i].data.ptr = pvPortMalloc(sizeof(int32_t));
+            outRecord->RWSet[i].valid = 0;
         }
         outRecord->validRecord = pdFALSE;
         outRecord->writeSetNum = 0;
@@ -89,11 +90,8 @@ uint8_t initValidationQueues()
 
 void taskCommit(uint8_t tid, TaskHandle_t *fromTask, int32_t commitNum, ...)
 {
-
     if(DEBUG)
-    {
         print2uart("Task %d, request to commit\n", tid);
-    }
 
     // find a place
     OutboundValidationRecord_t *currentLog = NULL;
@@ -122,34 +120,61 @@ void taskCommit(uint8_t tid, TaskHandle_t *fromTask, int32_t commitNum, ...)
         print2uart("Error, maximum task read data exceeded\n");
         while(1);
     }
+    ValidateObject_t *currentObject;
     if (commitNum > 0)
     {
         Data_t *data;
-        Data_t *currentWriteSet;
         va_list vl;
         va_start(vl, commitNum);
         for (uint8_t i = 0; i < commitNum; i++)
         {
             data = va_arg(vl, Data_t *);
-            currentWriteSet = currentLog->writeSet + i;
-            void *ptrToNVM = currentWriteSet->ptr;
-            *currentWriteSet = *data;   // copy the data object to NVM
-            currentWriteSet->ptr = ptrToNVM;
-            memcpy(currentWriteSet->ptr, data->ptr, data->size);    // copy the data content
-            currentWriteSet->version = modified;
+            currentObject = currentLog->RWSet + i;
+            void *ptrToNVM = currentObject->data.ptr;
+            currentObject->data = *data;   // copy the data object to NVM
+            currentObject->data.ptr = ptrToNVM;
+            memcpy(currentObject->data.ptr, data->ptr, data->size);    // copy the data content
+            currentObject->data.version = modified;
             currentLog->writeSetNum++;
             if(DEBUG)
             {
                 print2uart("Commit data (%d, %d) added\n", data->dataId.owner, data->dataId.id);
             }
+            // remove from readSet
+            for (int i = 0; i < MAX_TASK_READ_OBJ; i++)
+            {
+                if (dataIdEqual(&(accessLog[tid].readSet[i]), &(data->dataId)))
+                {
+                    accessLog[tid].readSet[i].id = 0;
+                }
+            }
         }
         va_end(vl);
     }
+
+    // save readSet to log
+    for (int i = commitNum; i < MAX_TASK_READ_OBJ; i++)
+    {
+        if (accessLog[tid].readSet[i].id != 0)
+        {
+            DataUUID_t dataId = accessLog[tid].readSet[i];
+            currentObject = currentLog->RWSet + i;
+            currentObject->data.dataId = dataId;
+            currentObject->mode = ro;
+            currentObject->valid = 1;
+            currentLog->writeSetNum++;
+            if(DEBUG)
+            {
+                print2uart("Read data(%d, %d) added for\n", dataId.owner, dataId.id);
+            }
+        }
+    }
+
     TaskUUID_t taskId = {.nodeAddr = nodeAddr, .id = tid};
     currentLog->taskId = taskId;
     currentLog->taskHandle = fromTask;
-    currentLog->writeSetNum = commitNum;
     currentLog->stage = validationPhase;
+    // atomic operation
     currentLog->validRecord = pdTRUE;
 
     // task sleep wait for validation and commit
@@ -242,7 +267,8 @@ void outboundValidationHandler()
                         if(outboundRecord->validationPassed[i] == 0)
                         {
                             toNextStage = pdFALSE;
-                            sendValidationRequest(&(outboundRecord->taskId), outboundRecord->writeSet);
+                            sendValidationRequest(&(outboundRecord->taskId),
+                                                  outboundRecord->RWSet+ i);
                         }
                     }
                     if (toNextStage == pdTRUE)
@@ -275,7 +301,7 @@ void outboundValidationHandler()
                         if(outboundRecord->commitDone[i] == 0)
                         {
                             toNextStage = pdFALSE;
-                            sendCommitRequest(outboundRecord->writeSet[i].dataId.owner,
+                            sendCommitRequest(outboundRecord->RWSet[i].data.dataId.owner,
                                                     &(outboundRecord->taskId), pdTRUE);
                         }
                     }
@@ -314,28 +340,36 @@ void outboundValidationHandler()
 }
 
 // functions for outbound validation
-void sendValidationRequest(TaskUUID_t* taskId, Data_t *dataToCommit)
+void sendValidationRequest(TaskUUID_t* taskId, ValidateObject_t *validateObject)
 {
     ValidationRequestPacket_t packet;
     packet.header.packetType = ValidationRequest;
     packet.taskId = *taskId;
+    Data_t* dataToCommit = &(validateObject->data);
     packet.data.dataId = dataToCommit->dataId;
-    packet.data.version = dataToCommit->version;
-    packet.data.size = dataToCommit->size;
-    memcpy(packet.data.content, dataToCommit->ptr, dataToCommit->size);
+    if (validateObject->mode == rw)  // not readSet
+    {
+        packet.mode = rw;
+        packet.data.version = dataToCommit->version;
+        packet.data.size = dataToCommit->size;
+        memcpy(packet.data.content, dataToCommit->ptr, dataToCommit->size);
+    } else
+    {
+        packet.mode = ro;
+        packet.data.size = 0;
+        memcpy(packet.data.content, 0, dataToCommit->size);
+    }
 
     RFSendPacket(dataToCommit->dataId.owner, (uint8_t *)&packet, sizeof(packet));
 }
 
-void sendValidationResponse(TaskUUID_t *taskId, DataUUID_t *dataId, TimeInterval_t *timeInterval,
-        uint8_t canCommit)
+void sendValidationResponse(TaskUUID_t *taskId, DataUUID_t *dataId, TimeInterval_t *timeInterval)
 {
     ValidationResponsePacket_t packet;
     packet.header.packetType = ValidationResponse;
     packet.taskId = *taskId;
     packet.dataId = *dataId;
     packet.taskInterval = *timeInterval;
-    packet.canCommit = canCommit;
 
     RFSendPacket(taskId->nodeAddr, (uint8_t *)&packet, sizeof(packet));
 }
@@ -364,13 +398,24 @@ void handleValidationRequest(ValidationRequestPacket_t *packet)
     // find a new place
     InboundValidationRecord_t *record= getOrCreateInboundRecord(&(packet->taskId));
     record->taskId = packet->taskId;
-    Data_t *writeData = record->writeSet + record->writeSetNum;
-    writeData->dataId = packet->data.dataId;
-    writeData->version = packet->data.version;
-    writeData->size = packet->data.size;
-    memcpy(writeData->ptr, packet->data.content, packet->data.size);
-    // currently we only allow one data object access on per remote device
     record->validRecord = pdTRUE;
+
+    ValidateObject_t *entry = record->RWSet + packet->data.dataId.id;
+    entry->valid = 0;
+    Data_t *validateData = &(entry->data);
+    validateData->dataId = packet->data.dataId;
+    if (packet->mode == rw) // writeSet
+    {
+        validateData->version = packet->data.version;
+        validateData->size = packet->data.size;
+        memcpy(validateData->ptr, packet->data.content, packet->data.size);
+    }
+    else    // read only
+    {
+        validateData->version = consistent;
+        validateData->size = 0;
+        validateData->ptr = NULL;
+    }
 
     Data_t *dataRecord = getDataRecord(packet->data.dataId, nvmdb);
     if (dataRecord->validationLock.nodeAddr == 0)    // nullTask, not locked
@@ -380,6 +425,7 @@ void handleValidationRequest(ValidationRequestPacket_t *packet)
             print2uart("Not locked, get lock\n");
         }
         dataRecord->validationLock = record->taskId;    // lock
+        entry->valid = 1;
     }
     else if (!taskIdEqual(&(dataRecord->validationLock), &(record->taskId)))
     {
@@ -393,7 +439,7 @@ void handleValidationRequest(ValidationRequestPacket_t *packet)
 
     TimeInterval_t ti = calcValidInterval(packet->taskId, packet->data.dataId);
 
-    sendValidationResponse(&(packet->taskId), &(packet->data.dataId), &ti, pdTRUE);
+    sendValidationResponse(&(packet->taskId), &(packet->data.dataId), &ti);
 }
 
 void handleValidationResponse(ValidationResponsePacket_t *packet)
@@ -403,7 +449,7 @@ void handleValidationResponse(ValidationResponsePacket_t *packet)
     record->taskValidInterval.vEnd = min(record->taskValidInterval.vEnd, packet->taskInterval.vEnd);
     for (unsigned int i = 0; i < MAX_TASK_READ_OBJ; i++)
     {
-        if (dataIdEqual(&(record->writeSet[i].dataId), &(packet->dataId)))
+        if (dataIdEqual(&(record->RWSet[i].data.dataId), &(packet->dataId)))
         {
             record->validationPassed[i] = pdTRUE;
             break;
@@ -416,9 +462,9 @@ void handleCommitRequest(CommitRequestPacket_t *packet)
     InboundValidationRecord_t *record = getInboundRecord(&(packet->taskId));
     for (unsigned int i = 0; i < MAX_TASK_READ_OBJ; i++)
     {
-        if (record->writeSet[i].dataId.owner == nodeAddr)
+        if (record->RWSet[i].data.dataId.owner == nodeAddr)
         {
-            Data_t *writeData = record->writeSet + i;
+            Data_t *writeData = &(record->RWSet[i].data);
             Data_t* dataRecord = getDataRecord(writeData->dataId, nvmdb);
             // TODO: Commit
             // unlock
@@ -435,7 +481,7 @@ void handleCommitResponse(CommitResponsePacket_t *packet)
     OutboundValidationRecord_t *record = getOutboundRecord(packet->taskId);
     for (uint8_t i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
-        if (dataIdEqual(&(record->writeSet[i].dataId), &(packet->dataId)))
+        if (dataIdEqual(&(record->RWSet[i].data.dataId), &(packet->dataId)))
         {
             record->commitDone[i] = pdTRUE;
             break;

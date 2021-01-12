@@ -1122,7 +1122,7 @@ typedef struct xSTATIC_TCB
 
 	/* Intermittent Distributed */
 	#if ( configINTERMITTENT_DISTRIBUTED == 1 )
-		uint32_t			ulMyDummy1[2];	// vBegin, vEnd
+		uint32_t			ulMyDummy1[3];	// local_task_id, vBegin, vEnd
 		void				*pxMyDummy2[2]; // AddressOfVMStack, AddressOffset
 		int32_t				iMyDummy3[2];
 		void				*pxMyDummy4[3];

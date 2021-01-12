@@ -18,6 +18,19 @@ typedef enum ValidationStage
 
 } ValidationStage_e;
 
+typedef enum DataModType
+{
+    ro,
+    rw
+}DataModType_e;
+
+typedef struct ValidateObject
+{
+    uint8_t valid;
+    DataModType_e mode;   // 0: read-only, 1: r/w
+    Data_t data;
+} ValidateObject_t;
+
 typedef struct OutboundValidationRecord
 {
     uint8_t validRecord;
@@ -25,7 +38,7 @@ typedef struct OutboundValidationRecord
     TaskUUID_t taskId;
     uint8_t writeSetNum;
     TaskHandle_t *taskHandle;
-    Data_t writeSet[MAX_TASK_READ_OBJ];
+    ValidateObject_t RWSet[MAX_TASK_READ_OBJ];  // read/write set
     TimeInterval_t taskValidInterval;
     void* taskRecord;
 
@@ -40,7 +53,7 @@ typedef struct OutboundValidationRecord
     TaskUUID_t taskId;
     uint8_t writeSetNum;
     // FIXME: not sharable modified version
-    Data_t writeSet[MAX_TASK_READ_OBJ];
+    ValidateObject_t RWSet[MAX_TASK_READ_OBJ];  // read/write set
     uint32_t vPhase1DataBegin[MAX_TASK_READ_OBJ];
 
  } InboundValidationRecord_t;

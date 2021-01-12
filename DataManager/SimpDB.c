@@ -31,6 +31,8 @@ static unsigned int VMWorkingSpacePos;
 
 /* space in VM for working versions*/
 static Database_t VMDatabase;
+/* Task accessing log in VM */
+TaskAccessLog_t accessLog[MAX_LOCAL_TASKS];
 
 extern DataRequestLog_t dataRequestLogs[MAX_GLOBAL_TASKS];
 extern uint8_t nodeAddr;
@@ -54,10 +56,7 @@ void NVMDBConstructor() {
         //       sizeof(TaskUUID_t) * MAX_READERS);
     }
 
-    VMWorkingSpacePos = 0;
-    for (uint8_t i = 0; i < MAX_GLOBAL_TASKS; i++) {
-        // taskAccessObjectLog[i].validLog = pdFALSE;
-    }
+    memset(accessLog, 0, MAX_LOCAL_TASKS * sizeof(TaskAccessLog_t));
 
     // insert for test
     /*
@@ -149,6 +148,7 @@ Data_t *getDataRecord(DataUUID_t dataId, DBSearchMode_e mode) {
  * */
 
 Data_t readLocalDB(uint8_t id, void *destDataPtr, uint8_t size) {
+    extern TaskHandle_t pxCurrentTCB;
     DataUUID_t dataId = {.owner = nodeAddr, .id = id};
     Data_t dataWorking;
     Data_t *data = getDataRecord(dataId, all);
@@ -172,12 +172,24 @@ Data_t readLocalDB(uint8_t id, void *destDataPtr, uint8_t size) {
         dataWorking.size = size;
     }
 
+    // logging
+    for (int  i = 0; i < MAX_TASK_READ_OBJ; i++)
+    {
+        // find space
+        if (accessLog[pxCurrentTCB->local_task_id].readSet[i].id == 0)
+        {
+            accessLog[pxCurrentTCB->local_task_id].readSet[i] = dataId;
+            break;
+        }
+    }
+
     return dataWorking;
 }
 
 Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask,
                     uint8_t remoteAddr, uint8_t id, void *destDataPtr,
                     uint8_t size) {
+    extern TaskHandle_t pxCurrentTCB;
     Data_t *dataBuffer;
     DataUUID_t dataId = {.owner = remoteAddr, .id = id};
     // see if we already have the duplicated copy of the data object
@@ -221,6 +233,18 @@ Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask,
     memcpy(destDataPtr, dataBuffer->ptr, dataBuffer->size);
     dataRead.ptr = destDataPtr;
     dataRead.version = working;
+
+    // logging
+    for (int  i = 0; i < MAX_TASK_READ_OBJ; i++)
+    {
+        // find space
+        if (accessLog[pxCurrentTCB->local_task_id].readSet[i].id == 0)
+        {
+            accessLog[pxCurrentTCB->local_task_id].readSet[i] = dataId;
+            break;
+        }
+    }
+
     return dataRead;
 }
 

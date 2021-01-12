@@ -7,6 +7,7 @@
 #include "SimpDB.h"
 #include "dht11.h"
 #include "myuart.h"
+#include "OurTCB.h"
 #include "task.h"
 
 #define DEBUG 0
@@ -61,6 +62,7 @@ void sensingTask() {
 void fanTask() {
     TaskUUID_t taskId = {.nodeAddr = nodeAddr, .id = 1};
     const TaskHandle_t myTaskHandle = xTaskGetHandle(TASKNAME_FAN);
+    myTaskHandle->local_task_id = taskId.id;
     if (myTaskHandle == NULL) {
         print2uart("Error, can not retrive task handle\n");
         while (1)
@@ -181,6 +183,8 @@ void reportSprayerTask() {
 }
 
 void monitorTask() {
+    TaskUUID_t taskId = {.nodeAddr = nodeAddr, .id = 1};
+    const TaskHandle_t myTaskHandle = xTaskGetHandle(TASKNAME_MONITOR);
     int32_t fanSpeed = 0;
     int32_t sprayAmount = 0;
     Data_t fanSpeedData = createWorkingSpace(&fanSpeed, sizeof(fanSpeed));
@@ -194,6 +198,7 @@ void monitorTask() {
     while (1) {
         readLocalDB(1, (void *)&fanSpeed, sizeof(fanSpeed));
         readLocalDB(2, (void *)&sprayAmount, sizeof(sprayAmount));
+        taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 0);
         print2uart_new("%d\n", ++statistics[3]);
         vTaskDelay(1000);
     }

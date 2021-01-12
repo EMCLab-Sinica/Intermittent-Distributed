@@ -65,12 +65,12 @@ typedef struct DataTransPacket
 
 } DataTransPacket_t;
 
-typedef struct TaskAccessObjectLog
+typedef struct TaskCommitObjectLog
 {
     uint32_t WARBegins[5];
     uint16_t pos;
 
-} TaskAccessObjectLog_t;
+} TaskCommitObjectLog_t;
 
 // Data structure used in local database
 typedef struct Data
@@ -80,7 +80,7 @@ typedef struct Data
     uint8_t size;
     void *ptr; // points to the data location
     TaskUUID_t validationLock;
-    TaskAccessObjectLog_t accessLog;
+    TaskCommitObjectLog_t accessLog;
 
 } Data_t;
 
@@ -91,6 +91,11 @@ typedef struct Database
     uint8_t dataIdAutoIncrement; // auto increment for NVM DB
 
 } Database_t;
+
+typedef struct taskAccessLog
+{
+    DataUUID_t readSet[MAX_TASK_READ_OBJ];
+} TaskAccessLog_t;
 
 /* for validation */
 extern uint32_t  timeCounter;
@@ -106,6 +111,7 @@ Data_t readLocalDB(uint8_t id, void* destDataPtr, uint8_t size);
 Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
                     uint8_t id, void *destDataPtr, uint8_t size);
 
+bool writeDataObjectInt(uint8_t task_id, Data_t* data, int value);
 Data_t createWorkingSpace(void *dataPtr, uint32_t size);
 Data_t *createVMDBobject(uint8_t size);
 

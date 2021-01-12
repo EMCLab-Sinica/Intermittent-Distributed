@@ -80,6 +80,7 @@ typedef struct ValidationRequestPacket
     PacketHeader_t header;
     TaskUUID_t taskId;
     DataTransPacket_t data;
+    DataModType_e mode;
 
 } ValidationRequestPacket_t;
 
@@ -89,7 +90,6 @@ typedef struct ValidationResponsePacket
     TaskUUID_t taskId;
     DataUUID_t dataId;
     TimeInterval_t taskInterval;
-    uint8_t canCommit;
 
 } ValidationResponsePacket_t;
 

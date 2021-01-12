@@ -26,6 +26,7 @@ typedef struct tskTaskControlBlock /* The old naming convention is used to preve
 
 /*------------------------------  Extend to support validation: Start ------------------------------*/
 #if (configINTERMITTENT_DISTRIBUTED == 1)
+    uint32_t local_task_id;
     uint32_t vBegin;
     uint32_t vEnd;
     /*------------------------------  Extend to support validation: End ------------------------------*/
