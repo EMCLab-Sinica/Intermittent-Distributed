@@ -267,8 +267,20 @@ void outboundValidationHandler()
                         if(outboundRecord->validationPassed[i] == 0)
                         {
                             toNextStage = pdFALSE;
-                            sendValidationRequest(&(outboundRecord->taskId),
-                                                  outboundRecord->RWSet+ i);
+
+                            if (outboundRecord->RWSet[i].data.dataId.owner == nodeAddr) // local
+                            {
+                                // validate on local
+                                TimeInterval_t ti = calcValidInterval(outboundRecord->taskId, outboundRecord->RWSet[i].data.dataId);
+                                outboundRecord->taskValidInterval.vBegin = max(outboundRecord->taskValidInterval.vBegin, ti.vBegin);
+                                outboundRecord->taskValidInterval.vEnd = min(outboundRecord->taskValidInterval.vEnd, ti.vEnd);
+                                outboundRecord->validationPassed[i] = 1;
+                            }
+                            else
+                            {
+                                sendValidationRequest(&(outboundRecord->taskId), outboundRecord->RWSet + i);
+                            }
+
                         }
                     }
                     if (toNextStage == pdTRUE)
@@ -301,8 +313,23 @@ void outboundValidationHandler()
                         if(outboundRecord->commitDone[i] == 0)
                         {
                             toNextStage = pdFALSE;
-                            sendCommitRequest(outboundRecord->RWSet[i].data.dataId.owner,
-                                                    &(outboundRecord->taskId), pdTRUE);
+                            if (outboundRecord->RWSet[i].mode == ro)    // read only, not commit needed
+                            {
+                                outboundRecord->commitDone[i] = 1;
+                            }
+                            else {
+                                if (outboundRecord->RWSet[i] .data.dataId.owner == nodeAddr)  // local
+                                {
+                                    // commit on local
+                                    commitLocalDB(&(outboundRecord->RWSet[i].data), outboundRecord->RWSet[i].data.size);
+                                    outboundRecord->commitDone[i] = 1;
+                                } else {
+                                    sendCommitRequest(outboundRecord->RWSet[i]
+                                                          .data.dataId.owner,
+                                                      &(outboundRecord->taskId),
+                                                      pdTRUE);
+                                }
+                            }
                         }
                     }
 
