@@ -13,6 +13,14 @@
 #define NUMCOMMIT 15
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
+typedef struct TaskCommitLog
+{
+    uint32_t TaskBegins[5];
+    uint32_t TaskEnds[5];
+    uint16_t pos_valid[5];
+    uint16_t pos;
+
+} TaskCommitLog_t;
 
 /* map functions */
 void init();

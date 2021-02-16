@@ -35,8 +35,8 @@ typedef enum DBSearchMode
 
 typedef struct TaskUUID // Task Universal Unique Identifier
 {
-    uint8_t nodeAddr: 4;
-    uint8_t id: 4;
+    uint8_t nodeAddr;
+    uint8_t id;
 
 } TaskUUID_t;
 
@@ -65,13 +65,6 @@ typedef struct DataTransPacket
 
 } DataTransPacket_t;
 
-typedef struct TaskCommitObjectLog
-{
-    uint32_t WARBegins[5];
-    uint16_t pos;
-
-} TaskCommitObjectLog_t;
-
 // Data structure used in local database
 typedef struct Data
 {
@@ -80,7 +73,6 @@ typedef struct Data
     uint8_t size;
     void *ptr; // points to the data location
     TaskUUID_t validationLock;
-    TaskCommitObjectLog_t accessLog;
 
 } Data_t;
 

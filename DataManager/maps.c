@@ -14,17 +14,13 @@ static uint32_t mapSwitcher[NUMCOMMIT];//16bit * 15 = 240 maximum objects
 /* Protected data for atomicity */
 #pragma NOINIT(map0)
 static void* map0[MAX_DB_OBJ];
-#pragma NOINIT(objectValidIntervalBegin0)
-static uint32_t objectValidIntervalBegin0[MAX_DB_OBJ];
-#pragma NOINIT(objectValidIntervalEnd0)
-static uint32_t objectValidIntervalEnd0[MAX_DB_OBJ];
+#pragma NOINIT(taskCommitLog0)
+static TaskCommitLog_t taskCommitLog0[MAX_DB_OBJ];
 
 #pragma NOINIT(map1)
 static void* map1[MAX_DB_OBJ];
-#pragma NOINIT(objectValidIntervalBegin1)
-static uint32_t objectValidIntervalBegin1[MAX_DB_OBJ];
-#pragma NOINIT(objectValidIntervalEnd1)
-static uint32_t objectValidIntervalEnd1[MAX_DB_OBJ];
+#pragma NOINIT(taskCommitLog1)
+static TaskCommitLog_t taskCommitLog1[MAX_DB_OBJ];
 
 /*
  * description: reset all the mapSwitcher and maps
@@ -35,12 +31,9 @@ static uint32_t objectValidIntervalEnd1[MAX_DB_OBJ];
     memset(mapSwitcher, 0, sizeof(uint32_t) * NUMCOMMIT);
 
     memset(map0, 0, sizeof(void*) * MAX_DB_OBJ);
-    memset(objectValidIntervalBegin0, 0, sizeof(uint32_t) * MAX_DB_OBJ);
-    memset(objectValidIntervalEnd0, 0, sizeof(uint32_t) * MAX_DB_OBJ);
-
     memset(map1, 0, sizeof(void*) * MAX_DB_OBJ);
-    memset(objectValidIntervalBegin1, 0, sizeof(uint32_t) * MAX_DB_OBJ);
-    memset(objectValidIntervalEnd1, 0, sizeof(uint32_t) * MAX_DB_OBJ);
+    memset(taskCommitLog0, 0, sizeof(TaskCommitLog_t) * MAX_DB_OBJ);
+    memset(taskCommitLog1, 0, sizeof(TaskCommitLog_t) * MAX_DB_OBJ);
 }
 
 
@@ -90,14 +83,14 @@ void commit(uint32_t objectIndex, void *dataAddress, uint32_t vBegin, uint32_t v
     if (CHECK_BIT(mapSwitcher[prefix], postfix) > 0)
     {
         map0[objectIndex] = dataAddress;
-        objectValidIntervalBegin0[objectIndex] = vBegin;
-        objectValidIntervalEnd0[objectIndex] = vEnd;
+        TaskCommitLog_t * log = taskCommitLog0 + objectIndex;
+        log->TaskBegins[log->pos++] = vBegin;
     }
     else
     {
         map1[objectIndex] = dataAddress;
-        objectValidIntervalBegin1[objectIndex] = vBegin;
-        objectValidIntervalEnd1[objectIndex] = vEnd;
+        TaskCommitLog_t * log = taskCommitLog1 + objectIndex;
+        log->TaskBegins[log->pos++] = vBegin;
     }
 
     //atomic commit
@@ -114,11 +107,13 @@ uint32_t getBegin(uint8_t objectIndex){
     int prefix = objectIndex/16, postfix = objectIndex%16;
     if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
         dummy = 1;
-        return objectValidIntervalBegin1[objectIndex];
+        TaskCommitLog_t * log = taskCommitLog1 + objectIndex;
+        return log->TaskBegins[log->pos];
     }
     else{
         dummy = 0;
-        return objectValidIntervalBegin0[objectIndex];
+        TaskCommitLog_t * log = taskCommitLog0 + objectIndex;
+        return log->TaskBegins[log->pos];
     }
 }
 
@@ -132,11 +127,13 @@ uint32_t  getEnd(uint8_t objectIndex){
     int prefix = objectIndex/16,postfix = objectIndex%16;
     if(CHECK_BIT(mapSwitcher[prefix], postfix) > 0){
         dummy = 1;
-        return objectValidIntervalEnd1[objectIndex];
+        TaskCommitLog_t * log = taskCommitLog1 + objectIndex;
+        return log->TaskEnds[log->pos];
     }
     else{
         dummy = 0;
-        return objectValidIntervalEnd0[objectIndex];
+        TaskCommitLog_t * log = taskCommitLog0 + objectIndex;
+        return log->TaskEnds[log->pos];
     }
 }
 
