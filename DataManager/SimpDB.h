@@ -33,13 +33,6 @@ typedef enum DBSearchMode
     nvmdb
 } DBSearchMode_e;
 
-typedef struct TaskUUID // Task Universal Unique Identifier
-{
-    uint8_t nodeAddr: 4;
-    uint8_t id: 4;
-
-} TaskUUID_t;
-
 typedef struct DataUUID
 {
     uint8_t owner: 4;
@@ -65,13 +58,6 @@ typedef struct DataTransPacket
 
 } DataTransPacket_t;
 
-typedef struct TaskCommitObjectLog
-{
-    uint32_t WARBegins[5];
-    uint16_t pos;
-
-} TaskCommitObjectLog_t;
-
 // Data structure used in local database
 typedef struct Data
 {
@@ -80,7 +66,6 @@ typedef struct Data
     uint8_t size;
     void *ptr; // points to the data location
     TaskUUID_t validationLock;
-    TaskCommitObjectLog_t accessLog;
 
 } Data_t;
 
@@ -115,7 +100,7 @@ bool writeDataObjectInt(uint8_t task_id, Data_t* data, int value);
 Data_t createWorkingSpace(void *dataPtr, uint32_t size);
 Data_t *createVMDBobject(uint8_t size);
 
-DataUUID_t commitLocalDB(Data_t *data, size_t size);
+DataUUID_t commitLocalDB(TaskUUID_t taskUUID, Data_t *data, size_t size);
 
 
 void * getStackVM(int taskID);

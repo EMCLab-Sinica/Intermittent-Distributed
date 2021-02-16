@@ -307,7 +307,7 @@ Data_t *createVMDBobject(uint8_t size) {
     return newVMData;
 }
 
-DataUUID_t commitLocalDB(Data_t *data, size_t size) {
+DataUUID_t commitLocalDB(TaskUUID_t taskUUID, Data_t *data, size_t size) {
     if (data->version != working &&
         data->version !=
             modified)  // only working or modified version can be committed
@@ -330,7 +330,7 @@ DataUUID_t commitLocalDB(Data_t *data, size_t size) {
 
     void *NVMSpace = (void *)pvPortMalloc(data->size);
     memcpy(NVMSpace, data->ptr, data->size);
-    commit(objectIndex, NVMSpace, 0, 0);
+    commit(taskUUID, objectIndex, NVMSpace, 0, 0);
 
     /* Free the previous consistent data */
     if (oldMallocDataAddress) vPortFree(oldMallocDataAddress);
