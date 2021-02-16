@@ -28,7 +28,6 @@ InboundValidationRecord_t inboundValidationRecords[MAX_GLOBAL_TASKS];
 extern volatile TCB_t * volatile pxCurrentTCB;
 extern uint8_t nodeAddr;
 extern int firstTime;
-extern TaskAccessLog_t accessLog[MAX_LOCAL_TASKS];
 
 void sendValidationRequest(TaskUUID_t *taskId, ValidateObject_t *dataToCommit);
 void sendValidationResponse(TaskUUID_t *taskId, DataUUID_t *dataId, TimeInterval_t *timeInterval);
@@ -43,7 +42,7 @@ void handleCommitResponse(CommitResponsePacket_t *packet);
 InboundValidationRecord_t *getOrCreateInboundRecord(TaskUUID_t *taskId);
 InboundValidationRecord_t *getInboundRecord(TaskUUID_t *taskId);
 OutboundValidationRecord_t *getOutboundRecord(TaskUUID_t taskId);
-TimeInterval_t calcValidInterval(TaskUUID_t taskId, DataUUID_t dataId);
+TimeInterval_t calcValidInterval(DataUUID_t dataId, uint32_t readBegin, uint8_t has_write);
 
 void initValidationEssentials()
 {
@@ -140,34 +139,8 @@ void taskCommit(uint8_t tid, TaskHandle_t *fromTask, int32_t commitNum, ...)
             {
                 print2uart("Commit data (%d, %d) added\n", data->dataId.owner, data->dataId.id);
             }
-            // remove from readSet
-            for (int i = 0; i < MAX_TASK_READ_OBJ; i++)
-            {
-                if (dataIdEqual(&(accessLog[tid].readSet[i]), &(data->dataId)))
-                {
-                    accessLog[tid].readSet[i].id = 0;
-                }
-            }
         }
         va_end(vl);
-    }
-
-    // save readSet to log
-    for (int i = commitNum; i < MAX_TASK_READ_OBJ; i++)
-    {
-        if (accessLog[tid].readSet[i].id != 0)
-        {
-            DataUUID_t dataId = accessLog[tid].readSet[i];
-            currentObject = currentLog->RWSet + i;
-            currentObject->data.dataId = dataId;
-            currentObject->mode = ro;
-            currentObject->valid = 1;
-            currentLog->writeSetNum++;
-            if(DEBUG)
-            {
-                print2uart("Read data(%d, %d) added for\n", dataId.owner, dataId.id);
-            }
-        }
     }
 
     TaskUUID_t taskId = {.nodeAddr = nodeAddr, .id = tid};
@@ -268,19 +241,24 @@ void outboundValidationHandler()
                         {
                             toNextStage = pdFALSE;
 
-                            if (outboundRecord->RWSet[i].data.dataId.owner == nodeAddr) // local
+                            if (outboundRecord->RWSet[i].data.dataId.owner ==
+                                nodeAddr)  // local
                             {
                                 // validate on local
-                                TimeInterval_t ti = calcValidInterval(outboundRecord->taskId, outboundRecord->RWSet[i].data.dataId);
-                                outboundRecord->taskValidInterval.vBegin = max(outboundRecord->taskValidInterval.vBegin, ti.vBegin);
-                                outboundRecord->taskValidInterval.vEnd = min(outboundRecord->taskValidInterval.vEnd, ti.vEnd);
+                                Data_t *data = &(outboundRecord->RWSet[i].data);
+                                TimeInterval_t ti =
+                                    calcValidInterval(data->dataId, data->begin,
+                                                      data->version == working);
+                                outboundRecord->taskValidInterval.vBegin = max(
+                                    outboundRecord->taskValidInterval.vBegin,
+                                    ti.vBegin);
+                                outboundRecord->taskValidInterval.vEnd =
+                                    min(outboundRecord->taskValidInterval.vEnd,
+                                        ti.vEnd);
                                 outboundRecord->validationPassed[i] = 1;
-                            }
-                            else
-                            {
+                            } else {
                                 sendValidationRequest(&(outboundRecord->taskId), outboundRecord->RWSet + i);
                             }
-
                         }
                     }
                     if (toNextStage == pdTRUE)
@@ -464,8 +442,7 @@ void handleValidationRequest(ValidationRequestPacket_t *packet)
         return;
     }
 
-    TimeInterval_t ti = calcValidInterval(packet->taskId, packet->data.dataId);
-
+    TimeInterval_t ti = calcValidInterval(packet->data.dataId, packet->data.begin, packet->data.version == working);
     sendValidationResponse(&(packet->taskId), &(packet->data.dataId), &ti);
 }
 
@@ -516,23 +493,25 @@ void handleCommitResponse(CommitResponsePacket_t *packet)
     }
 }
 
-TimeInterval_t calcValidInterval(TaskUUID_t taskId, DataUUID_t dataId)
+TimeInterval_t calcValidInterval(DataUUID_t dataId, uint32_t readBegin, uint8_t has_write)
 {
-    // need if modified
-    // reader task
     TimeInterval_t taskInterval = {.vBegin = 0, .vEnd = timeCounter};
     Data_t* dataRecord = getDataRecord(dataId, nvmdb);
-    // FIXME: here
-    if (dataRecord->accessLog.WARBegins[dataRecord->accessLog.pos] > 1 )// modified by some other task
+    uint32_t latestBegin = getDataBegin(dataId);
+
+    if (readBegin < latestBegin) // modified by some other task
     {
-        taskInterval.vEnd = min(taskInterval.vEnd, getDataBegin(dataId) - 1);
+        uint32_t firstCommittedBegin = getFirstCommitedBegin(dataId.id, readBegin);
+        taskInterval.vEnd = min(taskInterval.vEnd, firstCommittedBegin - 1);
     }
 
-    // write set
-    unsigned long long dataBegin = getDataBegin(dataId);
-    if (1)  // last modified
+    // if written
+    if (has_write)
     {
-        taskInterval.vBegin = max(taskInterval.vBegin, getDataBegin(dataId) + 1);
+        if (readBegin < latestBegin) // modified by some other task
+        {
+            taskInterval.vBegin = max(taskInterval.vBegin, getDataBegin(dataId) + 1);
+        }
     }
 
     return taskInterval;

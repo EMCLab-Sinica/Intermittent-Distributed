@@ -79,8 +79,12 @@ void DBServiceRoutine()
             ResponseDataPacket_t resPacket = {.header.packetType = ResponseData, .taskId=packet->taskId};
             DataTransPacket_t *resData = &(resPacket.data);
             resData->dataId = data->dataId;
-            resData->version = data->version;
+            if (data->version == consistent)
+            {
+                resData->version = duplicated;
+            }
             resData->size = data->size;
+            resData->begin = getBegin(data->dataId.id);
             memcpy(&(resPacket.data.content), dataPadded, MAX_DB_OBJ_SIZE);
 
             RFSendPacket(packet->taskId.nodeAddr, (uint8_t *)&resPacket, sizeof(resPacket));
@@ -110,6 +114,7 @@ void DBServiceRoutine()
             AES_ECB_decrypt(&aes_ctx, dataPadded);
 
             memcpy(log->xToDataObj->ptr, dataPadded, packet->data.size);
+            log->xToDataObj->begin = packet->data.begin;
 
             if (xTaskNotifyGive(*(log->xFromTask)) != pdPASS)
             {

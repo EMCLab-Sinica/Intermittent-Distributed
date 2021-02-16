@@ -55,10 +55,11 @@ typedef struct DataTransPacket
     DataVersion_e version;
     uint8_t size;
     uint8_t content[16]; // max 16bytes for AES to work
+    uint32_t begin;
 
 } DataTransPacket_t;
 
-// Data structure used in local database
+// Data structure
 typedef struct Data
 {
     DataUUID_t dataId;
@@ -66,6 +67,7 @@ typedef struct Data
     uint8_t size;
     void *ptr; // points to the data location
     TaskUUID_t validationLock;
+    uint32_t begin;
 
 } Data_t;
 
