@@ -128,18 +128,29 @@ uint32_t  getEnd(uint8_t objectIndex){
     return record->taskEnd;
 }
 
-uint8_t checkCommitted(TaskUUID_t taskUUID, uint32_t objectIndex)
+TaskCommitted_t checkCommitted(TaskUUID_t taskUUID, uint32_t objectIndex)
 {
+    uint8_t switcher = recordSwitcher[objectIndex] + 1; // get oldest
+    if(switcher >= NUMCOMMIT)
+    {
+        switcher = 0;
+    }
+    // too old, abort and rerun
+    if (dataCommitRecord[objectIndex][switcher].taskUUID.id > taskUUID.id)
+    {
+        return aborted;
+    }
+
     TaskUUID_t commitedTask;
     for (int i = 0; i < NUMCOMMIT; i++) {
         commitedTask = dataCommitRecord[objectIndex][i].taskUUID;
         if (commitedTask.nodeAddr == taskUUID.nodeAddr &&
             commitedTask.id == taskUUID.id) {
-            return 1;
+            return committed;
         }
     }
 
-    return 0;
+    return pending;
 }
 
 uint32_t getFirstCommitedBegin(uint8_t objectIndex, uint32_t begin)

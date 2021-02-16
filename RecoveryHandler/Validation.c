@@ -38,6 +38,7 @@ void handleValidationRequest(ValidationRequestPacket_t *packet);
 void handleValidationResponse(ValidationResponsePacket_t *packet);
 void handleCommitRequest(CommitRequestPacket_t *packet);
 void handleCommitResponse(CommitResponsePacket_t *packet);
+uint8_t resolveTaskDependency(TaskUUID_t taskId, DataUUID_t dataId);
 
 InboundValidationRecord_t *getOrCreateInboundRecord(TaskUUID_t *taskId);
 InboundValidationRecord_t *getInboundRecord(TaskUUID_t *taskId);
@@ -291,7 +292,7 @@ void outboundValidationHandler()
                         if(outboundRecord->commitDone[i] == 0)
                         {
                             toNextStage = pdFALSE;
-                            if (outboundRecord->RWSet[i].mode == ro)    // read only, not commit needed
+                            if (outboundRecord->RWSet[i].data.version != working)    // read only, not commit needed
                             {
                                 outboundRecord->commitDone[i] = 1;
                             }
@@ -352,15 +353,13 @@ void sendValidationRequest(TaskUUID_t* taskId, ValidateObject_t *validateObject)
     packet.taskId = *taskId;
     Data_t* dataToCommit = &(validateObject->data);
     packet.data.dataId = dataToCommit->dataId;
-    if (validateObject->mode == rw)  // not readSet
+    if (validateObject->data.version != working)  // not readSet
     {
-        packet.mode = rw;
         packet.data.version = dataToCommit->version;
         packet.data.size = dataToCommit->size;
         memcpy(packet.data.content, dataToCommit->ptr, dataToCommit->size);
     } else
     {
-        packet.mode = ro;
         packet.data.size = 0;
         memcpy(packet.data.content, 0, dataToCommit->size);
     }
@@ -409,7 +408,20 @@ void handleValidationRequest(ValidationRequestPacket_t *packet)
     entry->valid = 0;
     Data_t *validateData = &(entry->data);
     validateData->dataId = packet->data.dataId;
-    if (packet->mode == rw) // writeSet
+
+    if (validateData->version == modified) // resolve dependency
+    {
+        TaskCommitted_t resolve = resolveTaskDependency(packet->taskId, validateData->dataId);
+        if (resolve == aborted)
+        {
+            // TODO: send abort
+        }else if (resolve == pending)
+        {
+            return;
+        }
+    }
+
+    if (validateData->version != duplicated) // writeSet
     {
         validateData->version = packet->data.version;
         validateData->size = packet->data.size;
@@ -417,7 +429,7 @@ void handleValidationRequest(ValidationRequestPacket_t *packet)
     }
     else    // read only
     {
-        validateData->version = consistent;
+        validateData->version = duplicated;
         validateData->size = 0;
         validateData->ptr = NULL;
     }
@@ -575,4 +587,9 @@ InboundValidationRecord_t *getInboundRecord(TaskUUID_t *taskId)
     }
     return NULL;
 
+}
+
+uint8_t resolveTaskDependency(TaskUUID_t taskId, DataUUID_t dataId)
+{
+    TaskCommitted_t committed = checkCommitted(taskId, dataId.id);
 }

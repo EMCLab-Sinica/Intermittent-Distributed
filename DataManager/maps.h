@@ -12,6 +12,14 @@
 #define MAX_DB_OBJ 4
 #define NUMCOMMIT 15
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
+
+typedef enum TaskCommitted
+{
+    committed,
+    aborted,
+    pending
+} TaskCommitted_t;
+
 typedef struct TaskUUID // Task Universal Unique Identifier
 {
     uint8_t nodeAddr;
@@ -37,5 +45,5 @@ void dumpAll();
 uint32_t getBegin(uint8_t objectIndex);
 uint32_t getEnd(uint8_t objectIndex);
 uint32_t getFirstCommitedBegin(uint8_t objectIndex, uint32_t begin);
-uint8_t checkCommitted(TaskUUID_t taskUUID, uint32_t objectIndex);
+TaskCommitted_t checkCommitted(TaskUUID_t taskUUID, uint32_t objectIndex);
 

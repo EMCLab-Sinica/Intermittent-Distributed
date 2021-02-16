@@ -18,16 +18,9 @@ typedef enum ValidationStage
 
 } ValidationStage_e;
 
-typedef enum DataModType
-{
-    ro,
-    rw
-}DataModType_e;
-
 typedef struct ValidateObject
 {
     uint8_t valid;
-    DataModType_e mode;   // 0: read-only, 1: r/w
     Data_t data;
 } ValidateObject_t;
 
