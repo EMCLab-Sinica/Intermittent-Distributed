@@ -70,7 +70,7 @@ int main(void) {
     };
     do {
         RFSendPacketNoRTOS(SYNCTIME_NODE, (uint8_t *)&packet, sizeof(packet));
-        __delay_cycles(8000000); // 500 * 1000 * US_PER_SEC
+        __delay_cycles(9600000); // 600 * 1000 * US_PER_SEC
 
     } while (timeSynced == 0);
     DISABLE_GDO2_INT(); // disable RF Interrupt for setup
@@ -80,9 +80,9 @@ int main(void) {
     initDBSrvQueues();
     /* Create System Service Tasks */
     stopTrack = 1;
-    xTaskCreate(DBServiceRoutine, "DBServ", 400, NULL, 0, NULL);
-    xTaskCreate(inboundValidationHandler, "inboundV", 400, NULL, 0, NULL);
-    xTaskCreate(outboundValidationHandler, "outboundV", 400, NULL, 0, NULL);
+    xTaskCreate(DBServiceRoutine, "DBServ", 600, NULL, 0, NULL);
+    xTaskCreate(inboundValidationHandler, "inboundV", 600, NULL, 0, NULL);
+    xTaskCreate(outboundValidationHandler, "outboundV", 600, NULL, 0, NULL);
     stopTrack = 0;
 
     if (firstTime != 1) {

@@ -53,6 +53,7 @@ void taskRerun()
 
 void initRecoveryEssential()
 {
+    memset(dataRequestLogs, 0, sizeof(DataRequestLog_t) * MAX_GLOBAL_TASKS);
     for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
         taskRecord[i].taskStatus = invalid;

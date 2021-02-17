@@ -263,7 +263,6 @@ Data_t *createVMDBobject(uint8_t size) {
     Data_t *newVMData = &VMDatabase.dataRecord[freeSlot];
     newVMData->size = size;
     newVMData->ptr = VMWorkingSpace + VMWorkingSpacePos;
-
     VMWorkingSpacePos += size;
     VMDatabase.dataRecordCount++;
 

@@ -85,7 +85,7 @@ void DBServiceRoutine()
                 print2uart("ResponseData: dataId: %d \n", packet->data.dataId.id);
 
             // read request log and buffer
-            DataRequestLog_t *log = getDataRequestLog(packet->taskId, packet->data.dataId);
+            DataRequestLog_t * log = getDataRequestLog(packet->taskId, packet->data.dataId);
             if(log == NULL)
             {
                 if(DEBUG)
