@@ -101,7 +101,7 @@ bool writeDataObjectInt(uint8_t task_id, Data_t* data, int value);
 Data_t createWorkingSpace(void *dataPtr, uint32_t size);
 Data_t *createVMDBobject(uint8_t size);
 
-DataUUID_t commitLocalDB(TaskUUID_t taskUUID, Data_t *data, size_t size);
+DataUUID_t commitLocalDB(TaskUUID_t taskUUID, Data_t *data);
 
 
 void * getStackVM(int taskID);

@@ -150,7 +150,7 @@ Data_t *getDataRecord(DataUUID_t dataId, DBSearchMode_e mode) {
 Data_t readLocalDB(uint8_t id, void *destDataPtr, uint8_t size) {
     extern TaskHandle_t pxCurrentTCB;
     DataUUID_t dataId = {.owner = nodeAddr, .id = id};
-    Data_t dataWorking;
+    Data_t dataRead;
     Data_t *data = getDataRecord(dataId, all);
 
     if (data == NULL) {
@@ -160,16 +160,16 @@ Data_t readLocalDB(uint8_t id, void *destDataPtr, uint8_t size) {
         destDataPtr = NULL;
         // reset the DataUUID
         DataUUID_t resetId = {.owner = 0, .id = 0};
-        dataWorking.dataId = resetId;
-        return dataWorking;
+        dataRead.dataId = resetId;
+        return dataRead;
     }
 
     memcpy(destDataPtr, data->ptr, size);
-    dataWorking = *data;
-    dataWorking.ptr = destDataPtr;
-    dataWorking.version = working;
+    dataRead = *data;
+    dataRead.ptr = destDataPtr;
+    dataRead.version = duplicated;
     if (size < data->size) {
-        dataWorking.size = size;
+        dataRead.size = size;
     }
 
     // logging
@@ -183,7 +183,7 @@ Data_t readLocalDB(uint8_t id, void *destDataPtr, uint8_t size) {
         }
     }
 
-    return dataWorking;
+    return dataRead;
 }
 
 Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask,
@@ -232,7 +232,8 @@ Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask,
     Data_t dataRead = *dataBuffer;
     memcpy(destDataPtr, dataBuffer->ptr, dataBuffer->size);
     dataRead.ptr = destDataPtr;
-    dataRead.version = working;
+    // FIXME: data version
+    // dataRead.version = working;
 
     // logging
     for (int  i = 0; i < MAX_TASK_READ_OBJ; i++)
@@ -307,7 +308,7 @@ Data_t *createVMDBobject(uint8_t size) {
     return newVMData;
 }
 
-DataUUID_t commitLocalDB(TaskUUID_t taskUUID, Data_t *data, size_t size) {
+DataUUID_t commitLocalDB(TaskUUID_t taskUUID, Data_t *data) {
     if (data->version != working &&
         data->version !=
             modified)  // only working or modified version can be committed
@@ -330,7 +331,7 @@ DataUUID_t commitLocalDB(TaskUUID_t taskUUID, Data_t *data, size_t size) {
 
     void *NVMSpace = (void *)pvPortMalloc(data->size);
     memcpy(NVMSpace, data->ptr, data->size);
-    commit(taskUUID, objectIndex, NVMSpace, 0, 0);
+    commit(taskUUID, objectIndex, NVMSpace, 0, 1);
 
     /* Free the previous consistent data */
     if (oldMallocDataAddress) vPortFree(oldMallocDataAddress);
@@ -338,7 +339,7 @@ DataUUID_t commitLocalDB(TaskUUID_t taskUUID, Data_t *data, size_t size) {
     /* Link the data */
     NVMDatabase.dataRecord[objectIndex] = *data;
     NVMDatabase.dataRecord[objectIndex].ptr = NVMSpace;
-    NVMDatabase.dataRecord[objectIndex].size = size;
+    NVMDatabase.dataRecord[objectIndex].size = data->size;
     if (data->dataId.owner == nodeAddr) {
         NVMDatabase.dataRecord[objectIndex].version = consistent;
     } else {

@@ -21,67 +21,46 @@ extern uint32_t statistics[4];
 extern unsigned char SENSE_TIMER;
 
 void sensingTask() {
-    unsigned char RH_byte1, RH_byte2, T_byte1, T_byte2, checksum;
-    unsigned char Packet[5];
-    // Data_t temperature = createWorkingSpace(&T_byte1, sizeof(T_byte1));
-    Data_t humidity = createWorkingSpace(&RH_byte1, sizeof(RH_byte1));
-    // temperature.dataId.id = 1;
-    humidity.dataId.id = 2;
+    TaskUUID_t taskId = {.nodeAddr = nodeAddr, .id = 1};
+    const TaskHandle_t myTaskHandle = xTaskGetHandle(TASKNAME_SENSING);
+
+    int32_t RH;
+    Data_t humidityData = createWorkingSpace(&RH, sizeof(RH));
+    humidityData.dataId.id = 1;
+    commitLocalDB(taskId, &humidityData);
 
     while (1) {
-        // T_byte1 = 27;
-        RH_byte2 = 70;
-        /*
-        taskENTER_CRITICAL();
-        read_Packet(Packet);
-        RH_byte1 = Packet[0];
-        RH_byte2 = Packet[1];
-        T_byte1 = Packet[2];
-        T_byte2 = Packet[3];
-        checksum = Packet[4];
-        taskEXIT_CRITICAL();
-
-        if (DEBUG) {
-            if (check_Checksum(Packet)) {
-                print2uart("check sum success\n");
-            } else {
-                print2uart("check sum failed\n");
-            }
-            print2uart_new("DHT11: %d, %d\n", T_byte1, RH_byte1);
-        }
-        */
-
-        // temperature.dataId = commitLocalDB(&temperature, sizeof(T_byte1));
-        humidity.dataId = commitLocalDB(&humidity, sizeof(RH_byte1));
-
-        // print2uart("%d\n", ++statistics[0]);
+        humidityData = readLocalDB(1, &RH, sizeof(RH));
+        humidityData.version = working;
+        RH = 70;
+        taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 1, humidityData);
         vTaskDelay(2000);
+        taskId.id += 2;
     }
 }
 
+// reader task
 void monitorTask() {
-    TaskUUID_t taskId = {.nodeAddr = nodeAddr, .id = 1};
+    TaskUUID_t taskId = {.nodeAddr = nodeAddr, .id = 2};
     const TaskHandle_t myTaskHandle = xTaskGetHandle(TASKNAME_MONITOR);
-    int32_t fanSpeed = 0;
-    int32_t sprayAmount = 0;
-    Data_t fanSpeedData = createWorkingSpace(&fanSpeed, sizeof(fanSpeed));
-    Data_t sprayAmountData =
-        createWorkingSpace(&sprayAmount, sizeof(sprayAmount));
-    fanSpeedData.dataId.id = 1;
-    sprayAmountData.dataId.id = 2;
-    commitLocalDB(&fanSpeedData, sizeof(fanSpeed));
-    commitLocalDB(&sprayAmountData, sizeof(sprayAmount));
+
+    int32_t totalSpread;
+    Data_t totalSpreadData = createWorkingSpace(&totalSpread, sizeof(totalSpread));
+    totalSpread = 0;
+    totalSpreadData.dataId.id = 2;
+    commitLocalDB(taskId, &totalSpreadData);
 
     while (1) {
-        readLocalDB(1, (void *)&fanSpeed, sizeof(fanSpeed));
-        readLocalDB(2, (void *)&sprayAmount, sizeof(sprayAmount));
-        taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 0);
-        print2uart_new("%d\n", ++statistics[3]);
+        totalSpreadData = readLocalDB(2, (void *)&totalSpread, sizeof(totalSpread));
+        taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 1, totalSpreadData);
+        print2uart_new("Total Spread %d\n", totalSpread);
         vTaskDelay(1000);
+        taskId.id += 2;
     }
 }
 
 void sprayerTask() {
+    // init
     TaskUUID_t taskId = {.nodeAddr = nodeAddr, .id = 1};
     const TaskHandle_t myTaskHandle = xTaskGetHandle(TASKNAME_SPRAYER);
     if (myTaskHandle == NULL) {
@@ -90,34 +69,39 @@ void sprayerTask() {
             ;
     }
 
-    uint32_t humidity = 0;
-    int32_t sprayAmount = 0;
+    int32_t spreadAmount;
+    Data_t sprayAmountData = createWorkingSpace(&spreadAmount, sizeof(spreadAmount));
+    spreadAmount = 0;
+    sprayAmountData.dataId.id = 1;
+    commitLocalDB(taskId, &sprayAmountData);
+
     Data_t humidityData;
-    Data_t sprayAmountData;
+    int32_t RH;
+    int32_t sprayAmount;
     while (1) {
-        humidityData = readRemoteDB(taskId, &myTaskHandle, 1, 2,
-                                    (void *)&humidity, sizeof(humidity));
+        humidityData = readRemoteDB(taskId, &myTaskHandle, 1, 1, (void *)&RH, sizeof(RH));
         if (INFO) {
-            print2uart_new("RH: %d\n", humidity);
+            print2uart_new("RH: %d\n", RH);
         }
+
+        // some calc
+        sprayAmountData = readLocalDB(1, &sprayAmount, sizeof(sprayAmount));
+        sprayAmountData.version = working;
+        sprayAmount += 1;
+        taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 2, &sprayAmountData, &humidityData);
+
         print2uart_new("Spraying...\n");
         vTaskDelay(1000);
-
-        taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 1,
-                   &sprayAmountData);
-        // statistics[0]++;
-        print2uart_new("%d\n", ++statistics[2]);
         taskId.id += 2;
     }
 }
 
 void reportTask() {
     TaskUUID_t taskId = {.nodeAddr = nodeAddr, .id = 2};
-    const TaskHandle_t myTaskHandle = xTaskGetHandle(TASKNAME_SPRAYER_REPORT);
+    const TaskHandle_t myTaskHandle = xTaskGetHandle(TASKNAME_REPORT);
     if (myTaskHandle == NULL) {
         print2uart("Error, can not retrive task handle\n");
-        while (1)
-            ;
+        while (1) ;
     }
 
     Data_t sprayAmountLocalData;
@@ -129,19 +113,13 @@ void reportTask() {
         sprayAmountLocalData =
             readLocalDB(1, &sprayAmountLocal, sizeof(sprayAmountLocal));
         sprayAmountRemoteData =
-            readRemoteDB(taskId, &myTaskHandle, 4, 2,
+            readRemoteDB(taskId, &myTaskHandle, 1, 2,
                          (void *)&sprayAmountRemote, sizeof(sprayAmountRemote));
         sprayAmountRemote = sprayAmountLocal;
-        taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 1,
-                   &sprayAmountRemoteData);
+        taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 2,
+                   &sprayAmountRemoteData, &sprayAmountLocalData);
         vTaskDelay(1000);
         taskId.id += 2;
     }
 }
 
-void syncTimeHelperTask() {
-    while (1) {
-        print2uart("%l\n", timeCounter);
-        vTaskDelay(1000);
-    }
-}

@@ -101,21 +101,25 @@ int main(void) {
             case 1:
             {
                 xTaskCreate(sensingTask, TASKNAME_SENSING, 400, NULL, 0, NULL);
+                xTaskCreate(monitorTask, TASKNAME_MONITOR, 400, NULL, 0, NULL);
                 break;
             }
             case 2:
             {
-                xTaskCreate(fanTask, TASKNAME_FAN, 400, NULL, 0, NULL);
+                xTaskCreate(sprayerTask, TASKNAME_SPRAYER, 400, NULL, 0, NULL);
+                xTaskCreate(monitorTask, TASKNAME_REPORT, 400, NULL, 0, NULL);
                 break;
             }
             case 3:
             {
                 xTaskCreate(sprayerTask, TASKNAME_SPRAYER, 400, NULL, 0, NULL);
+                xTaskCreate(monitorTask, TASKNAME_REPORT, 400, NULL, 0, NULL);
                 break;
             }
             case 4:
             {
-                xTaskCreate(monitorTask, TASKNAME_MONITOR, 400, NULL, 0, NULL);
+                xTaskCreate(sprayerTask, TASKNAME_SPRAYER, 400, NULL, 0, NULL);
+                xTaskCreate(monitorTask, TASKNAME_REPORT, 400, NULL, 0, NULL);
                 break;
             }
         }

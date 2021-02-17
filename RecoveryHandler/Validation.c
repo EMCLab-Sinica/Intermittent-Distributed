@@ -300,7 +300,7 @@ void outboundValidationHandler()
                                 if (outboundRecord->RWSet[i] .data.dataId.owner == nodeAddr)  // local
                                 {
                                     // commit on local
-                                    commitLocalDB(&(outboundRecord->RWSet[i].data), outboundRecord->RWSet[i].data.size);
+                                    commitLocalDB( outboundRecord->taskId, &(outboundRecord->RWSet[i].data));
                                     outboundRecord->commitDone[i] = 1;
                                 } else {
                                     sendCommitRequest(outboundRecord->RWSet[i]
