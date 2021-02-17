@@ -5,18 +5,12 @@
 #include "myuart.h"
 #include <string.h> // for memset
 
-#define ECB 1
-#include <ThirdParty/tiny-AES-c/aes.h>
-
-#define  DEBUG 0
-#define INFO 0
+#define  DEBUG 1
+#define INFO 1
 
 #pragma NOINIT(DBServiceRoutinePacketQueue);
 QueueHandle_t DBServiceRoutinePacketQueue;
 extern int firstTime;
-
-// AES ECB Key
-static uint8_t key[] = { 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c };
 
 uint8_t initDBSrvQueues()
 {
@@ -42,10 +36,6 @@ void DBServiceRoutine()
 {
     static uint8_t packetBuf[MAX_PACKET_LEN];
     static PacketHeader_t *packetHeader;
-    struct AES_ctx aes_ctx;
-    uint8_t dataPadded[MAX_DB_OBJ_SIZE];
-
-    AES_init_ctx(&aes_ctx, key);
 
     while (1)
     {
@@ -70,10 +60,6 @@ void DBServiceRoutine()
                 }
                 break;
             }
-            // Encryption, pad the data to 16 bytes
-            memset(dataPadded, 0, MAX_DB_OBJ_SIZE);
-            memcpy(dataPadded, data->ptr, data->size);
-            AES_ECB_encrypt(&aes_ctx, dataPadded);
 
             // Send
             ResponseDataPacket_t resPacket = {.header.packetType = ResponseData, .taskId=packet->taskId};
@@ -85,7 +71,7 @@ void DBServiceRoutine()
             }
             resData->size = data->size;
             resData->begin = getBegin(data->dataId.id);
-            memcpy(&(resPacket.data.content), dataPadded, MAX_DB_OBJ_SIZE);
+            memcpy(&(resPacket.data.content), data->ptr, MAX_DB_OBJ_SIZE);
 
             RFSendPacket(packet->taskId.nodeAddr, (uint8_t *)&resPacket, sizeof(resPacket));
 
@@ -108,12 +94,7 @@ void DBServiceRoutine()
                 break;
             }
 
-            // decrypt
-            memset(dataPadded, 0, MAX_DB_OBJ_SIZE);
-            memcpy(dataPadded, packet->data.content, MAX_DB_OBJ_SIZE);
-            AES_ECB_decrypt(&aes_ctx, dataPadded);
-
-            memcpy(log->xToDataObj->ptr, dataPadded, packet->data.size);
+            memcpy(log->xToDataObj->ptr, &(packet->data.content), packet->data.size);
             log->xToDataObj->begin = packet->data.begin;
 
             if (xTaskNotifyGive(*(log->xFromTask)) != pdPASS)

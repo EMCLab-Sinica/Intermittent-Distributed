@@ -4,8 +4,8 @@
 #define TASKNAME_MONITOR STRINGIFY(monitor)
 #define TASKNAME_REPORT STRINGIFY(report)
 
-void syncTimeHelperTask();
+void setupTasks();
 void sensingTask();
-void fanTask();
 void sprayerTask();
 void monitorTask();
+void reportTask();

@@ -180,18 +180,16 @@ void failureRecovery()
             task->taskStatus = invalid;
             if (!(task->schedulerTask)) // consider recreating task
             {
-                if (task->validationRecord != NULL)
-                {
-                    if (task->validationRecord->validRecord == true)
-                    {
-                        // the task content is gone, but its modified version is under validation.
-                        task->taskStatus = validating;
-                        // recreate after previous task finished validation
-                        continue;
-                    }
+                if (task->validationRecord != NULL &&
+                    task->validationRecord->validRecord == true) {
+                    // the task content is gone, but its modified version is
+                    // under validation.
+                    task->taskStatus = validating;
+                    // recreate after previous task finished validation
+                    continue;
                 }
                 xTaskCreate(task->address, task->taskName, task->stackSize, NULL, task->priority, NULL);
-                dprint2uart("Recovery Create: %d\r\n", task->TCBNum);
+                print2uart("Recovery Create: %s\r\n", task->taskName);
             }
 
             dprint2uart("Rend: xPortGetFreeHeapSize = %d\r\n", xPortGetFreeHeapSize());

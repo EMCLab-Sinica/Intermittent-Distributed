@@ -50,6 +50,7 @@ volatile uint8_t timeSynced = 0;
 extern QueueHandle_t DBServiceRoutinePacketQueue;
 extern QueueHandle_t validationRequestPacketsQueue;
 extern unsigned int volatile stopTrack;
+extern uint16_t taskIdRecord[4];
 
 TaskHandle_t RecoverySrvTaskHandle = NULL;
 
@@ -73,10 +74,6 @@ int main(void) {
 
     } while (timeSynced == 0);
     DISABLE_GDO2_INT(); // disable RF Interrupt for setup
-    if (DEBUG)
-    {
-        print2uart("TC, %d\n", timeCounter);
-    }
 
     VMDBConstructor();
     initValidationQueues();
@@ -89,6 +86,7 @@ int main(void) {
     stopTrack = 0;
 
     if (firstTime != 1) {
+        setupTasks();
         memset(&statistics, 0, sizeof(uint32_t) * 4);
         if (DEBUG) {
             print2uart("Node id: %d FirstTime\n", nodeAddr);
@@ -107,19 +105,19 @@ int main(void) {
             case 2:
             {
                 xTaskCreate(sprayerTask, TASKNAME_SPRAYER, 400, NULL, 0, NULL);
-                xTaskCreate(monitorTask, TASKNAME_REPORT, 400, NULL, 0, NULL);
+                xTaskCreate(reportTask, TASKNAME_REPORT, 400, NULL, 0, NULL);
                 break;
             }
             case 3:
             {
                 xTaskCreate(sprayerTask, TASKNAME_SPRAYER, 400, NULL, 0, NULL);
-                xTaskCreate(monitorTask, TASKNAME_REPORT, 400, NULL, 0, NULL);
+                xTaskCreate(reportTask, TASKNAME_REPORT, 400, NULL, 0, NULL);
                 break;
             }
             case 4:
             {
                 xTaskCreate(sprayerTask, TASKNAME_SPRAYER, 400, NULL, 0, NULL);
-                xTaskCreate(monitorTask, TASKNAME_REPORT, 400, NULL, 0, NULL);
+                xTaskCreate(reportTask, TASKNAME_REPORT, 400, NULL, 0, NULL);
                 break;
             }
         }

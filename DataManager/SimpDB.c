@@ -31,8 +31,6 @@ static unsigned int VMWorkingSpacePos;
 
 /* space in VM for working versions*/
 static Database_t VMDatabase;
-/* Task accessing log in VM */
-TaskAccessLog_t accessLog[MAX_LOCAL_TASKS];
 
 extern DataRequestLog_t dataRequestLogs[MAX_GLOBAL_TASKS];
 extern uint8_t nodeAddr;
@@ -52,21 +50,9 @@ void NVMDBConstructor() {
         NVMDatabase.dataRecord[i].size = 0;
         memset(&(NVMDatabase.dataRecord[i].validationLock), 0,
                sizeof(TaskUUID_t));
-        //memset(NVMDatabase.dataRecord[i].readers, 0,
+        // memset(NVMDatabase.dataRecord[i].readers, 0,
         //       sizeof(TaskUUID_t) * MAX_READERS);
     }
-
-    memset(accessLog, 0, MAX_LOCAL_TASKS * sizeof(TaskAccessLog_t));
-
-    // insert for test
-    /*
-    if (nodeAddr == 1)
-    {
-        int32_t testValue = 7;
-        Data_t myData = createWorkingSpace(&testValue, sizeof(testValue));
-        commitLocalDB(&myData, sizeof(testValue));
-    }
-    */
 }
 
 void VMDBConstructor() {
@@ -167,22 +153,9 @@ Data_t readLocalDB(uint8_t id, void *destDataPtr, uint8_t size) {
     memcpy(destDataPtr, data->ptr, size);
     dataRead = *data;
     dataRead.ptr = destDataPtr;
-    dataRead.version = duplicated;
     if (size < data->size) {
         dataRead.size = size;
     }
-
-    // logging
-    for (int  i = 0; i < MAX_TASK_READ_OBJ; i++)
-    {
-        // find space
-        if (accessLog[pxCurrentTCB->local_task_id].readSet[i].id == 0)
-        {
-            accessLog[pxCurrentTCB->local_task_id].readSet[i] = dataId;
-            break;
-        }
-    }
-
     return dataRead;
 }
 
@@ -213,7 +186,8 @@ Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask,
     RequestDataPacket_t packet = {
         .header.packetType = RequestData, .taskId = taskId, .dataId = dataId};
     if (INFO) {
-        print2uart("task (%d, %d), read remote (%d, %d)\n", taskId.nodeAddr, taskId.id, remoteAddr, id);
+        print2uart("task (%d, %d), read remote (%d, %d)\n", taskId.nodeAddr,
+                   taskId.id, remoteAddr, id);
     }
     uint32_t ulNotificationValue = 0;
     do {
@@ -234,18 +208,6 @@ Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask,
     dataRead.ptr = destDataPtr;
     // FIXME: data version
     // dataRead.version = working;
-
-    // logging
-    for (int  i = 0; i < MAX_TASK_READ_OBJ; i++)
-    {
-        // find space
-        if (accessLog[pxCurrentTCB->local_task_id].readSet[i].id == 0)
-        {
-            accessLog[pxCurrentTCB->local_task_id].readSet[i] = dataId;
-            break;
-        }
-    }
-
     return dataRead;
 }
 
@@ -310,8 +272,7 @@ Data_t *createVMDBobject(uint8_t size) {
 
 DataUUID_t commitLocalDB(TaskUUID_t taskUUID, Data_t *data) {
     if (data->version != working &&
-        data->version !=
-            modified)  // only working or modified version can be committed
+        data->version != modified)
     {
         print2uart("Can only commit working or modified version\n");
         while (1)
@@ -350,3 +311,22 @@ DataUUID_t commitLocalDB(TaskUUID_t taskUUID, Data_t *data) {
     return data->dataId;
 }
 
+void writeData(Data_t *data, void *value) {
+    switch (data->version) {
+        case duplicated: {
+            data->version = working;
+            break;
+        }
+        case modified: {
+            break;
+        }
+        case working: {
+            break;
+        }
+        case consistent: {
+            data->version = working;
+            break;
+        }
+    }
+    memcpy(data->ptr, value, data->size);
+}

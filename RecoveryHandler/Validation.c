@@ -90,9 +90,7 @@ uint8_t initValidationQueues()
 
 void taskCommit(uint8_t tid, TaskHandle_t *fromTask, int32_t commitNum, ...)
 {
-    if(DEBUG)
-        print2uart("Task %d, request to commit\n", tid);
-
+    taskENTER_CRITICAL();
     // find a place
     OutboundValidationRecord_t *currentLog = NULL;
     for (uint8_t i = 0; i < MAX_GLOBAL_TASKS; i++)
@@ -108,6 +106,11 @@ void taskCommit(uint8_t tid, TaskHandle_t *fromTask, int32_t commitNum, ...)
         print2uart("No place for OutboundValidationRecord\n");
         while(1);
     }
+    // clear
+    currentLog->writeSetNum = 0;
+    memset(currentLog->validationPassed, 0,
+           sizeof(uint8_t) * MAX_TASK_READ_OBJ);
+    memset(currentLog->commitDone, 0, sizeof(uint8_t) * MAX_TASK_READ_OBJ);
 
     // save the log to taskRecord
     TaskRecord_t * taskRecord = pxCurrentTCB->taskRecord;
@@ -130,11 +133,12 @@ void taskCommit(uint8_t tid, TaskHandle_t *fromTask, int32_t commitNum, ...)
         {
             data = va_arg(vl, Data_t *);
             currentObject = currentLog->RWSet + i;
+
+            // copy the data object to NVM
             void *ptrToNVM = currentObject->data.ptr;
-            currentObject->data = *data;   // copy the data object to NVM
+            currentObject->data = *data;
             currentObject->data.ptr = ptrToNVM;
             memcpy(currentObject->data.ptr, data->ptr, data->size);    // copy the data content
-            currentObject->data.version = modified;
             currentLog->writeSetNum++;
             if(DEBUG)
             {
@@ -150,6 +154,7 @@ void taskCommit(uint8_t tid, TaskHandle_t *fromTask, int32_t commitNum, ...)
     currentLog->stage = validationPhase;
     // atomic operation
     currentLog->validRecord = pdTRUE;
+    taskEXIT_CRITICAL();
 
     // task sleep wait for validation and commit
     ulTaskNotifyTake(pdTRUE,         /* Clear the notification value before exiting. */
@@ -321,18 +326,17 @@ void outboundValidationHandler()
 
                 case finish:
                 {
-                    xTaskNotifyGive(*outboundRecord->taskHandle);
-                    outboundRecord->validRecord = pdFALSE;
-                    outboundRecord->writeSetNum = 0;
-                    memset(outboundRecord->validationPassed, 0, sizeof(uint8_t) * MAX_TASK_READ_OBJ);
-                    memset(outboundRecord->commitDone, 0, sizeof(uint8_t) * MAX_TASK_READ_OBJ);
-                    // recreate the task if needed
                     TaskRecord_t* task = (TaskRecord_t*)(outboundRecord->taskRecord);
+                    // recreate the task if needed
                     if (task->taskStatus == validating)
                     {
-                        task->taskStatus = invalid;
                         xTaskCreate(task->address, task->taskName, task->stackSize, NULL, task->priority, NULL);
-                        dprint2uart("Validation Create: %d\r\n", task->TCBNum);
+                        task->taskStatus = invalid;
+                        outboundRecord->validRecord = pdFALSE;
+                    } else
+                    {
+                        xTaskNotifyGive(*outboundRecord->taskHandle);
+                        outboundRecord->validRecord = pdFALSE;
                     }
                 }
 

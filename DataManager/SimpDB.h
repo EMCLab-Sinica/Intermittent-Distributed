@@ -54,7 +54,7 @@ typedef struct DataTransPacket
     DataUUID_t dataId;
     DataVersion_e version;
     uint8_t size;
-    uint8_t content[16]; // max 16bytes for AES to work
+    uint8_t content[MAX_DB_OBJ_SIZE]; // max 16bytes for AES to work
     uint32_t begin;
 
 } DataTransPacket_t;
@@ -96,6 +96,7 @@ Data_t *getDataRecord(DataUUID_t dataId, DBSearchMode_e mode);
 Data_t readLocalDB(uint8_t id, void* destDataPtr, uint8_t size);
 Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask, uint8_t remoteAddr,
                     uint8_t id, void *destDataPtr, uint8_t size);
+void writeData(Data_t *data, void *value);
 
 bool writeDataObjectInt(uint8_t task_id, Data_t* data, int value);
 Data_t createWorkingSpace(void *dataPtr, uint32_t size);

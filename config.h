@@ -8,7 +8,7 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#define NODEADDR 1
+#define NODEADDR 2
 #define SYNCTIME_NODE 5
 #define CYCLE_PER_US 16
 
