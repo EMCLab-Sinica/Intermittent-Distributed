@@ -70,7 +70,7 @@ int main(void) {
     };
     do {
         RFSendPacketNoRTOS(SYNCTIME_NODE, (uint8_t *)&packet, sizeof(packet));
-        __delay_cycles(4800000); // 300 * 1000 * US_PER_SEC
+        __delay_cycles(8000000); // 500 * 1000 * US_PER_SEC
 
     } while (timeSynced == 0);
     DISABLE_GDO2_INT(); // disable RF Interrupt for setup

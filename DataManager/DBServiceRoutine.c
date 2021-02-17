@@ -71,7 +71,7 @@ void DBServiceRoutine()
             }
             resData->size = data->size;
             resData->begin = getBegin(data->dataId.id);
-            memcpy(&(resPacket.data.content), data->ptr, MAX_DB_OBJ_SIZE);
+            memcpy(resPacket.data.content, data->ptr, MAX_DB_OBJ_SIZE);
 
             RFSendPacket(packet->taskId.nodeAddr, (uint8_t *)&resPacket, sizeof(resPacket));
 
@@ -94,7 +94,7 @@ void DBServiceRoutine()
                 break;
             }
 
-            memcpy(log->xToDataObj->ptr, &(packet->data.content), packet->data.size);
+            memcpy(log->xToDataObj->ptr, packet->data.content, packet->data.size);
             log->xToDataObj->begin = packet->data.begin;
 
             if (xTaskNotifyGive(*(log->xFromTask)) != pdPASS)
