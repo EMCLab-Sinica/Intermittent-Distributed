@@ -16,6 +16,7 @@
 extern uint8_t nodeAddr;
 extern uint32_t timeCounter;
 extern uint32_t statistics[4];
+extern int firstTime;
 #pragma NOINIT(taskIdRecord)
 uint16_t taskIdRecord[4];
 
@@ -27,9 +28,14 @@ void sensingTask() {
     const TaskHandle_t myTaskHandle = xTaskGetHandle(TASKNAME_SENSING);
 
     int32_t RH;
-    Data_t humidityData = createWorkingSpace(&RH, sizeof(RH));
-    humidityData.dataId.id = 1;
-    commitLocalDB(taskId, &humidityData);
+    Data_t humidityData;
+    if (firstTime != 1)
+    {
+        humidityData = createWorkingSpace(&RH, sizeof(RH));
+        RH = 100;
+        humidityData.dataId.id = 1;
+        commitLocalDB(taskId, &humidityData);
+    }
 
     while (1) {
         taskId.id = taskIdRecord[0];
@@ -49,10 +55,14 @@ void monitorTask() {
     const TaskHandle_t myTaskHandle = xTaskGetHandle(TASKNAME_MONITOR);
 
     int32_t totalSpread;
-    Data_t totalSpreadData = createWorkingSpace(&totalSpread, sizeof(totalSpread));
-    totalSpread = 0;
-    totalSpreadData.dataId.id = 2;
-    commitLocalDB(taskId, &totalSpreadData);
+    Data_t totalSpreadData;
+    if (firstTime != 1)
+    {
+        totalSpreadData = createWorkingSpace(&totalSpread, sizeof(totalSpread));
+        totalSpread = 0;
+        totalSpreadData.dataId.id = 2;
+        commitLocalDB(taskId, &totalSpreadData);
+    }
 
     while (1) {
         taskId.id = taskIdRecord[1];
@@ -76,10 +86,14 @@ void sprayerTask() {
     }
 
     int32_t spreadAmount;
-    Data_t sprayAmountData = createWorkingSpace(&spreadAmount, sizeof(spreadAmount));
-    spreadAmount = 0;
-    sprayAmountData.dataId.id = 1;
-    commitLocalDB(taskId, &sprayAmountData);
+    Data_t sprayAmountData;
+    if (firstTime != 1) {
+        sprayAmountData =
+            createWorkingSpace(&spreadAmount, sizeof(spreadAmount));
+        spreadAmount = 0;
+        sprayAmountData.dataId.id = 1;
+        commitLocalDB(taskId, &sprayAmountData);
+    }
 
     Data_t humidityData;
     int32_t RH;
