@@ -9,26 +9,41 @@
  */
 #include <stdint.h>
 
-#define MAX_DB_OBJ 16
+#define MAX_DB_OBJ 4
 #define NUMCOMMIT 15
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
-typedef struct TaskCommitLog
+typedef enum TaskCommitted
 {
-    uint32_t TaskBegins[5];
-    uint32_t TaskEnds[5];
-    uint16_t pos_valid[5];
-    uint16_t pos;
+    committed,
+    aborted,
+    pending
+} TaskCommitted_t;
 
-} TaskCommitLog_t;
+typedef struct TaskUUID // Task Universal Unique Identifier
+{
+    uint8_t nodeAddr;
+    uint8_t id;
+
+} TaskUUID_t;
+
+typedef struct DataCommitRecord
+{
+    TaskUUID_t taskUUID;
+    uint8_t mapSwitcher;
+    uint32_t taskBegin;
+    uint32_t taskEnd;
+} DataCommitRecord_t;
 
 /* map functions */
 void init();
 void* access(uint8_t objectIndex);
 void accessCache(uint8_t objectIndex);
 void* accessData(uint8_t objectIndex);
-void commit(uint32_t objectIndex, void *dataAddress, uint32_t vBegin, uint32_t vEnd);
+void commit(TaskUUID_t taskUUID, uint32_t objectIndex, void *dataAddress, uint32_t vBegin, uint32_t vEnd);
 void dumpAll();
 uint32_t getBegin(uint8_t objectIndex);
 uint32_t getEnd(uint8_t objectIndex);
+uint32_t getFirstCommitedBegin(uint8_t objectIndex, uint32_t begin);
+TaskCommitted_t checkCommitted(TaskUUID_t taskUUID, uint32_t objectIndex);
 
