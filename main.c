@@ -261,28 +261,31 @@ __interrupt void Port_8(void) {
         get_packet(buf, &pktlen, &my_addr, &src_addr);
         static PacketHeader_t *packetHeader = (PacketHeader_t *)buf;
 
-        if (packetHeader->packetType <= ResponseData) {
-            xSendQueueResult = xQueueSendToBackFromISR(
-                DBServiceRoutinePacketQueue, buf, &xHigherPriorityTaskWoken);
-            if (xSendQueueResult != pdTRUE) {
-                print2uart("Send to queue failed\n");
-                return;
+        if (timeSynced == 0) {
+            if (packetHeader->packetType == SyncCounter) {
+                SyncCounterPacket_t *packet = (SyncCounterPacket_t *)buf;
+                // 106 is the compensation to propagation time
+                // the RTT time of an RF packet is 212 ticks
+                // which is observed in our experiment.
+                timeCounter = packet->timeCounter + 106;
+                timeSynced = 1;
             }
         }
+        else
+        {
+            if (packetHeader->packetType <= ResponseData) {
+                xSendQueueResult = xQueueSendToBackFromISR(
+                    DBServiceRoutinePacketQueue, buf, &xHigherPriorityTaskWoken);
+                if (xSendQueueResult != pdTRUE) {
+                    print2uart("Send to queue failed\n");
+                }
+            }
 
-        else if (packetHeader->packetType == SyncCounter) {
-            SyncCounterPacket_t *packet = (SyncCounterPacket_t *)buf;
-            // 106 is the compensation to propagation time
-            // the RTT time of an RF packet is 212 ticks
-            // which is observed in our experiment.
-            timeCounter = packet->timeCounter + 106;
-            timeSynced = 1;
-        }
-
-        else if (packetHeader->packetType >= ValidationRequest) {
-            xSendQueueResult = xQueueSendToBackFromISR( validationRequestPacketsQueue, buf, NULL);
-            if (xSendQueueResult != pdTRUE) {
-                print2uart("Send to validation queue failed\n");
+            else if (packetHeader->packetType >= ValidationRequest) {
+                xSendQueueResult = xQueueSendToBackFromISR( validationRequestPacketsQueue, buf, NULL);
+                if (xSendQueueResult != pdTRUE) {
+                    print2uart("Send to validation queue failed\n");
+                }
             }
         }
 

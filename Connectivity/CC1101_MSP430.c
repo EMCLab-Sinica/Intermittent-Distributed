@@ -48,7 +48,7 @@ static const uint8_t CC1101_GFSK_1_2_kb[] = {
     // 0x15, // DEVIATN       Modem Deviation Setting
     (1 << 5 & NODEADDR), // DEVIATN       Modem Deviation Setting
     0x07,                // MCSM2         Main Radio Control State Machine Configuration
-    0x3F,                // MCSM1         Main Radio Control State Machine Configuration
+    0x2C,                // MCSM1         Main Radio Control State Machine Configuration
     0x18,                // MCSM0         Main Radio Control State Machine Configuration
     0x16,                // FOCCFG        Frequency Offset Compensation Configuration
     0x6C,                // BSCFG         Bit Synchronization Configuration
@@ -530,12 +530,12 @@ uint8_t transmit(void)
     uint8_t marcstate;
     marcstate = 0xFF; //set unknown/dummy state value
 
-    //while (marcstate != 0x01) //0x01 = ILDE after sending data
-    while (marcstate != 0x0D) //0x0D = RX
+    while (marcstate != 0x01) //0x01 = ILDE after sending data
+    //while (marcstate != 0x0D) //0x0D = RX
     {
         marcstate = (spi_read_register(MARCSTATE) & 0x1F); //read out state of CC1101 to be sure in IDLE and TX is finished
     }
-    __delay_cycles(800 * CYCLE_PER_US);
+    vTaskDelay(100);
     return TRUE;
 }
 
@@ -547,12 +547,12 @@ uint8_t transmit_no_rtos(void)
     uint8_t marcstate;
     marcstate = 0xFF; //set unknown/dummy state value
 
-    //while (marcstate != 0x01) //0x01 = ILDE after sending data
-    while (marcstate != 0x0D) //0x0D = RX
+    while (marcstate != 0x01) //0x01 = ILDE after sending data
+    //while (marcstate != 0x0D) //0x0D = RX
     {
         marcstate = (spi_read_register(MARCSTATE) & 0x1F); //read out state of CC1101 to be sure in IDLE and TX is finished
     }
-    __delay_cycles(800 * CYCLE_PER_US);
+    __delay_cycles(1600000);
     return TRUE;
 }
 //-------------------------------[end]------------------------------------------

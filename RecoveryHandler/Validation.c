@@ -51,25 +51,20 @@ void initValidationEssentials()
     for (int i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
         outRecord = outboundValidationRecords + i;
+        memset(outRecord, 0, sizeof(OutboundValidationRecord_t));
         for(int i = 0; i < MAX_TASK_READ_OBJ; i++)
         {
             // maximum of data size
             outRecord->RWSet[i].data.ptr = pvPortMalloc(sizeof(int32_t));
             outRecord->RWSet[i].valid = 0;
         }
-        outRecord->validRecord = pdFALSE;
-        outRecord->writeSetNum = 0;
-        memset(outRecord->validationPassed, 0, sizeof(uint8_t) * MAX_TASK_READ_OBJ);
-        memset(outRecord->commitDone, 0, sizeof(uint8_t) * MAX_TASK_READ_OBJ);
     }
 
     InboundValidationRecord_t *inRecord = NULL;
     for (int i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
         inRecord = inboundValidationRecords + i;
-        inRecord->validRecord = pdFALSE;
-        inRecord->writeSetNum = 0;
-        memset(inRecord->vPhase1DataBegin, 0, sizeof(unsigned long long) * MAX_TASK_READ_OBJ);
+        memset(inRecord, 0, sizeof(InboundValidationRecord_t));
     }
 }
 uint8_t initValidationQueues()
