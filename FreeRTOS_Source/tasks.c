@@ -2040,7 +2040,7 @@ BaseType_t xReturn;
 	#endif
 
 	/* Add the idle task at the lowest priority. */
-	#if( configSUPPORT_STATIC_ALLOCATION == 1 )
+	#if( configSUPPORT_STATIC_ALLOCATION == 1 && configINTERMITTENT_DISTRIBUTED != 1 )
 	{
 		StaticTask_t *pxIdleTaskTCBBuffer = NULL;
 		StackType_t *pxIdleTaskStackBuffer = NULL;

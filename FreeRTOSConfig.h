@@ -64,6 +64,7 @@ __persistent keyword to be used.  See http://www.freertos.org/a00111.html#heap_4
 #define configNUM_THREAD_LOCAL_STORAGE_POINTERS	0
 #define configENABLE_BACKWARD_COMPATIBILITY		0
 #define configSUPPORT_DYNAMIC_ALLOCATION		1
+#define configSUPPORT_STATIC_ALLOCATION			1
 
 /* For Failure Resilient and Intermittent Distributed */
 #define configFIAILURE_RESILIENT				1
@@ -77,7 +78,7 @@ __persistent keyword to be used.  See http://www.freertos.org/a00111.html#heap_4
 #define configCHECK_FOR_STACK_OVERFLOW	2
 
 /* Software timer related definitions. */
-#define configUSE_TIMERS				1
+#define configUSE_TIMERS				0
 #define configTIMER_TASK_PRIORITY		0
 #define configTIMER_QUEUE_LENGTH		5
 #define configTIMER_TASK_STACK_DEPTH	( configMINIMAL_STACK_SIZE )
@@ -112,7 +113,7 @@ left at 1 with no impact on the code size. */
 #define INCLUDE_xQueueGetMutexHolder			1
 #define INCLUDE_eTaskGetState					1
 #define INCLUDE_xEventGroupSetBitsFromISR		1
-#define INCLUDE_xTimerPendFunctionCall			1
+#define INCLUDE_xTimerPendFunctionCall			0
 #define INCLUDE_xTaskGetHandle					1
 
 /* Include functions that format system and run-time stats into human readable

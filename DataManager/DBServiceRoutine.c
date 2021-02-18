@@ -8,27 +8,20 @@
 #define  DEBUG 1
 #define INFO 1
 
-#pragma NOINIT(DBServiceRoutinePacketQueue);
 QueueHandle_t DBServiceRoutinePacketQueue;
+
+uint8_t ucQueueStorageArea[5 * MAX_PACKET_LEN];
+static StaticQueue_t xStaticQueue;
+
 extern int firstTime;
-
-uint8_t initDBSrvQueues()
-{
-    if (firstTime == 1)
-    {
-        vQueueDelete(DBServiceRoutinePacketQueue);
-    }
-    DBServiceRoutinePacketQueue = xQueueCreate(5, MAX_PACKET_LEN);
-    if (DBServiceRoutinePacketQueue == NULL)
-    {
-        print2uart("Error: DB Service Routine Queue init failed\n");
-    }
-
-    return TRUE;
-}
 
 void DBServiceRoutine()
 {
+    DBServiceRoutinePacketQueue = xQueueCreateStatic(5, MAX_PACKET_LEN, ucQueueStorageArea, &xStaticQueue);
+    if (DBServiceRoutinePacketQueue == NULL) {
+        print2uart("Error: DB Service Routine Queue init failed\n");
+    }
+
     static uint8_t packetBuf[MAX_PACKET_LEN];
     static PacketHeader_t *packetHeader;
 

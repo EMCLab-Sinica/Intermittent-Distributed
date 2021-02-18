@@ -16,8 +16,6 @@
 #define DEBUG 0
 #define INFO 1
 
-#pragma NOINIT(validationRequestPacketsQueue)
-QueueHandle_t validationRequestPacketsQueue;
 
 #pragma NOINIT(outboundValidationRecords)
 OutboundValidationRecord_t outboundValidationRecords[MAX_GLOBAL_TASKS];
@@ -28,6 +26,10 @@ InboundValidationRecord_t inboundValidationRecords[MAX_GLOBAL_TASKS];
 extern volatile TCB_t * volatile pxCurrentTCB;
 extern uint8_t nodeAddr;
 extern int firstTime;
+
+QueueHandle_t validationRequestPacketsQueue;
+uint8_t ucQueueStorageArea[5 * MAX_PACKET_LEN];
+static StaticQueue_t xStaticQueue;
 
 void sendValidationRequest(TaskUUID_t *taskId, ValidateObject_t *dataToCommit);
 void sendValidationResponse(TaskUUID_t *taskId, DataUUID_t *dataId, TimeInterval_t *timeInterval);
@@ -66,21 +68,6 @@ void initValidationEssentials()
         inRecord = inboundValidationRecords + i;
         memset(inRecord, 0, sizeof(InboundValidationRecord_t));
     }
-}
-uint8_t initValidationQueues()
-{
-    if (firstTime == 1)
-    {
-        vQueueDelete(validationRequestPacketsQueue);
-    }
-
-    validationRequestPacketsQueue = xQueueCreate(5, MAX_PACKET_LEN);
-    if (validationRequestPacketsQueue == NULL)
-    {
-        print2uart("Error: DB Service Routine Queue init failed\n");
-    }
-
-    return pdTRUE;
 }
 
 void taskCommit(uint8_t tid, TaskHandle_t *fromTask, int32_t commitNum, ...)
@@ -161,6 +148,11 @@ void inboundValidationHandler()
     static uint8_t packetBuf[MAX_PACKET_LEN];
     uint8_t hasPacket = pdFALSE;
     PacketHeader_t *packetHeader = NULL;
+
+    validationRequestPacketsQueue = xQueueCreateStatic(5, MAX_PACKET_LEN, ucQueueStorageArea, &xStaticQueue);
+    if (validationRequestPacketsQueue == NULL) {
+        print2uart("Error: DB Service Routine Queue init failed\n");
+    }
 
     while(1)
     {

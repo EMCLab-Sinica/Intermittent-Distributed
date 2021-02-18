@@ -75,9 +75,7 @@ int main(void) {
     } while (timeSynced == 0);
     DISABLE_GDO2_INT(); // disable RF Interrupt for setup
 
-    initDBSrvQueues();
     VMDBConstructor();
-    initValidationQueues();
     /* Create System Service Tasks */
     stopTrack = 1;
     xTaskCreate(DBServiceRoutine, "DBServ", 600, NULL, 0, NULL);
