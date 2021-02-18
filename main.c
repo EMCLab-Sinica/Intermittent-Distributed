@@ -75,9 +75,9 @@ int main(void) {
     } while (timeSynced == 0);
     DISABLE_GDO2_INT(); // disable RF Interrupt for setup
 
+    initDBSrvQueues();
     VMDBConstructor();
     initValidationQueues();
-    initDBSrvQueues();
     /* Create System Service Tasks */
     stopTrack = 1;
     xTaskCreate(DBServiceRoutine, "DBServ", 600, NULL, 0, NULL);
@@ -86,7 +86,6 @@ int main(void) {
     stopTrack = 0;
 
     if (firstTime != 1) {
-        setupTasks();
         memset(&statistics, 0, sizeof(uint32_t) * 4);
         if (DEBUG) {
             print2uart("Node id: %d FirstTime\n", nodeAddr);
@@ -95,6 +94,7 @@ int main(void) {
         NVMDBConstructor();
         initValidationEssentials();
 
+        setupTasks();
         switch (nodeAddr) {
             case 1:
             {
@@ -105,7 +105,7 @@ int main(void) {
             case 2:
             {
                 xTaskCreate(sprayerTask, TASKNAME_SPRAYER, 400, NULL, 0, NULL);
-                xTaskCreate(reportTask, TASKNAME_REPORT, 400, NULL, 0, NULL);
+                //xTaskCreate(reportTask, TASKNAME_REPORT, 400, NULL, 0, NULL);
                 break;
             }
             case 3:

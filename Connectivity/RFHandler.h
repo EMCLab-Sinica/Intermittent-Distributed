@@ -12,9 +12,7 @@
 /* CC1101 Packet Format
 pkt_len [1byte] | rx_addr [1byte] | tx_addr [1byte] | payload data [1..60bytes]
 */
-#define MAX_PACKET_LEN 62   // 0x3E
-#define PACKET_HEADER_LEN 6 // enum can be 1byte or 2, not sure #TODO: enum size
-#define CHUNK_SIZE 53       // 62-6(header)-3(dataId, payloadSize, chunkSize)
+#define MAX_PACKET_LEN 32   // 0x3E
 
 /* Our Packet Format
 pkt_len [1byte] | rx_addr [1byte] | tx_addr [1byte] | request_type [1byte] | payload data [1..bytes]

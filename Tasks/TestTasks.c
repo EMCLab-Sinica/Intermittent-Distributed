@@ -29,17 +29,9 @@ void sensingTask() {
 
     int32_t RH;
     Data_t humidityData;
-    if (firstTime != 1)
-    {
-        humidityData = createWorkingSpace(&RH, sizeof(RH));
-        RH = 100;
-        humidityData.dataId.id = 1;
-        commitLocalDB(taskId, &humidityData);
-    }
-
     while (1) {
-        taskId.id = taskIdRecord[0];
         taskIdRecord[0] += 2;
+        taskId.id = taskIdRecord[0];
 
         humidityData = readLocalDB(1, &RH, sizeof(RH));
         RH = 70;
@@ -56,13 +48,6 @@ void monitorTask() {
 
     int32_t totalSpread;
     Data_t totalSpreadData;
-    if (firstTime != 1)
-    {
-        totalSpreadData = createWorkingSpace(&totalSpread, sizeof(totalSpread));
-        totalSpread = 0;
-        totalSpreadData.dataId.id = 2;
-        commitLocalDB(taskId, &totalSpreadData);
-    }
 
     while (1) {
         taskId.id = taskIdRecord[1];
@@ -87,14 +72,6 @@ void sprayerTask() {
 
     int32_t spreadAmount;
     Data_t sprayAmountData;
-    if (firstTime != 1) {
-        sprayAmountData =
-            createWorkingSpace(&spreadAmount, sizeof(spreadAmount));
-        spreadAmount = 0;
-        sprayAmountData.dataId.id = 1;
-        commitLocalDB(taskId, &sprayAmountData);
-    }
-
     Data_t humidityData;
     int32_t RH;
     int32_t sprayAmount;
@@ -149,6 +126,33 @@ void reportTask() {
 
 void setupTasks()
 {
+    if (nodeAddr == 1)
+    {
+        int32_t RH = 100;
+        TaskUUID_t taskId = {.nodeAddr = nodeAddr, .id = 1};
+        Data_t humidityData = createWorkingSpace(&RH, sizeof(RH));
+        humidityData.dataId.owner = nodeAddr;
+        humidityData.dataId.id = 1;
+        commitLocalDB(taskId, &humidityData);
+
+        int totalSpread = 0;
+        TaskUUID_t taskId2 = {.nodeAddr = nodeAddr, .id = 2};
+        Data_t totalSpreadData = createWorkingSpace(&totalSpread, sizeof(totalSpread));
+        totalSpreadData.dataId.owner = nodeAddr;
+        totalSpreadData.dataId.id = 2;
+        commitLocalDB(taskId2, &totalSpreadData);
+    }
+    else if (nodeAddr == 2 || nodeAddr == 3 || nodeAddr == 4)
+    {
+        int spreadAmount = 0;
+        TaskUUID_t taskId = {.nodeAddr = nodeAddr, .id = 1};
+        Data_t sprayAmountData =
+            createWorkingSpace(&spreadAmount, sizeof(spreadAmount));
+        sprayAmountData.dataId.owner = nodeAddr;
+        sprayAmountData.dataId.id = 1;
+        commitLocalDB(taskId, &sprayAmountData);
+    }
+
     taskIdRecord[0] = 1;
     taskIdRecord[1] = 2;
     taskIdRecord[2] = 1;

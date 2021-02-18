@@ -221,7 +221,7 @@ void outboundValidationHandler()
     OutboundValidationRecord_t *outboundRecord = NULL;
     while (1)
     {
-        vTaskDelay(300);
+        vTaskDelay(500);
         // Outbound Validation
         for (unsigned int i = 0; i < MAX_GLOBAL_TASKS; i++)
         {
@@ -326,17 +326,10 @@ void outboundValidationHandler()
 
                 case finish:
                 {
-                    TaskRecord_t* task = (TaskRecord_t*)(outboundRecord->taskRecord);
-                    // recreate the task if needed
-                    if (task->taskStatus == validating)
+                    outboundRecord->validRecord = pdFALSE;
+                    if (outboundRecord->taskHandle != NULL)
                     {
-                        xTaskCreate(task->address, task->taskName, task->stackSize, NULL, task->priority, NULL);
-                        task->taskStatus = invalid;
-                        outboundRecord->validRecord = pdFALSE;
-                    } else
-                    {
-                        xTaskNotifyGive(*outboundRecord->taskHandle);
-                        outboundRecord->validRecord = pdFALSE;
+                        xTaskNotifyGive(*(outboundRecord->taskHandle));
                     }
                 }
 
@@ -365,7 +358,7 @@ void sendValidationRequest(TaskUUID_t* taskId, ValidateObject_t *validateObject)
     } else
     {
         packet.data.size = 0;
-        memcpy(packet.data.content, 0, dataToCommit->size);
+        memset(packet.data.content, 0, dataToCommit->size);
     }
 
     RFSendPacket(dataToCommit->dataId.owner, (uint8_t *)&packet, sizeof(packet));
@@ -596,4 +589,18 @@ InboundValidationRecord_t *getInboundRecord(TaskUUID_t *taskId)
 uint8_t resolveTaskDependency(TaskUUID_t taskId, DataUUID_t dataId)
 {
     TaskCommitted_t committed = checkCommitted(taskId, dataId.id);
+    return committed;
+}
+
+void recoverOutboundValidation() {
+    OutboundValidationRecord_t *record = NULL;
+    for (int i = 0; i < MAX_GLOBAL_TASKS; i++)
+    {
+        record = outboundValidationRecords + i;
+        if(record->validRecord == pdTRUE)
+        {
+            record->taskHandle = NULL;
+        }
+
+    }
 }

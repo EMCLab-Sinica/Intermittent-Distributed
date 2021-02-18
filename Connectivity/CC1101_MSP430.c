@@ -715,6 +715,7 @@ uint8_t send_packet(uint8_t rx_addr, uint8_t *txbuffer,
     transmit();                                           //sends data over air
     receive();                                            //receive mode
 
+    vTaskDelay(rand() % 6 * 100);
     taskEXIT_CRITICAL();
 
     return TRUE;
@@ -794,11 +795,13 @@ uint8_t packet_available()
 //------------------[check Payload for ACK or Data]-----------------------------
 uint8_t get_packet(uint8_t rxbuffer[], uint8_t *pktlen, uint8_t *dest_addr, uint8_t *src_addr)
 {
+    taskENTER_CRITICAL();
     rx_fifo_erase(rxbuffer); //delete rx_fifo bufffer
 
     if (rx_payload_burst(rxbuffer, pktlen) == FALSE) //read package in buffer
     {
         rx_fifo_erase(rxbuffer); //delete rx_fifo bufffer
+        taskEXIT_CRITICAL();
         return FALSE;            //exit
     }
     else
@@ -809,6 +812,7 @@ uint8_t get_packet(uint8_t rxbuffer[], uint8_t *pktlen, uint8_t *dest_addr, uint
         if (check_acknowledge(rxbuffer, *pktlen, *src_addr, *dest_addr) == TRUE) //acknowlage received?
         {
             rx_fifo_erase(rxbuffer); //delete rx_fifo bufffer
+            taskEXIT_CRITICAL();
             return FALSE;            //Ack received -> finished
         }
         else //real data, and send acknowladge
@@ -839,8 +843,10 @@ uint8_t get_packet(uint8_t rxbuffer[], uint8_t *pktlen, uint8_t *dest_addr, uint
             //     send_acknowledge(*dest_addr, *src_addr); //sending acknowledge to src_addr!
             // }
 
+            taskEXIT_CRITICAL();
             return TRUE;
         }
+        taskEXIT_CRITICAL();
         return FALSE;
     }
 }

@@ -28,8 +28,10 @@ static void* map1[MAX_DB_OBJ];
  void init(){
     memset(dataCommitRecord, 0, sizeof(DataCommitRecord_t) * MAX_DB_OBJ * NUMCOMMIT);
     memset(recordSwitcher, 0, sizeof(uint8_t) * MAX_DB_OBJ);
-    memset(map0, 0, sizeof(void*) * MAX_DB_OBJ);
-    memset(map1, 0, sizeof(void*) * MAX_DB_OBJ);
+    for (int i = 0; i < MAX_DB_OBJ; i++) {
+        map0[i] = NULL;
+        map1[i] = NULL;
+    }
 }
 
 

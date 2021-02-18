@@ -15,7 +15,7 @@
 #include "config.h"
 #include "myuart.h"
 
-#define DEBUG 0  // control debug message
+#define DEBUG 1  // control debug message
 #define INFO 1   // control debug message
 
 #pragma NOINIT(NVMDatabase)
@@ -195,7 +195,7 @@ Data_t readRemoteDB(TaskUUID_t taskId, const TaskHandle_t const *xFromTask,
         RFSendPacket(remoteAddr, (uint8_t *)&packet, sizeof(packet));
         ulNotificationValue = ulTaskNotifyTake(
             pdFALSE, /* Clear the notification value before exiting. */
-            pdMS_TO_TICKS(800));
+            pdMS_TO_TICKS(1000));
     } while (ulNotificationValue != 1);
 
     if (DEBUG) print2uart("readRemoteDB: remote dataId: %d, notified\n", id);
@@ -284,17 +284,20 @@ DataUUID_t commitLocalDB(TaskUUID_t taskUUID, Data_t *data) {
             ;
     }
 
-    void *oldMallocDataAddress = NULL;
     int32_t objectIndex = data->dataId.id;
 
     taskENTER_CRITICAL();
+
+    void* previous = accessData(objectIndex);
 
     void *NVMSpace = (void *)pvPortMalloc(data->size);
     memcpy(NVMSpace, data->ptr, data->size);
     commit(taskUUID, objectIndex, NVMSpace, 0, 1);
 
-    /* Free the previous consistent data */
-    if (oldMallocDataAddress) vPortFree(oldMallocDataAddress);
+    if (previous != NULL)
+    {
+        vPortFree(previous);
+    }
 
     /* Link the data */
     NVMDatabase.dataRecord[objectIndex] = *data;

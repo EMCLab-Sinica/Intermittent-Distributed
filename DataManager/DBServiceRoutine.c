@@ -14,20 +14,15 @@ extern int firstTime;
 
 uint8_t initDBSrvQueues()
 {
-    if (firstTime != 1)
-    {
-        DBServiceRoutinePacketQueue = xQueueCreate(5, MAX_PACKET_LEN);
-        if (DBServiceRoutinePacketQueue == NULL)
-        {
-            print2uart("Error: DB Service Routine Queue init failed\n");
-        }
-    }
-    else
+    if (firstTime == 1)
     {
         vQueueDelete(DBServiceRoutinePacketQueue);
-        DBServiceRoutinePacketQueue = xQueueCreate(5, MAX_PACKET_LEN);
     }
-
+    DBServiceRoutinePacketQueue = xQueueCreate(5, MAX_PACKET_LEN);
+    if (DBServiceRoutinePacketQueue == NULL)
+    {
+        print2uart("Error: DB Service Routine Queue init failed\n");
+    }
 
     return TRUE;
 }

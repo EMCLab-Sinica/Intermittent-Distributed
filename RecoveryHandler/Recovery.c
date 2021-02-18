@@ -14,6 +14,7 @@
 #include "driverlib.h"
 #include "RFHandler.h"
 #include "OurTCB.h"
+#include "Validation.h"
 
 #define DEBUG 1
 
@@ -38,6 +39,7 @@ DataRequestLog_t dataRequestLogs[MAX_GLOBAL_TASKS];
 extern tskTCB *volatile pxCurrentTCB;
 extern unsigned int volatile stopTrack;
 extern TaskHandle_t RecoverySrvTaskHandle;
+extern OutboundValidationRecord_t outboundValidationRecords[MAX_GLOBAL_TASKS];
 
 /*
  * taskRerun(): rerun the current task invoking this function
@@ -162,6 +164,8 @@ void freePreviousTasks()
  * */
 void failureRecovery()
 {
+
+    recoverOutboundValidation();
     TaskRecord_t *task = NULL;
     for (int i = 0; i < MAX_GLOBAL_TASKS; i++)
     {
@@ -172,7 +176,7 @@ void failureRecovery()
             //see if the address is valid
             if (prvcheckAdd(task->TCB) == 1)
             {
-                dprint2uart("Recovery: Delete: %s\r\n", task->taskName);
+                print2uart("Recovery: Delete: %s\r\n", task->taskName);
                 //Since all tasks information, e.g., list of ready queue, is saved in VM, we only needs to consider the stack and free the stack and TCB
                 tskTCB *tcb = task->TCB;
                 vPortFree(tcb->pxStack);
@@ -181,6 +185,7 @@ void failureRecovery()
             task->taskStatus = invalid;
             if (!(task->schedulerTask)) // consider recreating task
             {
+                /*
                 if (task->validationRecord != NULL &&
                     task->validationRecord->validRecord == true) {
                     // the task content is gone, but its modified version is
@@ -189,11 +194,12 @@ void failureRecovery()
                     // recreate after previous task finished validation
                     continue;
                 }
+                */
                 xTaskCreate(task->address, task->taskName, task->stackSize, NULL, task->priority, NULL);
-                print2uart("Recovery Create: %s\r\n", task->taskName);
+                dprint2uart("Recovery Create: %s\r\n", task->taskName);
             }
 
-            dprint2uart("Rend: xPortGetFreeHeapSize = %d\r\n", xPortGetFreeHeapSize());
+            print2uart("Rend: xPortGetFreeHeapSize = %d\r\n", xPortGetFreeHeapSize());
         }
     }
 
