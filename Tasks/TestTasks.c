@@ -1,6 +1,6 @@
 #include "TestTasks.h"
 
-#include <RecoveryHandler/Validation.h>
+#include <ValidationHandler/Validation.h>
 #include <msp430.h>
 
 #include "FreeRTOS.h"
@@ -29,14 +29,30 @@ void sensingTask() {
 
     int32_t RH;
     Data_t humidityData;
+    unsigned char Packet[5];
+    unsigned char RH_byte1, RH_byte2;
     while (1) {
         taskIdRecord[0] += 2;
         taskId.id = taskIdRecord[0];
 
         humidityData = readLocalDB(1, &RH, sizeof(RH));
-        RH = 70;
+        taskENTER_CRITICAL();   // The sensing can not be interrupted
+        read_Packet(Packet);
+        RH_byte1 = Packet[0];
+        RH_byte2 = Packet[1];
+        taskEXIT_CRITICAL();
+        if (DEBUG) {
+            if (check_Checksum(Packet)) {
+                print2uart("check sum success\n");
+            } else {
+                print2uart("check sum failed\n");
+            }
+        }
+        RH = RH_byte1;
         writeData(&humidityData, &RH);
         taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 1, humidityData);
+
+        // wait for humidity sensor to sense again, must > 1500ms, otherwise checksum will fail
         vTaskDelay(2000);
     }
 }
@@ -56,7 +72,8 @@ void monitorTask() {
         totalSpreadData = readLocalDB(2, &totalSpread, sizeof(totalSpread));
         taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 1, totalSpreadData);
         print2uart_new("Total Spread %d\n", totalSpread);
-        vTaskDelay(1000);
+        // same as sensing rate to make sense
+        vTaskDelay(2000);
     }
 }
 
@@ -91,6 +108,7 @@ void sprayerTask() {
         taskCommit(taskId.id, (TaskHandle_t *)&myTaskHandle, 2, &sprayAmountData, &humidityData);
 
         print2uart_new("Spraying...\n");
+        // wait for spraying
         vTaskDelay(1000);
     }
 }

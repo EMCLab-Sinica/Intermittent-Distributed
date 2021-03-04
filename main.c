@@ -10,8 +10,8 @@
 #include <DataManager/DBServiceRoutine.h>
 #include <FreeRTOS.h>
 #include <Peripheral/dht11.h>
-#include <RecoveryHandler/Recovery.h>
-#include <RecoveryHandler/Validation.h>
+#include <ValidationHandler/Recovery.h>
+#include <ValidationHandler/Validation.h>
 #include <Tasks/TestTasks.h>
 #include <Tools/dvfs.h>
 #include <Tools/myuart.h>
@@ -103,7 +103,7 @@ int main(void) {
             case 2:
             {
                 xTaskCreate(sprayerTask, TASKNAME_SPRAYER, 400, NULL, 0, NULL);
-                //xTaskCreate(reportTask, TASKNAME_REPORT, 400, NULL, 0, NULL);
+                xTaskCreate(reportTask, TASKNAME_REPORT, 400, NULL, 0, NULL);
                 break;
             }
             case 3:
@@ -155,8 +155,8 @@ static void prvSetupHardware(void) {
     GPIO_setAsOutputPin(GPIO_PORT_P4, GPIO_PIN0 | GPIO_PIN1 | GPIO_PIN2 | GPIO_PIN3 | GPIO_PIN4 | GPIO_PIN5 | GPIO_PIN6 | GPIO_PIN7);
     GPIO_setAsOutputPin(GPIO_PORT_PJ, GPIO_PIN0 | GPIO_PIN1 | GPIO_PIN2 | GPIO_PIN3 | GPIO_PIN4 | GPIO_PIN5 | GPIO_PIN6 | GPIO_PIN7 | GPIO_PIN8 | GPIO_PIN9 | GPIO_PIN10 | GPIO_PIN11 | GPIO_PIN12 | GPIO_PIN13 | GPIO_PIN14 | GPIO_PIN15);
 
-    GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN0);  // Red LED on
-    GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN1);  // Red LED on
+    GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN0);  // Red LED off
+    GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN1);  // Green LED off
 
     /* Configure P2.0 - UCA0TXD and P2.1 - UCA0RXD. */
     GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN0);

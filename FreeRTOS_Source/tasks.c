@@ -43,8 +43,8 @@ task.h is included from an application file. */
 #if ( configINTERMITTENT_DISTRIBUTED == 1 )
 	#include "Tools/myuart.h"
 	/* Extend for recovery */
-	#include <RecoveryHandler/Recovery.h>
-	#include <RecoveryHandler/OurTCB.h>
+	#include <ValidationHandler/Recovery.h>
+	#include <ValidationHandler/OurTCB.h>
 #endif
 
 /* Lint e9021, e961 and e750 are suppressed as a MISRA exception justified

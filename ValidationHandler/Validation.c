@@ -1,5 +1,5 @@
 #include "FreeRTOS.h"
-#include "RecoveryHandler/TaskControl.h"
+#include "ValidationHandler/TaskControl.h"
 #include "SimpDB.h"
 #include "task.h"
 #include "Validation.h"
@@ -256,23 +256,17 @@ void outboundValidationHandler()
                     }
                     if (toNextStage == pdTRUE)
                     {
-                        outboundRecord->stage = commitPhase;
-                        /*
                         if (outboundRecord->taskValidInterval.vBegin <= outboundRecord->taskValidInterval.vEnd)
                         {
                             outboundRecord->stage = commitPhase;
                         } else
                         {
                             print2uart("abort\n");
-                            print2uart("%u\n",outboundRecord->taskValidInterval.vBegin );
-                            print2uart("%u\n", outboundRecord->taskValidInterval.vEnd);
-                            TaskRecord_t* task = (TaskRecord_t*)(outboundRecord->taskRecord);
-                            vTaskDelete(task->TCB); //delete the current task
-                            task->taskStatus = invalid;
-                            xTaskCreate(task->address, task->taskName, task->stackSize, NULL, task->priority, NULL);
+                            // The memory of aborted task will be cleaned up on next recovery
+                            // send abort the task
+                            sendCommitRequest(outboundRecord->RWSet[i] .data.dataId.owner, &(outboundRecord->taskId), 0);
                             outboundRecord->validRecord = false;
                         }
-                        */
                         break;
                     }
                 }
@@ -398,9 +392,12 @@ void handleValidationRequest(ValidationRequestPacket_t *packet)
         TaskCommitted_t resolve = resolveTaskDependency(packet->taskId, validateData->dataId);
         if (resolve == aborted)
         {
-            // TODO: send abort
+            // send invalid TimeInterval_t, meaning abort
+            TimeInterval_t ti = {.vBegin = 1, .vEnd = -1};
+            sendValidationResponse(&(packet->taskId), &(packet->data.dataId), &ti);
         }else if (resolve == pending)
         {
+            // return and wait
             return;
         }
     }

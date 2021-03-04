@@ -515,14 +515,14 @@ uint8_t transmit(void)
 {
     if (GDO0_PIN_IS_HIGH()) // channel busy
     {
-        GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN0);      // Red LED on
+        //GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN0);      // Red LED on
         // spi_write_strobe(SFTX);    //flush TX Buffer
         vTaskDelay(rand() % 6 * 100);
         if (debug_level)
             print2uart("CCA\n");
     } else
     {
-        GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN0);      // Red LED off
+        //GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN0);      // Red LED off
     }
 
     sidle();
