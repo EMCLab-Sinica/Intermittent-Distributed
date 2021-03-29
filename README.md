@@ -1,4 +1,4 @@
-# Intermittent-aware Distributed Concurrency Control Demo
+# Distributed Concurrency Control in Intermittent Networks Demo
 
 <!-- ABOUT THE PROJECT -->
 ## Project Description
