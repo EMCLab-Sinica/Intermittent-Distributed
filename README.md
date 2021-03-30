@@ -8,14 +8,19 @@ In particular, we propose a borrowing-based data management method to increase d
 The proposed protocol was integrated into a FreeRTOS-extended intermittent operating system running on Texas Instruments devices
 
 ## Implementaton Description
-To realize an operating system for intermittent networks, we integrated our borrowing-based distributed concurrency control protocol into an intermittent operating system, which was built upon FreeRTOS according to the [failure-resilient](https://www.citi.sinica.edu.tw/papers/pchsiu/7157-F.pdf) design intended for standalone intermittent systems.
-Our protocol is realized on top of the task schedulerand memory manager, as shown in Figure 7, with around 4800 lines of C code scattered into 18 files. Our operating system is then deployed on several TI MSP430 LaunchPad devices,equipped with TI CC1101 Radio Frequency (RF) transceivers, to form an intermittentnetwork.
-Currently the project suuports up to 10 tasks and 16 data object globally.
+To realize an operating system for intermittent networks, we integrated our borrowing-based distributed concurrency control protocol into the [Intermittent Operating System](https://github.com/EMCLab-Sinica/Intermittent-OS), which was built upon FreeRTOS according to the failure-resilient design intended for standalone intermittent systems.
+Our protocol is realized on top of the task schedulerand memory manager, as shown in the figure below, with around 4800 lines of C code scattered into 18 files. Our operating system is then deployed on several TI MSP430 LaunchPad devices,equipped with TI CC1101 Radio Frequency (RF) transceivers, to form an intermittentnetwork.
+Currently the project supports up to 10 tasks and 16 data object globally.
+
+![System Design](https://i.imgur.com/mttLGuu.png)
 
 ### Project Structure
-  * The folder `DataManager/` is the implementation of Data Manager in paper Chapter 5.1
-  * The folder `ValidationHandler/` is the implementation of Validation Handler in paper Chapter 5.2
-  * The folder `Connectivity/` is the implementation of Node Communications in paper Chapter 5.3
+
+Refer to the system design figure above
+
+  * The folder `DataManager/` is the implementation of Data manager
+  * The folder `ValidationHandler/` is the implementation of Validation handler
+  * The folder `Connectivity/` is the implementation of Node communications with RF
 
 <!-- TABLE OF CONTENTS -->
 ## Table of Contents
@@ -52,6 +57,9 @@ Here are the basic software and hardware you need to build the applications runn
 
 4. Build and flash to your device
 
+#### Note
+* Please refer to `Connectivity/pins.h` to setup the the RF module, the pinout may be different
+* Please refer to `Peripheral/dht11.c` to setup the the humidity sensor
 
 ## License
 
