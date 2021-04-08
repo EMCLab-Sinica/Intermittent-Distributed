@@ -1,16 +1,18 @@
-# Distributed Concurrency Control in Intermittent Networks Demo
+# An Intermittent Operating System for Intermittent Networks
 
 <!-- ABOUT THE PROJECT -->
 ## Project Description
 
-This project presents an intermittent-aware distributed concurrency control protocol, which leverages existing data copies inherently created in the network to improve the computation progressof concurrently executed tasks.
-In particular, we propose a borrowing-based data management method to increase data availability, and an intermittent two-phase commit procedure incorporatedwith distributed backward validation to ensure data consistency in the network.
-The proposed protocol was integrated into a FreeRTOS-extended intermittent operating system running on Texas Instruments devices
+This project develops an intermittent operating system for an intermittent network formed by multiple intermittent devices, facilitating programmers in developing intermittent-aware IoT applications, regardless of power stability.
+
+Internet-of-Things (IoT) devices are gradually adopting battery-less, energy harvesting solutions, thereby driving the development of an intermittent computing paradigm to accumulate computation progress across multiple power cycles. However, the computation progress improved by distributed task concurrency in an intermittent network can be significantly offset by data unavailability due to frequent power failures. We propose an intermittent-aware distributed concurrency control protocol which leverages existing data copies inherently created in the network to improve the computation progress of concurrently executed tasks. The protocol uses a borrowing-based data management method to increase data availability and an intermittent two-phase commit procedure incorporated with distributed backward validation to ensure data consistency in the network.
 
 ## Implementaton Description
-To realize an operating system for intermittent networks, we integrated our borrowing-based distributed concurrency control protocol into the [Intermittent Operating System](https://github.com/EMCLab-Sinica/Intermittent-OS), which was built upon FreeRTOS according to the failure-resilient design intended for standalone intermittent systems.
-Our protocol is realized on top of the task schedulerand memory manager, as shown in the figure below, with around 4800 lines of C code scattered into 18 files. Our operating system is then deployed on several TI MSP430 LaunchPad devices,equipped with TI CC1101 Radio Frequency (RF) transceivers, to form an intermittentnetwork.
-Currently the project supports up to 10 tasks and 16 data object globally.
+
+To realize an operating system for intermittent networks, we integrated our borrowing-based distributed concurrency control protocol into an [intermittent operating system](https://github.com/EMCLab-Sinica/Intermittent-OS), which was built upon FreeRTOS for standalone intermittent systems.
+Our protocol is realized on top of the task schedulerand memory manager, as shown in the figure below, with around 4800 lines of C code divided into 18 files.
+Our operating system can be deployed on several TI MSP430 LaunchPad devices, equipped with TI CC1101 RF transceivers to form an intermittent network. The used low-power transceiver supports neither time-division multiple access (TDMA) nor frequency division multiple access (FDMA), resulting in severe channel collision when a network comprises more than four nodes. The intermittent OS when applied to a larger-scale intermittent network require another low-power wireless module that support multiple access and multi-hop relay routing.
+
 
 ![System Design](https://i.imgur.com/mttLGuu.png)
 
