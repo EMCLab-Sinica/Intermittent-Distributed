@@ -13,6 +13,7 @@ To realize an operating system for intermittent networks, we integrated our borr
 Our protocol is realized on top of the task schedulerand memory manager, as shown in the figure below, with around 4800 lines of C code divided into 18 files.
 Our operating system can be deployed on several TI MSP430 LaunchPad devices, equipped with TI CC1101 RF transceivers to form an intermittent network. The used low-power transceiver supports neither time-division multiple access (TDMA) nor frequency division multiple access (FDMA), resulting in severe channel collision when a network comprises more than four nodes. The intermittent OS when applied to a larger-scale intermittent network require another low-power wireless module that support multiple access and multi-hop relay routing.
 
+Interested readers may refer to a demo at [https://youtu.be/hK4mQWHZvGk](https://youtu.be/hK4mQWHZvGk)
 
 ![System Design](https://i.imgur.com/mttLGuu.png)
 
