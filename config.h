@@ -1,10 +1,3 @@
-/*
- * config.h
- *
- *  Created on: 2018�~2��13��
- *      Author: Meenchen
- */
-
 #ifndef CONFIG_H_
 #define CONFIG_H_
 

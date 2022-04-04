@@ -1,12 +1,5 @@
 #ifndef SIMPDB_H
 #define SIMPDB_H
-/*
- * SimpDB.h
- *
- *  Created on: 2017�~7��12��
- *      Author: Meenchen
- *  Description: This simple DB is used to manage data and task snapshot(stacks)
- */
 #include <DataManager/maps.h>
 #include "FreeRTOS.h"
 #include "task.h"

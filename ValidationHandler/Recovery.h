@@ -1,9 +1,3 @@
-/*
- * Recover.h
- *
- *  Created on: 2018�~2��12��
- *      Author: Meenchen
- */
 #ifndef RECOVERYHANDLER_RECOVERY_H_
 #define RECOVERYHANDLER_RECOVERY_H_
 

@@ -1,10 +1,3 @@
-/*
- * Recovery.c
- *
- *  Created on: 2018�~2��12��
- *      Author: Meenchen
- */
-
 #include <ValidationHandler/Recovery.h>
 #include "FreeRTOS.h"
 #include <stdio.h>

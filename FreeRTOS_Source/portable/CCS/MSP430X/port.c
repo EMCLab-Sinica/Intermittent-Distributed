@@ -39,14 +39,6 @@ not the MCLK. */
 #define portINITIAL_CRITICAL_NESTING	( ( uint16_t ) 10 )
 #define portFLAGS_INT_ENABLED			( ( StackType_t ) 0x08 )
 
-/* We require the address of the pxCurrentTCB variable, but don't want to know
-any details of its type. */
-//typedef void TCB_t;
-//extern volatile TCB_t * volatile pxCurrentTCB;
-//#define Meenchen
-//#define CacheCode
-
-
 #if ( configINTERMITTENT_DISTRIBUTED== 1)
 	extern uint32_t  timeCounter;
 #endif
